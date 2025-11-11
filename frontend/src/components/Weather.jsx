@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_ENDPOINTS } from '../config/api';
 
 /**
  * Weather Component
@@ -19,7 +20,7 @@ export default function Weather() {
       setError(null);
       
       // Call backend proxy endpoint to keep API key secure
-      const response = await fetch('http://localhost:3001/api/weather');
+      const response = await fetch(API_ENDPOINTS.weather);
       
       if (!response.ok) {
         throw new Error('Failed to fetch weather data');
