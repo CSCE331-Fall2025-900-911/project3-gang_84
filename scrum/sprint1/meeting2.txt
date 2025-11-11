@@ -1,0 +1,70 @@
+SCRUM Meeting 2 for Project 3
+Prepared by: Namrata Iyer
+Meeting Date: 11/3/25
+Meeting Attendees
+ Namrata Iyer
+ Pranav Harwadekar
+ Nishanth Gandhe
+ Vishnu Nayak
+Meeting Agenda Items
+ Plan out how to integrate front and back end
+Finalize database structure
+Status Update Since Last Meeting
+Accomplishments:
+Finished setting up  front end for kiosk
+Database is structured tentatively for project 3
+
+Tasks Completed:
+Task Description
+Assigned to
+Completed? (yes/no)
+Set up environment
+nishanth
+yes
+Set up github repo
+nishanth
+yes
+Set up kiosk front end
+namrata
+yes
+Add all drinks to kiosk display
+vishnu
+yes
+Allow customer to customize drink
+vishnu
+yes
+Display cart on side
+pranav
+yes
+allow add to cart
+pranav
+yes
+
+
+Before The Next Meeting
+Plans:
+Finish user side kiosk ordering functionality 
+Deploy website on vercel
+
+Task Assignments:
+Task Description
+Assigned to
+Update price as items added to cart
+namrata
+Connect kiosk to database
+pranav
+Deploy product on website
+pranav
+Create different sections for drinks
+vishnu
+Suggest more drinks to customer before checkout
+namrata
+Checkout page with choice of cash or card
+nishanth
+
+Minutes from Previous Meeting
+What we accomplished before meeting 1: We decided on the tech stack that we wanted to use for this project, planned out our product backlog, and split the tasks into 3 sprints.
+
+What we need to get done before the next meeting: We need to set up the environment and github repo and start doing the frontend for the kiosk.
+
+Blockers: We are still getting used to the tech stack and need to learn it.
