@@ -46,6 +46,7 @@ Plans:
 Finish user side kiosk ordering functionality 
 Deploy website on vercel
 
+
 Task Assignments:
 Task Description
 Assigned to
