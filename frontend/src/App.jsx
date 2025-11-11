@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import Weather from './components/Weather';
+import { API_ENDPOINTS } from './config/api';
 
 // Customization Modal
 function CustomizationModal({ drink, onClose, onAddToCart, sweetnessOptions, iceOptions, toppingOptions }) {
@@ -169,8 +170,6 @@ function Cart({ cartItems, total }) {
         ) : (
           cartItems.map((item, index) => (
             <div
-              key={`${item.menuitemid}-${index}`} // Use lowercase menuitemid from database
-              className="flex justify-between items-center mb-4"
               key={`${item.menuitemid}-${index}`}
               className="flex justify-between items-start mb-4 pb-4 border-b"
             >
@@ -229,7 +228,7 @@ export default function App() {
     // This function fetches data from your backend
     const fetchMenu = async () => {
       try {
-        const response = await fetch('http://localhost:3001/api/menu');
+        const response = await fetch(API_ENDPOINTS.menu);
         if (!response.ok) {
           throw new Error('Network response was not ok');
         }
@@ -263,8 +262,6 @@ export default function App() {
   // Filter drinks based on the selected category
   const visibleDrinks = useMemo(() => {
     // Filter by lowercase 'category' column from database
-    return drinks.filter((d) => d.category === selectedCategory);
-    // This now filters by the 'category' column (lowercase)
     return drinks.filter((d) => d.category === selectedCategory);
   }, [selectedCategory, drinks]);
 
@@ -375,21 +372,29 @@ export default function App() {
               </ul>
             </nav>
 
-      {/* Center Drink Grid */}
-      <main className="w-3/5 px-6">
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-          {visibleDrinks.map((drink) => (
-            <DrinkCard
-              key={drink.menuitemid}
-              drink={drink}
-              onDrinkClick={handleDrinkClick}
-            />
-          ))}
-        </div>
-      </main>
+            {/* Center Drink Grid */}
+            <main className="w-3/5 px-6">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                {visibleDrinks.map((drink) => (
+                  <DrinkCard
+                    key={drink.menuitemid}
+                    drink={drink}
+                    onDrinkClick={handleDrinkClick}
+                  />
+                ))}
+              </div>
+            </main>
 
-      {/* Right-hand Cart Sidebar */}
-      <Cart cartItems={cart} total={cartTotal} />
+            {/* Right-hand Cart Sidebar */}
+            <Cart cartItems={cart} total={cartTotal} />
+          </>
+        ) : (
+          /* Weather Tab */
+          <div className="flex-1">
+            <Weather />
+          </div>
+        )}
+      </div>
 
       {/* Customization Modal */}
       {selectedDrink && (
