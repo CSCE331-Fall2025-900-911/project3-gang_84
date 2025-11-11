@@ -1,8 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import Weather from './components/Weather';
 
 // A single drink item in the grid
 function DrinkCard({ drink, onAddToCart }) {
-  // Use 'Name' and 'Price' from your 'menu_items' table (case-sensitive)
+  // Use lowercase column names from database: 'name', 'price'
   return (
     <div
       className="flex flex-col items-center justify-between p-4 bg-white rounded-lg shadow-md cursor-pointer transition-transform transform hover:scale-105"
@@ -11,9 +12,9 @@ function DrinkCard({ drink, onAddToCart }) {
       <div className="w-24 h-24 bg-gray-200 rounded-full mb-4 flex items-center justify-center">
         <span className="text-4xl">🥤</span>
       </div>
-      <span className="text-center font-medium">{drink.Name}</span>
-      {/* Ensure your price column is named 'Price' and is a number */}
-      <span className="text-gray-600">${parseFloat(drink.Price).toFixed(2)}</span>
+      <span className="text-center font-medium">{drink.name}</span>
+      {/* Database returns 'price' as lowercase */}
+      <span className="text-gray-600">${parseFloat(drink.price).toFixed(2)}</span>
     </div>
   );
 }
@@ -29,17 +30,17 @@ function Cart({ cartItems, total }) {
         ) : (
           cartItems.map((item, index) => (
             <div
-              key={`${item.MenuItemID}-${index}`} // Use a more robust key for cart items
+              key={`${item.menuitemid}-${index}`} // Use lowercase menuitemid from database
               className="flex justify-between items-center mb-4"
             >
               <div>
-                <span className="font-medium">{item.Name}</span>
+                <span className="font-medium">{item.name}</span>
                 <span className="text-sm text-gray-500 block">
-                  {item.quantity} x ${parseFloat(item.Price).toFixed(2)}
+                  {item.quantity} x ${parseFloat(item.price).toFixed(2)}
                 </span>
               </div>
               <span className="font-semibold">
-                ${(item.quantity * parseFloat(item.Price)).toFixed(2)}
+                ${(item.quantity * parseFloat(item.price)).toFixed(2)}
               </span>
             </div>
           ))
@@ -61,6 +62,7 @@ function Cart({ cartItems, total }) {
 
 // The main Kiosk App
 export default function App() {
+  const [activeTab, setActiveTab] = useState('menu'); // 'menu' or 'weather'
   const [categories, setCategories] = useState([]);
   const [drinks, setDrinks] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
@@ -103,23 +105,23 @@ export default function App() {
 
   // Filter drinks based on the selected category
   const visibleDrinks = useMemo(() => {
-    // This now filters by the 'Category' column (case-sensitive)
-    return drinks.filter((d) => d.Category === selectedCategory);
+    // Filter by lowercase 'category' column from database
+    return drinks.filter((d) => d.category === selectedCategory);
   }, [selectedCategory, drinks]);
 
   // Calculate cart total
   const cartTotal = useMemo(() => {
-    return cart.reduce((sum, item) => sum + parseFloat(item.Price) * item.quantity, 0);
+    return cart.reduce((sum, item) => sum + parseFloat(item.price) * item.quantity, 0);
   }, [cart]);
 
   // Add a drink to the cart
   const handleAddToCart = (drink) => {
     setCart((prevCart) => {
-      // 'MenuItemID' is the primary key from your 'menu_items' table
-      const existingItem = prevCart.find((item) => item.MenuItemID === drink.MenuItemID);
+      // 'menuitemid' is the primary key from database (lowercase)
+      const existingItem = prevCart.find((item) => item.menuitemid === drink.menuitemid);
       if (existingItem) {
         return prevCart.map((item) =>
-          item.MenuItemID === drink.MenuItemID
+          item.menuitemid === drink.menuitemid
             ? { ...item, quantity: item.quantity + 1 }
             : item
         );
@@ -139,44 +141,85 @@ export default function App() {
   }
 
   return (
-    <div className="flex w-full min-h-screen p-8 bg-lime-50 font-sans">
+    <div className="flex flex-col w-full min-h-screen bg-lime-50 font-sans">
       
-      {/* Left-hand Category Navigation */}
-      <nav className="w-1/5 pr-6">
-        <h1 className="text-2xl font-bold mb-6 text-gray-800">Menu</h1>
-        <ul>
-          {categories.map((categoryName) => (
-            <li key={categoryName} className="mb-2">
-              <button
-                onClick={() => setSelectedCategory(categoryName)}
-                className={`w-full text-left p-4 rounded-lg font-medium transition-colors ${
-                  selectedCategory === categoryName
-                    ? 'bg-green-600 text-white shadow-md'
-                    : 'bg-white text-gray-700 hover:bg-gray-100'
-                }`}
-              >
-                {categoryName}
-              </button>
-            </li>
-          ))}
-        </ul>
-      </nav>
-
-      {/* Center Drink Grid */}
-      <main className="w-3/5 px-6">
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-          {visibleDrinks.map((drink) => (
-            <DrinkCard
-              key={drink.MenuItemID} // 'MenuItemID' from your 'menu_items' table
-              drink={drink}
-              onAddToCart={handleAddToCart}
-            />
-          ))}
+      {/* Top Navigation Tabs */}
+      <header className="bg-white shadow-md">
+        <div className="flex items-center justify-between px-8 py-4">
+          <h1 className="text-3xl font-bold text-gray-800">Kiosk System</h1>
+          <div className="flex gap-4">
+            <button
+              onClick={() => setActiveTab('menu')}
+              className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
+                activeTab === 'menu'
+                  ? 'bg-green-600 text-white shadow-md'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              🥤 Menu
+            </button>
+            <button
+              onClick={() => setActiveTab('weather')}
+              className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
+                activeTab === 'weather'
+                  ? 'bg-blue-600 text-white shadow-md'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              ☀️ Weather
+            </button>
+          </div>
         </div>
-      </main>
+      </header>
 
-      {/* Right-hand Cart Sidebar */}
-      <Cart cartItems={cart} total={cartTotal} />
+      {/* Main Content Area */}
+      <div className="flex flex-1 p-8">
+        {activeTab === 'menu' ? (
+          <>
+            {/* Left-hand Category Navigation */}
+            <nav className="w-1/5 pr-6">
+              <h2 className="text-2xl font-bold mb-6 text-gray-800">Menu</h2>
+              <ul>
+                {categories.map((categoryName) => (
+                  <li key={categoryName} className="mb-2">
+                    <button
+                      onClick={() => setSelectedCategory(categoryName)}
+                      className={`w-full text-left p-4 rounded-lg font-medium transition-colors ${
+                        selectedCategory === categoryName
+                          ? 'bg-green-600 text-white shadow-md'
+                          : 'bg-white text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      {categoryName}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+
+            {/* Center Drink Grid */}
+            <main className="w-3/5 px-6">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                {visibleDrinks.map((drink) => (
+                  <DrinkCard
+                    key={drink.menuitemid}
+                    drink={drink}
+                    onAddToCart={handleAddToCart}
+                  />
+                ))}
+              </div>
+            </main>
+
+            {/* Right-hand Cart Sidebar */}
+            <Cart cartItems={cart} total={cartTotal} />
+          </>
+        ) : (
+          /* Weather Tab */
+          <div className="flex-1">
+            <Weather />
+          </div>
+        )}
+      </div>
     </div>
   );
 }
