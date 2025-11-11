@@ -28,7 +28,14 @@ pool.query('SELECT NOW()', (err, res) => {
   }
 });
 
-app.use(cors());
+app.use(cors({
+  origin: [
+    'http://localhost:5173',
+    'http://localhost:5175',
+    'https://csce331-fall2025-900-911.github.io'
+  ],
+  credentials: true
+}));
 app.use(express.json());
 
 /**
