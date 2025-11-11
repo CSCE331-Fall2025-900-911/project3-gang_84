@@ -1,12 +1,40 @@
 const express = require('express');
 const { Pool } = require('pg');
 const cors = require('cors');
-const { db } = require('./config');
 require('dotenv').config();
 
 const app = express();
-const port = 3001;
-const pool = new Pool(db);
+const port = process.env.PORT || 3001;
+
+// Database config - use env vars in production, config.js for local dev
+let dbConfig;
+if (process.env.DATABASE_URL) {
+  // For services like Render that provide DATABASE_URL
+  dbConfig = {
+    connectionString: process.env.DATABASE_URL,
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+  };
+} else if (process.env.DB_USER) {
+  // Use individual env vars if provided
+  dbConfig = {
+    user: process.env.DB_USER,
+    host: process.env.DB_HOST,
+    database: process.env.DB_NAME,
+    password: process.env.DB_PASSWORD,
+    port: parseInt(process.env.DB_PORT || '5432')
+  };
+} else {
+  // Fall back to config.js for local development
+  try {
+    const { db } = require('./config');
+    dbConfig = db;
+  } catch (err) {
+    console.error('❌ No database configuration found. Set environment variables or create config.js');
+    process.exit(1);
+  }
+}
+
+const pool = new Pool(dbConfig);
 
 // Add connection error handler
 pool.on('error', (err, client) => {
@@ -17,11 +45,11 @@ pool.on('error', (err, client) => {
 pool.query('SELECT NOW()', (err, res) => {
   if (err) {
     console.error('❌ Database connection failed:', err.message);
-    console.error('Connection config:', {
-      host: db.host,
-      port: db.port,
-      database: db.database,
-      user: db.user
+    console.error('Connection config:', dbConfig.connectionString ? 'Using DATABASE_URL' : {
+      host: dbConfig.host,
+      port: dbConfig.port,
+      database: dbConfig.database,
+      user: dbConfig.user
     });
   } else {
     console.log('✅ Database connected successfully at:', res.rows[0].now);
