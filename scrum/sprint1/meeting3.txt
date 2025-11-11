@@ -42,6 +42,7 @@ Plans:
 Finish up last few screens for checking out and  payment
 Add weather api functionality
 
+
 Task Assignments:
 Task Description
 Assigned to
