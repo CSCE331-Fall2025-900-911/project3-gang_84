@@ -27,6 +27,7 @@ Set up github
 nishanth
 yes
 
+
 Before The Next Meeting
 Plans:
  Finish fixing the database to fit new product specifications

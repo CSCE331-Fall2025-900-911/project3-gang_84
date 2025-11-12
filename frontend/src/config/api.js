@@ -27,4 +27,5 @@ export const API_ENDPOINTS = {
   menu: `${API_BASE_URL}/api/menu`,
   weather: `${API_BASE_URL}/api/weather`,
   health: `${API_BASE_URL}/api/health`,
+  translate: `${API_BASE_URL}/api/translate`,
 };

@@ -142,41 +142,66 @@ function CustomizationModal({ drink, onClose, onAddToCart, sweetnessOptions, ice
 }
 
 // A single drink item in the grid
-function DrinkCard({ drink, onDrinkClick }) {
-  // Use 'name' and 'price' from your 'menu_items' table (lowercase)
+function DrinkCard({ drink, onDrinkClick, getTranslatedText, highContrast }) {
+  // Database returns 'name' and 'price' as lowercase
   return (
     <div
-      className="flex flex-col items-center justify-between p-4 bg-white rounded-lg shadow-md cursor-pointer transition-transform transform hover:scale-105"
+      className={`flex flex-col items-center justify-between p-6 rounded-lg shadow-lg cursor-pointer transition-all transform hover:scale-105 ${
+        highContrast 
+          ? 'bg-gray-900 border-4 border-yellow-400 hover:border-yellow-300' 
+          : 'bg-white hover:shadow-xl'
+      }`}
       onClick={() => onDrinkClick(drink)}
+      style={{ minHeight: '200px' }}
     >
-      <div className="w-24 h-24 bg-gray-200 rounded-full mb-4 flex items-center justify-center">
-        <span className="text-4xl">🥤</span>
+      <div className={`w-28 h-28 rounded-full mb-4 flex items-center justify-center ${
+        highContrast ? 'bg-gray-800' : 'bg-gray-200'
+      }`}>
+        <span className="text-5xl">🥤</span>
       </div>
-      <span className="text-center font-medium">{drink.name}</span>
+      <span className={`text-center font-semibold mb-2 ${
+        highContrast ? 'text-yellow-400' : 'text-gray-800'
+      }`}>
+        {getTranslatedText(drink.name)}
+      </span>
       {/* Database returns 'price' as lowercase */}
-      <span className="text-gray-600">${parseFloat(drink.price).toFixed(2)}</span>
+      <span className={`text-xl font-bold ${
+        highContrast ? 'text-white' : 'text-green-600'
+      }`}>
+        ${parseFloat(drink.price).toFixed(2)}
+      </span>
     </div>
   );
 }
 
 // The sidebar showing the cart
-function Cart({ cartItems, total }) {
+function Cart({ cartItems, total, highContrast }) {
   return (
-    <div className="w-1/4 bg-white p-6 shadow-lg rounded-lg">
-      <h2 className="text-2xl font-bold mb-6 text-center">View Cart</h2>
+    <div className={`w-1/4 p-6 shadow-lg rounded-lg ${
+      highContrast ? 'bg-gray-900 border-4 border-yellow-400' : 'bg-white'
+    }`}>
+      <h2 className={`text-2xl font-bold mb-6 text-center ${
+        highContrast ? 'text-yellow-400' : 'text-gray-800'
+      }`}>View Cart</h2>
       <div className="flex-grow overflow-y-auto mb-4" style={{maxHeight: '60vh'}}>
         {cartItems.length === 0 ? (
-          <p className="text-gray-500 text-center">Your cart is empty.</p>
+          <p className={`text-center ${highContrast ? 'text-white' : 'text-gray-500'}`}>Your cart is empty.</p>
         ) : (
           cartItems.map((item, index) => (
             <div
               key={`${item.menuitemid}-${index}`}
-              className="flex justify-between items-start mb-4 pb-4 border-b"
+              className={`flex justify-between items-start mb-4 pb-4 ${
+                highContrast ? 'border-b-2 border-yellow-400' : 'border-b border-gray-200'
+              }`}
             >
               <div className="flex-1">
-                <span className="font-medium block">{item.name}</span>
+                <span className={`font-semibold block text-lg ${
+                  highContrast ? 'text-yellow-400' : 'text-gray-800'
+                }`}>{item.name}</span>
                 {item.customizations && (
-                  <div className="text-xs text-gray-500 mt-1">
+                  <div className={`text-sm mt-1 ${
+                    highContrast ? 'text-white' : 'text-gray-500'
+                  }`}>
                     <div>Sweetness: {item.customizations.sweetness}</div>
                     <div>Ice: {item.customizations.ice}</div>
                     {item.customizations.toppings.length > 0 && (
@@ -184,11 +209,15 @@ function Cart({ cartItems, total }) {
                     )}
                   </div>
                 )}
-                <span className="text-sm text-gray-500 block mt-1">
+                <span className={`text-sm block mt-1 ${
+                  highContrast ? 'text-gray-300' : 'text-gray-500'
+                }`}>
                   {item.quantity} x ${parseFloat(item.price).toFixed(2)}
                 </span>
               </div>
-              <span className="font-semibold ml-2">
+              <span className={`font-bold ml-2 text-lg ${
+                highContrast ? 'text-white' : 'text-gray-800'
+              }`}>
                 ${(item.quantity * parseFloat(item.price)).toFixed(2)}
               </span>
             </div>
@@ -196,12 +225,22 @@ function Cart({ cartItems, total }) {
         )}
       </div>
       
-      <div className="border-t pt-6">
-        <div className="flex justify-between items-center text-xl font-bold mb-6">
+      <div className={`pt-6 ${
+        highContrast ? 'border-t-4 border-yellow-400' : 'border-t border-gray-200'
+      }`}>
+        <div className={`flex justify-between items-center text-2xl font-bold mb-6 ${
+          highContrast ? 'text-yellow-400' : 'text-gray-800'
+        }`}>
           <span>Total</span>
           <span>${total.toFixed(2)}</span>
         </div>
-        <button className="w-full bg-green-600 text-white py-4 rounded-lg text-lg font-bold shadow-md hover:bg-green-700 transition-colors">
+        <button className={`w-full py-5 rounded-lg text-xl font-bold shadow-lg transition-colors ${
+          highContrast 
+            ? 'bg-yellow-400 text-black border-4 border-yellow-400 hover:bg-yellow-300' 
+            : 'bg-green-600 text-white hover:bg-green-700'
+        }`}
+        style={{ minHeight: '60px' }}
+        >
           Pay ${total.toFixed(2)}
         </button>
       </div>
@@ -222,6 +261,29 @@ export default function App() {
   const [toppings, setToppings] = useState([]);
   const [sweetnessOptions, setSweetnessOptions] = useState([]);
   const [iceOptions, setIceOptions] = useState([]);
+  const [selectedLanguage, setSelectedLanguage] = useState('en');
+  const [translatedData, setTranslatedData] = useState({});
+  const [isTranslating, setIsTranslating] = useState(false);
+  
+  // Accessibility states for Carol
+  const [fontSize, setFontSize] = useState('normal'); // 'normal', 'large', 'extra-large'
+  const [highContrast, setHighContrast] = useState(false);
+
+  // Get font size classes
+  const getFontSizeClass = () => {
+    switch(fontSize) {
+      case 'large': return 'text-lg';
+      case 'extra-large': return 'text-xl';
+      default: return 'text-base';
+    }
+  };
+
+  // Get container class with accessibility settings
+  const getContainerClass = () => {
+    const baseClass = 'flex flex-col w-full min-h-screen font-sans';
+    const bgClass = highContrast ? 'bg-black' : 'bg-lime-50';
+    return `${baseClass} ${bgClass} ${getFontSizeClass()}`;
+  };
 
   // --- Data Fetching ---
   useEffect(() => {
@@ -280,6 +342,85 @@ export default function App() {
     setSelectedDrink(drink);
   };
 
+  // Translation function
+  const translateText = async (text, targetLang) => {
+    if (targetLang === 'en' || !text) return text;
+    
+    // Check cache first
+    const cacheKey = `${text}_${targetLang}`;
+    if (translatedData[cacheKey]) {
+      return translatedData[cacheKey];
+    }
+
+    try {
+      const response = await fetch(API_ENDPOINTS.translate, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, targetLang })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        const translated = data.translatedText;
+        setTranslatedData(prev => ({ ...prev, [cacheKey]: translated }));
+        return translated;
+      }
+    } catch (err) {
+      console.error('Translation error:', err);
+    }
+    return text; // Return original if translation fails
+  };
+
+  // Handle language change
+  const handleLanguageChange = async (lang) => {
+    setSelectedLanguage(lang);
+    if (lang === 'en') {
+      setTranslatedData({}); // Clear translations for English
+      return;
+    }
+
+    setIsTranslating(true);
+    
+    // Translate all menu items, categories, and options
+    const translationPromises = [];
+    const newTranslations = {};
+
+    // Translate categories
+    for (const category of categories) {
+      const key = `${category}_${lang}`;
+      if (!translatedData[key]) {
+        translationPromises.push(
+          translateText(category, lang).then(result => {
+            newTranslations[key] = result;
+          })
+        );
+      }
+    }
+
+    // Translate drink names
+    for (const drink of drinks) {
+      const key = `${drink.name}_${lang}`;
+      if (!translatedData[key]) {
+        translationPromises.push(
+          translateText(drink.name, lang).then(result => {
+            newTranslations[key] = result;
+          })
+        );
+      }
+    }
+
+    await Promise.all(translationPromises);
+    setTranslatedData(prev => ({ ...prev, ...newTranslations }));
+    setIsTranslating(false);
+  };
+
+  // Get translated text helper
+  const getTranslatedText = (text) => {
+    if (selectedLanguage === 'en' || !text) return text;
+    const key = `${text}_${selectedLanguage}`;
+    return translatedData[key] || text;
+  };
+
   // Add a customized drink to the cart
   const handleAddToCart = (customizedDrink) => {
     setCart((prevCart) => {
@@ -321,20 +462,106 @@ export default function App() {
   }
 
   return (
-    <div className="flex flex-col w-full min-h-screen bg-lime-50 font-sans">
+    <div className={getContainerClass()}>
       
       {/* Top Navigation Tabs */}
-      <header className="bg-white shadow-md">
+      <header className={`shadow-md ${highContrast ? 'bg-gray-900 border-b-4 border-yellow-400' : 'bg-white'}`}>
         <div className="flex items-center justify-between px-8 py-4">
-          <h1 className="text-3xl font-bold text-gray-800">Kiosk System</h1>
-          <div className="flex gap-4">
+          <h1 className={`text-3xl font-bold ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>Kiosk System</h1>
+          <div className="flex items-center gap-6">
+            {/* Accessibility Controls for Carol */}
+            <div className="flex items-center gap-3 border-r pr-6">
+              <span className={`text-sm font-semibold ${highContrast ? 'text-yellow-400' : 'text-gray-700'}`}>♿ Accessibility:</span>
+              
+              {/* Font Size Controls */}
+              <div className="flex items-center gap-2">
+                <span className={`text-xs ${highContrast ? 'text-white' : 'text-gray-600'}`}>Text Size:</span>
+                <button
+                  onClick={() => setFontSize('normal')}
+                  className={`px-3 py-2 rounded-lg font-bold transition-colors ${
+                    fontSize === 'normal'
+                      ? highContrast ? 'bg-yellow-400 text-black' : 'bg-green-600 text-white'
+                      : highContrast ? 'bg-gray-700 text-yellow-400 border-2 border-yellow-400' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                  style={{ minWidth: '50px', minHeight: '44px' }}
+                >
+                  A
+                </button>
+                <button
+                  onClick={() => setFontSize('large')}
+                  className={`px-3 py-2 rounded-lg font-bold transition-colors text-lg ${
+                    fontSize === 'large'
+                      ? highContrast ? 'bg-yellow-400 text-black' : 'bg-green-600 text-white'
+                      : highContrast ? 'bg-gray-700 text-yellow-400 border-2 border-yellow-400' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                  style={{ minWidth: '50px', minHeight: '44px' }}
+                >
+                  A
+                </button>
+                <button
+                  onClick={() => setFontSize('extra-large')}
+                  className={`px-3 py-2 rounded-lg font-bold transition-colors text-xl ${
+                    fontSize === 'extra-large'
+                      ? highContrast ? 'bg-yellow-400 text-black' : 'bg-green-600 text-white'
+                      : highContrast ? 'bg-gray-700 text-yellow-400 border-2 border-yellow-400' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                  style={{ minWidth: '50px', minHeight: '44px' }}
+                >
+                  A
+                </button>
+              </div>
+
+              {/* High Contrast Toggle */}
+              <button
+                onClick={() => setHighContrast(!highContrast)}
+                className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+                  highContrast
+                    ? 'bg-yellow-400 text-black border-2 border-yellow-400'
+                    : 'bg-gray-800 text-white hover:bg-gray-700'
+                }`}
+                style={{ minHeight: '44px' }}
+              >
+                {highContrast ? '🌞 Normal Contrast' : '🌓 High Contrast'}
+              </button>
+            </div>
+
+            {/* Language Selector */}
+            <div className="flex items-center gap-2">
+              <span className={`text-sm ${highContrast ? 'text-yellow-400' : 'text-gray-600'}`}>🌐 Language:</span>
+              <select
+                value={selectedLanguage}
+                onChange={(e) => handleLanguageChange(e.target.value)}
+                className={`px-4 py-2 rounded-lg border-2 font-medium focus:outline-none focus:ring-4 ${
+                  highContrast
+                    ? 'bg-black text-yellow-400 border-yellow-400 focus:ring-yellow-400'
+                    : 'bg-white text-gray-800 border-gray-300 focus:ring-green-500'
+                }`}
+                style={{ minHeight: '44px' }}
+                disabled={isTranslating}
+              >
+                <option value="en">English</option>
+                <option value="es">Español (Spanish)</option>
+                <option value="fr">Français (French)</option>
+                <option value="de">Deutsch (German)</option>
+                <option value="zh-CN">中文 (Chinese)</option>
+                <option value="ja">日本語 (Japanese)</option>
+                <option value="ko">한국어 (Korean)</option>
+                <option value="vi">Tiếng Việt (Vietnamese)</option>
+                <option value="ar">العربية (Arabic)</option>
+                <option value="hi">हिन्दी (Hindi)</option>
+              </select>
+              {isTranslating && (
+                <span className="text-sm text-gray-500">Translating...</span>
+              )}
+            </div>
             <button
               onClick={() => setActiveTab('menu')}
               className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
                 activeTab === 'menu'
-                  ? 'bg-green-600 text-white shadow-md'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  ? highContrast ? 'bg-yellow-400 text-black border-4 border-yellow-400 shadow-lg' : 'bg-green-600 text-white shadow-md'
+                  : highContrast ? 'bg-gray-800 text-yellow-400 border-2 border-yellow-400' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
+              style={{ minHeight: '50px', minWidth: '120px' }}
             >
               🥤 Menu
             </button>
@@ -342,9 +569,10 @@ export default function App() {
               onClick={() => setActiveTab('weather')}
               className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
                 activeTab === 'weather'
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  ? highContrast ? 'bg-yellow-400 text-black border-4 border-yellow-400 shadow-lg' : 'bg-blue-600 text-white shadow-md'
+                  : highContrast ? 'bg-gray-800 text-yellow-400 border-2 border-yellow-400' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
+              style={{ minHeight: '50px', minWidth: '120px' }}
             >
               ☀️ Weather
             </button>
@@ -358,19 +586,20 @@ export default function App() {
           <>
             {/* Left-hand Category Navigation */}
             <nav className="w-1/5 pr-6">
-              <h2 className="text-2xl font-bold mb-6 text-gray-800">Menu</h2>
+              <h2 className={`text-2xl font-bold mb-6 ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>Menu</h2>
               <ul>
                 {categories.map((categoryName) => (
-                  <li key={categoryName} className="mb-2">
+                  <li key={categoryName} className="mb-3">
                     <button
                       onClick={() => setSelectedCategory(categoryName)}
-                      className={`w-full text-left p-4 rounded-lg font-medium transition-colors ${
+                      className={`w-full text-left p-5 rounded-lg font-semibold transition-colors ${
                         selectedCategory === categoryName
-                          ? 'bg-green-600 text-white shadow-md'
-                          : 'bg-white text-gray-700 hover:bg-gray-100'
+                          ? highContrast ? 'bg-yellow-400 text-black border-4 border-yellow-400 shadow-lg' : 'bg-green-600 text-white shadow-md'
+                          : highContrast ? 'bg-gray-900 text-yellow-400 border-2 border-yellow-400 hover:bg-gray-800' : 'bg-white text-gray-700 hover:bg-gray-100 border-2 border-gray-200'
                       }`}
+                      style={{ minHeight: '60px' }}
                     >
-                      {categoryName}
+                      {getTranslatedText(categoryName)}
                     </button>
                   </li>
                 ))}
@@ -385,13 +614,15 @@ export default function App() {
                     key={drink.menuitemid}
                     drink={drink}
                     onDrinkClick={handleDrinkClick}
+                    getTranslatedText={getTranslatedText}
+                    highContrast={highContrast}
                   />
                 ))}
               </div>
             </main>
 
             {/* Right-hand Cart Sidebar */}
-            <Cart cartItems={cart} total={cartTotal} />
+            <Cart cartItems={cart} total={cartTotal} highContrast={highContrast} />
           </>
         ) : (
           /* Weather Tab */
