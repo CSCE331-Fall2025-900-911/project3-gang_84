@@ -203,17 +203,17 @@ function DrinkCard({ drink, onDrinkClick, getTranslatedText, highContrast }) {
 }
 
 // The sidebar showing the cart
-function Cart({ cartItems, total, highContrast }) {
+function Cart({ cartItems, total, highContrast, getTranslatedText }) {
   return (
     <div className={`w-1/4 p-6 shadow-lg rounded-lg ${
       highContrast ? 'bg-gray-900 border-4 border-yellow-400' : 'bg-white'
     }`}>
       <h2 className={`text-2xl font-bold mb-6 text-center ${
         highContrast ? 'text-yellow-400' : 'text-gray-800'
-      }`}>View Cart</h2>
+      }`}>{getTranslatedText('View Cart')}</h2>
       <div className="flex-grow overflow-y-auto mb-4" style={{maxHeight: '60vh'}}>
         {cartItems.length === 0 ? (
-          <p className={`text-center ${highContrast ? 'text-white' : 'text-gray-500'}`}>Your cart is empty.</p>
+          <p className={`text-center ${highContrast ? 'text-white' : 'text-gray-500'}`}>{getTranslatedText('Your cart is empty.')}</p>
         ) : (
           cartItems.map((item, index) => (
             <div
@@ -225,15 +225,15 @@ function Cart({ cartItems, total, highContrast }) {
               <div className="flex-1">
                 <span className={`font-semibold block text-lg ${
                   highContrast ? 'text-yellow-400' : 'text-gray-800'
-                }`}>{item.name}</span>
+                }`}>{getTranslatedText(item.name)}</span>
                 {item.customizations && (
                   <div className={`text-sm mt-1 ${
                     highContrast ? 'text-white' : 'text-gray-500'
                   }`}>
-                    <div>Sweetness: {item.customizations.sweetness}</div>
-                    <div>Ice: {item.customizations.ice}</div>
+                    <div>{getTranslatedText('Sweetness:')} {getTranslatedText(item.customizations.sweetness)}</div>
+                    <div>{getTranslatedText('Ice:')} {getTranslatedText(item.customizations.ice)}</div>
                     {item.customizations.toppings.length > 0 && (
-                      <div>Toppings: {item.customizations.toppings.join(', ')}</div>
+                      <div>{getTranslatedText('Toppings:')} {item.customizations.toppings.map(t => getTranslatedText(t)).join(', ')}</div>
                     )}
                   </div>
                 )}
@@ -259,7 +259,7 @@ function Cart({ cartItems, total, highContrast }) {
         <div className={`flex justify-between items-center text-2xl font-bold mb-6 ${
           highContrast ? 'text-yellow-400' : 'text-gray-800'
         }`}>
-          <span>Total</span>
+          <span>{getTranslatedText('Total')}</span>
           <span>${total.toFixed(2)}</span>
         </div>
         <button className={`w-full py-5 rounded-lg text-xl font-bold shadow-lg transition-colors ${
@@ -269,7 +269,7 @@ function Cart({ cartItems, total, highContrast }) {
         }`}
         style={{ minHeight: '60px' }}
         >
-          Pay ${total.toFixed(2)}
+          {getTranslatedText('Pay')} ${total.toFixed(2)}
         </button>
       </div>
     </div>
@@ -413,6 +413,25 @@ export default function App() {
     const translationPromises = [];
     const newTranslations = {};
 
+    // Static labels to translate
+    const staticLabels = [
+      'Sweetness Level', 'Ice Level', 'Toppings', 'Total', 'Add to Cart',
+      'View Cart', 'Your cart is empty.', 'Sweetness:', 'Ice:', 'Toppings:', 
+      'Pay', 'Menu', 'Kiosk System', 'Accessibility:', 'Text Size:', 
+      'Normal', 'Large', 'Extra Large', 'High Contrast', 'Language:'
+    ];
+
+    for (const label of staticLabels) {
+      const key = `${label}_${lang}`;
+      if (!translatedData[key]) {
+        translationPromises.push(
+          translateText(label, lang).then(result => {
+            newTranslations[key] = result;
+          })
+        );
+      }
+    }
+
     // Translate categories
     for (const category of categories) {
       const key = `${category}_${lang}`;
@@ -431,6 +450,42 @@ export default function App() {
       if (!translatedData[key]) {
         translationPromises.push(
           translateText(drink.name, lang).then(result => {
+            newTranslations[key] = result;
+          })
+        );
+      }
+    }
+
+    // Translate topping names
+    for (const topping of toppings) {
+      const key = `${topping.name}_${lang}`;
+      if (!translatedData[key]) {
+        translationPromises.push(
+          translateText(topping.name, lang).then(result => {
+            newTranslations[key] = result;
+          })
+        );
+      }
+    }
+
+    // Translate sweetness options
+    for (const option of sweetnessOptions) {
+      const key = `${option.name}_${lang}`;
+      if (!translatedData[key]) {
+        translationPromises.push(
+          translateText(option.name, lang).then(result => {
+            newTranslations[key] = result;
+          })
+        );
+      }
+    }
+
+    // Translate ice options
+    for (const option of iceOptions) {
+      const key = `${option.name}_${lang}`;
+      if (!translatedData[key]) {
+        translationPromises.push(
+          translateText(option.name, lang).then(result => {
             newTranslations[key] = result;
           })
         );
@@ -495,15 +550,15 @@ export default function App() {
       {/* Top Navigation Tabs */}
       <header className={`shadow-md ${highContrast ? 'bg-gray-900 border-b-4 border-yellow-400' : 'bg-white'}`}>
         <div className="flex items-center justify-between px-8 py-4">
-          <h1 className={`text-3xl font-bold ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>Kiosk System</h1>
+          <h1 className={`text-3xl font-bold ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>{getTranslatedText('Kiosk System')}</h1>
           <div className="flex items-center gap-6">
             {/* Accessibility Controls for Carol */}
             <div className="flex items-center gap-3 border-r pr-6">
-              <span className={`text-sm font-semibold ${highContrast ? 'text-yellow-400' : 'text-gray-700'}`}>♿ Accessibility:</span>
+              <span className={`text-sm font-semibold ${highContrast ? 'text-yellow-400' : 'text-gray-700'}`}>♿ {getTranslatedText('Accessibility:')}</span>
               
               {/* Font Size Controls */}
               <div className="flex items-center gap-2">
-                <span className={`text-xs ${highContrast ? 'text-white' : 'text-gray-600'}`}>Text Size:</span>
+                <span className={`text-xs ${highContrast ? 'text-white' : 'text-gray-600'}`}>{getTranslatedText('Text Size:')}</span>
                 <button
                   onClick={() => setFontSize('normal')}
                   className={`px-3 py-2 rounded-lg font-bold transition-colors ${
@@ -512,6 +567,7 @@ export default function App() {
                       : highContrast ? 'bg-gray-700 text-yellow-400 border-2 border-yellow-400' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                   }`}
                   style={{ minWidth: '50px', minHeight: '44px' }}
+                  title={getTranslatedText('Normal')}
                 >
                   A
                 </button>
@@ -523,6 +579,7 @@ export default function App() {
                       : highContrast ? 'bg-gray-700 text-yellow-400 border-2 border-yellow-400' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                   }`}
                   style={{ minWidth: '50px', minHeight: '44px' }}
+                  title={getTranslatedText('Large')}
                 >
                   A
                 </button>
@@ -534,6 +591,7 @@ export default function App() {
                       : highContrast ? 'bg-gray-700 text-yellow-400 border-2 border-yellow-400' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                   }`}
                   style={{ minWidth: '50px', minHeight: '44px' }}
+                  title={getTranslatedText('Extra Large')}
                 >
                   A
                 </button>
@@ -549,13 +607,13 @@ export default function App() {
                 }`}
                 style={{ minHeight: '44px' }}
               >
-                {highContrast ? '🌞 Normal Contrast' : '🌓 High Contrast'}
+                {highContrast ? `🌞 ${getTranslatedText('Normal')} ${getTranslatedText('High Contrast')}` : `🌓 ${getTranslatedText('High Contrast')}`}
               </button>
             </div>
 
             {/* Language Selector */}
             <div className="flex items-center gap-2">
-              <span className={`text-sm ${highContrast ? 'text-yellow-400' : 'text-gray-600'}`}>🌐 Language:</span>
+              <span className={`text-sm ${highContrast ? 'text-yellow-400' : 'text-gray-600'}`}>🌐 {getTranslatedText('Language:')}</span>
               <select
                 value={selectedLanguage}
                 onChange={(e) => handleLanguageChange(e.target.value)}
@@ -591,7 +649,7 @@ export default function App() {
               }`}
               style={{ minHeight: '50px', minWidth: '120px' }}
             >
-              🥤 Menu
+              🥤 {getTranslatedText('Menu')}
             </button>
             <button
               onClick={() => setActiveTab('weather')}
@@ -650,7 +708,7 @@ export default function App() {
             </main>
 
             {/* Right-hand Cart Sidebar */}
-            <Cart cartItems={cart} total={cartTotal} highContrast={highContrast} />
+            <Cart cartItems={cart} total={cartTotal} highContrast={highContrast} getTranslatedText={getTranslatedText} />
           </>
         ) : (
           /* Weather Tab */
