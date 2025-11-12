@@ -3,7 +3,7 @@ import Weather from './components/Weather';
 import { API_ENDPOINTS } from './config/api';
 
 // Customization Modal
-function CustomizationModal({ drink, onClose, onAddToCart, sweetnessOptions, iceOptions, toppingOptions }) {
+function CustomizationModal({ drink, onClose, onAddToCart, sweetnessOptions, iceOptions, toppingOptions, getTranslatedText, highContrast }) {
   // Set default to first option from each category
   const [sweetness, setSweetness] = useState(sweetnessOptions[0]);
   const [ice, setIce] = useState(iceOptions[0]);
@@ -43,33 +43,46 @@ function CustomizationModal({ drink, onClose, onAddToCart, sweetnessOptions, ice
   };
 
   return (
-    <div className="fixed inset-0 bg-opacity-30 flex items-center justify-center z-50" style={{ backgroundColor: '#f8ffe9' }} onClick={onClose}>
-      <div className="bg-white rounded-lg p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-opacity-30 flex items-center justify-center z-50" style={{ backgroundColor: highContrast ? 'rgba(0,0,0,0.8)' : '#f8ffe9' }} onClick={onClose}>
+      <div className={`rounded-lg p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto ${
+        highContrast ? 'bg-gray-900 border-4 border-yellow-400' : 'bg-white'
+      }`} onClick={(e) => e.stopPropagation()}>
         <div className="flex justify-between items-start mb-6">
           <div>
-            <h2 className="text-3xl font-bold">{drink.name}</h2>
-            <p className="text-gray-600 text-lg">${parseFloat(drink.price).toFixed(2)}</p>
+            <h2 className={`text-3xl font-bold ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
+              {getTranslatedText(drink.name)}
+            </h2>
+            <p className={`text-lg ${highContrast ? 'text-white' : 'text-gray-600'}`}>
+              ${parseFloat(drink.price).toFixed(2)}
+            </p>
           </div>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl">
+          <button 
+            onClick={onClose} 
+            className={`text-2xl ${highContrast ? 'text-yellow-400 hover:text-yellow-300' : 'text-gray-500 hover:text-gray-700'}`}
+            style={{ minWidth: '44px', minHeight: '44px' }}
+          >
             ✕
           </button>
         </div>
 
         {/* Sweetness Level */}
         <div className="mb-6">
-          <h3 className="text-xl font-semibold mb-3">Sweetness Level</h3>
+          <h3 className={`text-xl font-semibold mb-3 ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
+            {getTranslatedText('Sweetness Level')}
+          </h3>
           <div className="flex gap-2 flex-wrap">
             {sweetnessOptions.map((option) => (
               <button
                 key={option.menuitemid}
                 onClick={() => setSweetness(option)}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                className={`px-4 py-3 rounded-lg font-semibold transition-colors ${
                   sweetness?.menuitemid === option.menuitemid
-                    ? 'bg-green-600 text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    ? highContrast ? 'bg-yellow-400 text-black border-2 border-yellow-400' : 'bg-green-600 text-white'
+                    : highContrast ? 'bg-gray-800 text-yellow-400 border-2 border-yellow-400' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }`}
+                style={{ minHeight: '44px' }}
               >
-                {option.name}
+                {getTranslatedText(option.name)}
                 {parseFloat(option.price) > 0 && ` (+$${parseFloat(option.price).toFixed(2)})`}
               </button>
             ))}
@@ -78,19 +91,22 @@ function CustomizationModal({ drink, onClose, onAddToCart, sweetnessOptions, ice
 
         {/* Ice Level */}
         <div className="mb-6">
-          <h3 className="text-xl font-semibold mb-3">Ice Level</h3>
+          <h3 className={`text-xl font-semibold mb-3 ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
+            {getTranslatedText('Ice Level')}
+          </h3>
           <div className="flex gap-2 flex-wrap">
             {iceOptions.map((option) => (
               <button
                 key={option.menuitemid}
                 onClick={() => setIce(option)}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                className={`px-4 py-3 rounded-lg font-semibold transition-colors ${
                   ice?.menuitemid === option.menuitemid
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    ? highContrast ? 'bg-yellow-400 text-black border-2 border-yellow-400' : 'bg-blue-600 text-white'
+                    : highContrast ? 'bg-gray-800 text-yellow-400 border-2 border-yellow-400' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }`}
+                style={{ minHeight: '44px' }}
               >
-                {option.name}
+                {getTranslatedText(option.name)}
                 {parseFloat(option.price) > 0 && ` (+$${parseFloat(option.price).toFixed(2)})`}
               </button>
             ))}
@@ -99,7 +115,9 @@ function CustomizationModal({ drink, onClose, onAddToCart, sweetnessOptions, ice
 
         {/* Toppings */}
         <div className="mb-6">
-          <h3 className="text-xl font-semibold mb-3">Toppings</h3>
+          <h3 className={`text-xl font-semibold mb-3 ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
+            {getTranslatedText('Toppings')}
+          </h3>
           <div className="grid grid-cols-2 gap-3">
             {toppingOptions.map((topping) => {
               const isSelected = toppings.find((t) => t.menuitemid === topping.menuitemid);
@@ -107,14 +125,15 @@ function CustomizationModal({ drink, onClose, onAddToCart, sweetnessOptions, ice
                 <button
                   key={topping.menuitemid}
                   onClick={() => toggleTopping(topping)}
-                  className={`p-3 rounded-lg font-medium transition-colors text-left ${
+                  className={`p-4 rounded-lg font-semibold transition-colors text-left ${
                     isSelected
-                      ? 'bg-purple-600 text-white'
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      ? highContrast ? 'bg-yellow-400 text-black border-2 border-yellow-400' : 'bg-purple-600 text-white'
+                      : highContrast ? 'bg-gray-800 text-yellow-400 border-2 border-yellow-400' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                   }`}
+                  style={{ minHeight: '50px' }}
                 >
                   <div className="flex justify-between items-center">
-                    <span>{topping.name}</span>
+                    <span>{getTranslatedText(topping.name)}</span>
                     <span className="text-sm">+${parseFloat(topping.price).toFixed(2)}</span>
                   </div>
                 </button>
@@ -124,16 +143,25 @@ function CustomizationModal({ drink, onClose, onAddToCart, sweetnessOptions, ice
         </div>
 
         {/* Add to Cart Button */}
-        <div className="border-t pt-6">
-          <div className="flex justify-between items-center mb-4">
-            <span className="text-xl font-semibold">Total:</span>
-            <span className="text-2xl font-bold text-green-600">${calculateTotal().toFixed(2)}</span>
+        <div className={`pt-6 ${highContrast ? 'border-t-4 border-yellow-400' : 'border-t border-gray-200'}`}>
+          <div className={`flex justify-between items-center mb-4 ${
+            highContrast ? 'text-yellow-400' : 'text-gray-800'
+          }`}>
+            <span className="text-xl font-semibold">{getTranslatedText('Total')}:</span>
+            <span className={`text-2xl font-bold ${highContrast ? 'text-white' : 'text-green-600'}`}>
+              ${calculateTotal().toFixed(2)}
+            </span>
           </div>
           <button
             onClick={handleAddToCart}
-            className="w-full bg-green-600 text-white py-4 rounded-lg text-lg font-bold shadow-md hover:bg-green-700 transition-colors"
+            className={`w-full py-5 rounded-lg text-lg font-bold shadow-lg transition-colors ${
+              highContrast
+                ? 'bg-yellow-400 text-black border-4 border-yellow-400 hover:bg-yellow-300'
+                : 'bg-green-600 text-white hover:bg-green-700'
+            }`}
+            style={{ minHeight: '60px' }}
           >
-            Add to Cart
+            {getTranslatedText('Add to Cart')}
           </button>
         </div>
       </div>
@@ -641,6 +669,8 @@ export default function App() {
           sweetnessOptions={sweetnessOptions}
           iceOptions={iceOptions}
           toppingOptions={toppings}
+          getTranslatedText={getTranslatedText}
+          highContrast={highContrast}
         />
       )}
     </div>
