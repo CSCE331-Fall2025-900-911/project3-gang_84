@@ -200,6 +200,53 @@ app.get('/api/menu', async (req, res) => {
     });
   }
 });
+
+/**
+ * POST /api/translate
+ * Translates text to the target language using MyMemory Translation API
+ */
+app.post('/api/translate', async (req, res) => {
+  try {
+    const { text, targetLang } = req.body;
+    
+    if (!text || !targetLang) {
+      return res.status(400).json({ error: 'Text and target language are required' });
+    }
+
+    // Use MyMemory Translation API (free, no API key required)
+    const https = require('https');
+    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${targetLang}`;
+    
+    https.get(url, (apiRes) => {
+      let data = '';
+      
+      apiRes.on('data', (chunk) => {
+        data += chunk;
+      });
+      
+      apiRes.on('end', () => {
+        try {
+          const result = JSON.parse(data);
+          if (result.responseData && result.responseData.translatedText) {
+            res.json({ translatedText: result.responseData.translatedText });
+          } else {
+            res.status(500).json({ error: 'Translation failed' });
+          }
+        } catch (e) {
+          res.status(500).json({ error: 'Failed to parse translation response' });
+        }
+      });
+    }).on('error', (err) => {
+      console.error('Translation API error:', err);
+      res.status(500).json({ error: 'Translation service unavailable' });
+    });
+    
+  } catch (err) {
+    console.error('Translation error:', err);
+    res.status(500).json({ error: 'An error occurred during translation' });
+  }
+});
+
 app.listen(port, () => {
   console.log(`Kiosk backend server running on http://localhost:${port}`);
 });

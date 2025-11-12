@@ -142,8 +142,8 @@ function CustomizationModal({ drink, onClose, onAddToCart, sweetnessOptions, ice
 }
 
 // A single drink item in the grid
-function DrinkCard({ drink, onDrinkClick }) {
-  // Use 'name' and 'price' from your 'menu_items' table (lowercase)
+function DrinkCard({ drink, onDrinkClick, getTranslatedText }) {
+  // Database returns 'name' and 'price' as lowercase
   return (
     <div
       className="flex flex-col items-center justify-between p-4 bg-white rounded-lg shadow-md cursor-pointer transition-transform transform hover:scale-105"
@@ -152,7 +152,7 @@ function DrinkCard({ drink, onDrinkClick }) {
       <div className="w-24 h-24 bg-gray-200 rounded-full mb-4 flex items-center justify-center">
         <span className="text-4xl">🥤</span>
       </div>
-      <span className="text-center font-medium">{drink.name}</span>
+      <span className="text-center font-medium">{getTranslatedText(drink.name)}</span>
       {/* Database returns 'price' as lowercase */}
       <span className="text-gray-600">${parseFloat(drink.price).toFixed(2)}</span>
     </div>
@@ -222,6 +222,29 @@ export default function App() {
   const [toppings, setToppings] = useState([]);
   const [sweetnessOptions, setSweetnessOptions] = useState([]);
   const [iceOptions, setIceOptions] = useState([]);
+  const [selectedLanguage, setSelectedLanguage] = useState('en');
+  const [translatedData, setTranslatedData] = useState({});
+  const [isTranslating, setIsTranslating] = useState(false);
+  
+  // Accessibility states for Carol
+  const [fontSize, setFontSize] = useState('normal'); // 'normal', 'large', 'extra-large'
+  const [highContrast, setHighContrast] = useState(false);
+
+  // Get font size classes
+  const getFontSizeClass = () => {
+    switch(fontSize) {
+      case 'large': return 'text-lg';
+      case 'extra-large': return 'text-xl';
+      default: return 'text-base';
+    }
+  };
+
+  // Get container class with accessibility settings
+  const getContainerClass = () => {
+    const baseClass = 'flex flex-col w-full min-h-screen font-sans';
+    const bgClass = highContrast ? 'bg-black' : 'bg-lime-50';
+    return `${baseClass} ${bgClass} ${getFontSizeClass()}`;
+  };
 
   // --- Data Fetching ---
   useEffect(() => {
@@ -275,6 +298,85 @@ export default function App() {
     setSelectedDrink(drink);
   };
 
+  // Translation function
+  const translateText = async (text, targetLang) => {
+    if (targetLang === 'en' || !text) return text;
+    
+    // Check cache first
+    const cacheKey = `${text}_${targetLang}`;
+    if (translatedData[cacheKey]) {
+      return translatedData[cacheKey];
+    }
+
+    try {
+      const response = await fetch(API_ENDPOINTS.translate, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, targetLang })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        const translated = data.translatedText;
+        setTranslatedData(prev => ({ ...prev, [cacheKey]: translated }));
+        return translated;
+      }
+    } catch (err) {
+      console.error('Translation error:', err);
+    }
+    return text; // Return original if translation fails
+  };
+
+  // Handle language change
+  const handleLanguageChange = async (lang) => {
+    setSelectedLanguage(lang);
+    if (lang === 'en') {
+      setTranslatedData({}); // Clear translations for English
+      return;
+    }
+
+    setIsTranslating(true);
+    
+    // Translate all menu items, categories, and options
+    const translationPromises = [];
+    const newTranslations = {};
+
+    // Translate categories
+    for (const category of categories) {
+      const key = `${category}_${lang}`;
+      if (!translatedData[key]) {
+        translationPromises.push(
+          translateText(category, lang).then(result => {
+            newTranslations[key] = result;
+          })
+        );
+      }
+    }
+
+    // Translate drink names
+    for (const drink of drinks) {
+      const key = `${drink.name}_${lang}`;
+      if (!translatedData[key]) {
+        translationPromises.push(
+          translateText(drink.name, lang).then(result => {
+            newTranslations[key] = result;
+          })
+        );
+      }
+    }
+
+    await Promise.all(translationPromises);
+    setTranslatedData(prev => ({ ...prev, ...newTranslations }));
+    setIsTranslating(false);
+  };
+
+  // Get translated text helper
+  const getTranslatedText = (text) => {
+    if (selectedLanguage === 'en' || !text) return text;
+    const key = `${text}_${selectedLanguage}`;
+    return translatedData[key] || text;
+  };
+
   // Add a customized drink to the cart
   const handleAddToCart = (customizedDrink) => {
     setCart((prevCart) => {
@@ -322,7 +424,31 @@ export default function App() {
       <header className="bg-white shadow-md">
         <div className="flex items-center justify-between px-8 py-4">
           <h1 className="text-3xl font-bold text-gray-800">Kiosk System</h1>
-          <div className="flex gap-4">
+          <div className="flex items-center gap-4">
+            {/* Language Selector */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">🌐 Language:</span>
+              <select
+                value={selectedLanguage}
+                onChange={(e) => handleLanguageChange(e.target.value)}
+                className="px-3 py-2 rounded-lg border border-gray-300 bg-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-green-500"
+                disabled={isTranslating}
+              >
+                <option value="en">English</option>
+                <option value="es">Español (Spanish)</option>
+                <option value="fr">Français (French)</option>
+                <option value="de">Deutsch (German)</option>
+                <option value="zh-CN">中文 (Chinese)</option>
+                <option value="ja">日本語 (Japanese)</option>
+                <option value="ko">한국어 (Korean)</option>
+                <option value="vi">Tiếng Việt (Vietnamese)</option>
+                <option value="ar">العربية (Arabic)</option>
+                <option value="hi">हिन्दी (Hindi)</option>
+              </select>
+              {isTranslating && (
+                <span className="text-sm text-gray-500">Translating...</span>
+              )}
+            </div>
             <button
               onClick={() => setActiveTab('menu')}
               className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
@@ -365,7 +491,7 @@ export default function App() {
                           : 'bg-white text-gray-700 hover:bg-gray-100'
                       }`}
                     >
-                      {categoryName}
+                      {getTranslatedText(categoryName)}
                     </button>
                   </li>
                 ))}
@@ -380,6 +506,7 @@ export default function App() {
                     key={drink.menuitemid}
                     drink={drink}
                     onDrinkClick={handleDrinkClick}
+                    getTranslatedText={getTranslatedText}
                   />
                 ))}
               </div>
