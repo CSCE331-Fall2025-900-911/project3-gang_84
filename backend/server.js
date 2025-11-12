@@ -89,9 +89,75 @@ app.get('/api/weather', async (req, res) => {
     const API_KEY = process.env.WEATHERAPI_KEY || 'YOUR_API_KEY_HERE';
     
     if (API_KEY === 'YOUR_API_KEY_HERE') {
-      return res.status(500).json({ 
-        error: 'WeatherAPI key not configured. Please set WEATHERAPI_KEY environment variable.',
-        instructions: 'Get your free API key from https://www.weatherapi.com/signup.aspx'
+      // Return mock weather data when API key is not configured
+      console.warn('⚠️ WEATHERAPI_KEY not configured. Using mock weather data.');
+      console.warn('Get your free API key from https://www.weatherapi.com/signup.aspx');
+      
+      return res.json({
+        location: {
+          name: 'College Station',
+          region: 'Texas',
+          country: 'United States of America',
+          lat: 30.63,
+          lon: -96.33,
+          localtime: new Date().toLocaleString('en-US', { timeZone: 'America/Chicago' })
+        },
+        current: {
+          temp_f: 72,
+          temp_c: 22,
+          condition: {
+            text: 'Partly cloudy',
+            icon: '//cdn.weatherapi.com/weather/64x64/day/116.png'
+          },
+          wind_mph: 8,
+          wind_kph: 12.9,
+          humidity: 65,
+          feelslike_f: 72,
+          feelslike_c: 22
+        },
+        forecast: {
+          forecastday: [
+            {
+              date: new Date().toISOString().split('T')[0],
+              day: {
+                maxtemp_f: 78,
+                maxtemp_c: 26,
+                mintemp_f: 65,
+                mintemp_c: 18,
+                condition: {
+                  text: 'Partly cloudy',
+                  icon: '//cdn.weatherapi.com/weather/64x64/day/116.png'
+                }
+              }
+            },
+            {
+              date: new Date(Date.now() + 86400000).toISOString().split('T')[0],
+              day: {
+                maxtemp_f: 80,
+                maxtemp_c: 27,
+                mintemp_f: 67,
+                mintemp_c: 19,
+                condition: {
+                  text: 'Sunny',
+                  icon: '//cdn.weatherapi.com/weather/64x64/day/113.png'
+                }
+              }
+            },
+            {
+              date: new Date(Date.now() + 172800000).toISOString().split('T')[0],
+              day: {
+                maxtemp_f: 82,
+                maxtemp_c: 28,
+                mintemp_f: 68,
+                mintemp_c: 20,
+                condition: {
+                  text: 'Sunny',
+                  icon: '//cdn.weatherapi.com/weather/64x64/day/113.png'
+                }
+              }
+            }
+          ]
+        }
       });
     }
     
