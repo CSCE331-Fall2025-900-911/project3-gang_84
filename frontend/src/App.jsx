@@ -251,6 +251,11 @@ export default function App() {
       } catch (err) {
         setError(err.message);
         console.error("Failed to fetch menu:", err);
+        
+        // Show helpful message in production
+        if (import.meta.env.PROD) {
+          setError("Backend not available. The backend needs to be deployed separately. See DEPLOYMENT.md for instructions.");
+        }
       } finally {
         setIsLoading(false);
       }
