@@ -9,13 +9,11 @@ const port = process.env.PORT || 3001;
 // Database config - use env vars in production, config.js for local dev
 let dbConfig;
 if (process.env.DATABASE_URL) {
-  // For services like Render that provide DATABASE_URL
   dbConfig = {
     connectionString: process.env.DATABASE_URL,
     ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
   };
 } else if (process.env.DB_USER) {
-  // Use individual env vars if provided
   dbConfig = {
     user: process.env.DB_USER,
     host: process.env.DB_HOST,
@@ -83,7 +81,7 @@ app.get('/api/health', (req, res) => {
 app.get('/api/weather', async (req, res) => {
   try {
     // College Station, TX
-    const location = '30.6280,-96.3344'; // lat,lon format
+    const location = '30.6280,-96.3344';
     
     // Get API key from environment variable
     const API_KEY = process.env.WEATHERAPI_KEY || 'YOUR_API_KEY_HERE';
@@ -190,7 +188,6 @@ app.get('/api/weather', async (req, res) => {
  */
 app.get('/api/menu', async (req, res) => {
   try {
-    // 1. Get all menu items from your table
     const menuItemsPromise = pool.query('SELECT * FROM menu_items');
 
     
@@ -245,11 +242,8 @@ app.get('/api/menu', async (req, res) => {
     
     // Send the structured data
     res.json({
-      // Send back the categories, e.g., [{category: 'Milky Series'}, {category: 'Fruity Beverage'}]
       categories: categoriesResult.rows,
-      // Send back all the drinks
       menu_items: menuItemsResult.rows,
-      // Send back customization options
       toppings: toppingsResult.rows,
       sweetness_options: sweetnessResult.rows,
       ice_options: iceResult.rows,
