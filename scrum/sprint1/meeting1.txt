@@ -1,0 +1,55 @@
+Appendix 1: SCRUM Meeting Agendas and Minutes
+
+SCRUM Meeting 1 for Project 3
+Prepared by: Namrata Iyer
+Meeting Date: 10/27/25
+Meeting Attendees
+ Namrata Iyer
+ Pranav Harwadekar
+ Nishanth Gandhe
+ Vishnu Nayak
+Meeting Agenda Items
+Assign Tasks for the sprint 
+Plan timeline for the sprint
+Status Update Since Last Meeting
+Accomplishments:
+Chose tech stack for the project: React and Node.js, AWS database, deploy on vercel
+Chose roles for the project: Nishanth – back end, Vishnu – front end, Pranav – back end, Namrata – product manager and front end
+
+Tasks Completed:
+Task Description
+Assigned to
+Completed? (yes/no)
+Create product backlog
+namrata
+yes
+Set up github 
+nishanth
+yes
+
+
+Before The Next Meeting
+Plans:
+ Finish fixing the database to fit new product specifications
+Set up front end for kiosk
+
+Task Assignments:
+Task Description
+Assigned to
+Set up environment
+nishanth
+Set up github repo
+nishanth
+Set up kiosk front end
+namrata
+Add all drinks to kiosk display
+vishnu
+Allow customer to customize drink
+vishnu
+Display cart on side
+pranav
+allow add to cart
+pranav
+
+Minutes from Previous Meeting
+Not applicable for meeting 1.

@@ -1,14 +1,187 @@
 const express = require('express');
 const { Pool } = require('pg');
 const cors = require('cors');
-const { db } = require('./config');
+require('dotenv').config();
 
 const app = express();
-const port = 3001;
-const pool = new Pool(db);
+const port = process.env.PORT || 3001;
 
-app.use(cors());
+// Database config - use env vars in production, config.js for local dev
+let dbConfig;
+if (process.env.DATABASE_URL) {
+  // For services like Render that provide DATABASE_URL
+  dbConfig = {
+    connectionString: process.env.DATABASE_URL,
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+  };
+} else if (process.env.DB_USER) {
+  // Use individual env vars if provided
+  dbConfig = {
+    user: process.env.DB_USER,
+    host: process.env.DB_HOST,
+    database: process.env.DB_NAME,
+    password: process.env.DB_PASSWORD,
+    port: parseInt(process.env.DB_PORT || '5432')
+  };
+} else {
+  // Fall back to config.js for local development
+  try {
+    const { db } = require('./config');
+    dbConfig = db;
+  } catch (err) {
+    console.error('❌ No database configuration found. Set environment variables or create config.js');
+    process.exit(1);
+  }
+}
+
+const pool = new Pool(dbConfig);
+
+// Add connection error handler
+pool.on('error', (err, client) => {
+  console.error('Unexpected database error on idle client', err);
+});
+
+// Test database connection on startup
+pool.query('SELECT NOW()', (err, res) => {
+  if (err) {
+    console.error('❌ Database connection failed:', err.message);
+    console.error('Connection config:', dbConfig.connectionString ? 'Using DATABASE_URL' : {
+      host: dbConfig.host,
+      port: dbConfig.port,
+      database: dbConfig.database,
+      user: dbConfig.user
+    });
+  } else {
+    console.log('✅ Database connected successfully at:', res.rows[0].now);
+  }
+});
+
+app.use(cors({
+  origin: [
+    'http://localhost:5173',
+    'http://localhost:5175',
+    'https://csce331-fall2025-900-911.github.io'
+  ],
+  credentials: true
+}));
 app.use(express.json());
+
+/**
+ * GET /api/health
+ * Simple health check endpoint
+ */
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', message: 'Server is running' });
+});
+
+/**
+ * GET /api/weather
+ * Proxy endpoint for WeatherAPI.com
+ * Keeps API key secure on the server side
+ * Free tier: 1M calls/month
+ */
+app.get('/api/weather', async (req, res) => {
+  try {
+    // College Station, TX
+    const location = '30.6280,-96.3344'; // lat,lon format
+    
+    // Get API key from environment variable
+    const API_KEY = process.env.WEATHERAPI_KEY || 'YOUR_API_KEY_HERE';
+    
+    if (API_KEY === 'YOUR_API_KEY_HERE') {
+      // Return mock weather data when API key is not configured
+      console.warn('⚠️ WEATHERAPI_KEY not configured. Using mock weather data.');
+      console.warn('Get your free API key from https://www.weatherapi.com/signup.aspx');
+      
+      return res.json({
+        location: {
+          name: 'College Station',
+          region: 'Texas',
+          country: 'United States of America',
+          lat: 30.63,
+          lon: -96.33,
+          localtime: new Date().toLocaleString('en-US', { timeZone: 'America/Chicago' })
+        },
+        current: {
+          temp_f: 72,
+          temp_c: 22,
+          condition: {
+            text: 'Partly cloudy',
+            icon: '//cdn.weatherapi.com/weather/64x64/day/116.png'
+          },
+          wind_mph: 8,
+          wind_kph: 12.9,
+          humidity: 65,
+          feelslike_f: 72,
+          feelslike_c: 22
+        },
+        forecast: {
+          forecastday: [
+            {
+              date: new Date().toISOString().split('T')[0],
+              day: {
+                maxtemp_f: 78,
+                maxtemp_c: 26,
+                mintemp_f: 65,
+                mintemp_c: 18,
+                condition: {
+                  text: 'Partly cloudy',
+                  icon: '//cdn.weatherapi.com/weather/64x64/day/116.png'
+                }
+              }
+            },
+            {
+              date: new Date(Date.now() + 86400000).toISOString().split('T')[0],
+              day: {
+                maxtemp_f: 80,
+                maxtemp_c: 27,
+                mintemp_f: 67,
+                mintemp_c: 19,
+                condition: {
+                  text: 'Sunny',
+                  icon: '//cdn.weatherapi.com/weather/64x64/day/113.png'
+                }
+              }
+            },
+            {
+              date: new Date(Date.now() + 172800000).toISOString().split('T')[0],
+              day: {
+                maxtemp_f: 82,
+                maxtemp_c: 28,
+                mintemp_f: 68,
+                mintemp_c: 20,
+                condition: {
+                  text: 'Sunny',
+                  icon: '//cdn.weatherapi.com/weather/64x64/day/113.png'
+                }
+              }
+            }
+          ]
+        }
+      });
+    }
+    
+    // Call WeatherAPI.com Forecast API (includes current + 3 day forecast on free tier)
+    const url = `https://api.weatherapi.com/v1/forecast.json?key=${API_KEY}&q=${location}&days=7&aqi=no&alerts=no`;
+    
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`WeatherAPI error: ${response.status} - ${errorData.error?.message || response.statusText}`);
+    }
+    
+    const weatherData = await response.json();
+    res.json(weatherData);
+    
+  } catch (err) {
+    console.error('Weather API error:', err);
+    res.status(500).json({ 
+      error: 'Failed to fetch weather data',
+      details: err.message 
+    });
+  }
+});
 
 /**
  * GET /api/menu
@@ -17,26 +190,128 @@ app.use(express.json());
  */
 app.get('/api/menu', async (req, res) => {
   try {
+    // 1. Get all menu items from your table
     const menuItemsPromise = pool.query('SELECT * FROM menu_items');
-    
-    const categoriesPromise = pool.query('SELECT DISTINCT category FROM menu_items ORDER BY category');
 
-    const [menuItemsResult, categoriesResult] = await Promise.all([
+    
+    // 2. Get all unique categories from the 'menu_items' table.
+    //    Only show categories where type = 'Drink' or category = 'Miscellaneous'
+    //    Custom sort: Seasonal before Miscellaneous, then alphabetically
+    const categoriesPromise = pool.query(`
+      SELECT DISTINCT 
+        category,
+        CASE 
+          WHEN category = 'Seasonal' THEN 1
+          WHEN category = 'Miscellaneous' THEN 2
+          ELSE 0
+        END as sort_order
+      FROM menu_items 
+      WHERE type = 'Drink' OR category = 'Miscellaneous'
+      ORDER BY sort_order, category
+    `);
+
+    // 3. Get toppings (type = 'Topping')
+    const toppingsPromise = pool.query(`
+      SELECT menuitemid, name, price 
+      FROM menu_items 
+      WHERE type = 'Topping' AND available = true
+      ORDER BY name
+    `);
+
+    // 4. Get sweetness options (type = 'Modification' and category = 'sweetness')
+    const sweetnessPromise = pool.query(`
+      SELECT menuitemid, name, price 
+      FROM menu_items 
+      WHERE type = 'Modification' AND category = 'sweetness'
+      ORDER BY menuitemid
+    `);
+
+    // 5. Get ice options (type = 'Modification' and category = 'ice')
+    const icePromise = pool.query(`
+      SELECT menuitemid, name, price 
+      FROM menu_items 
+      WHERE type = 'Modification' AND category = 'ice'
+      ORDER BY menuitemid
+    `);
+
+    // Wait for all queries to finish
+    const [menuItemsResult, categoriesResult, toppingsResult, sweetnessResult, iceResult] = await Promise.all([
       menuItemsPromise,
       categoriesPromise,
+      toppingsPromise,
+      sweetnessPromise,
+      icePromise,
     ]);
-
+    
+    // Send the structured data
     res.json({
+      // Send back the categories, e.g., [{category: 'Milky Series'}, {category: 'Fruity Beverage'}]
       categories: categoriesResult.rows,
+      // Send back all the drinks
       menu_items: menuItemsResult.rows,
+      // Send back customization options
+      toppings: toppingsResult.rows,
+      sweetness_options: sweetnessResult.rows,
+      ice_options: iceResult.rows,
     });
     
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'An error occurred while fetching the menu.' });
+    console.error('Database error details:', err);
+    console.error('Error message:', err.message);
+    console.error('Error code:', err.code);
+    res.status(500).json({ 
+      error: 'An error occurred while fetching the menu.',
+      details: err.message,
+      code: err.code
+    });
   }
 });
 
+/**
+ * POST /api/translate
+ * Translates text to the target language using MyMemory Translation API
+ */
+app.post('/api/translate', async (req, res) => {
+  try {
+    const { text, targetLang } = req.body;
+    
+    if (!text || !targetLang) {
+      return res.status(400).json({ error: 'Text and target language are required' });
+    }
+
+    // Use MyMemory Translation API (free, no API key required)
+    const https = require('https');
+    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${targetLang}`;
+    
+    https.get(url, (apiRes) => {
+      let data = '';
+      
+      apiRes.on('data', (chunk) => {
+        data += chunk;
+      });
+      
+      apiRes.on('end', () => {
+        try {
+          const result = JSON.parse(data);
+          if (result.responseData && result.responseData.translatedText) {
+            res.json({ translatedText: result.responseData.translatedText });
+          } else {
+            res.status(500).json({ error: 'Translation failed' });
+          }
+        } catch (e) {
+          res.status(500).json({ error: 'Failed to parse translation response' });
+        }
+      });
+    }).on('error', (err) => {
+      console.error('Translation API error:', err);
+      res.status(500).json({ error: 'Translation service unavailable' });
+    });
+    
+  } catch (err) {
+    console.error('Translation error:', err);
+    res.status(500).json({ error: 'An error occurred during translation' });
+  }
+});
 
 app.listen(port, () => {
   console.log(`Kiosk backend server running on http://localhost:${port}`);

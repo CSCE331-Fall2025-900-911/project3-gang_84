@@ -1,0 +1,65 @@
+SCRUM Meeting 3 for Project 3
+Prepared by: Namrata Iyer
+Meeting Date: 11/7/25
+Meeting Attendees
+Namrata Iyer
+ Pranav Harwadekar
+ Nishanth Gandhe
+ Vishnu Nayak
+Meeting Agenda Items
+ Discuss which apis to use for weather and 
+Finalize what needs to be done for sprint 1
+Status Update Since Last Meeting
+Accomplishments:
+ Ordering functionality complete
+Website is deployed
+
+Tasks Completed:
+Task Description
+Assigned to
+Completed? (yes/no)
+Update price as items added to cart
+namrata
+yes
+Connect kiosk to database
+pranav
+yes
+Deploy product on website
+pranav
+yes
+Create different sections for drinks
+vishnu
+yes
+Suggest more drinks to customer before checkout
+namrata
+yes
+Checkout page with choice of cash or card
+nishanth
+yes
+
+Before The Next Meeting
+Plans:
+Finish up last few screens for checking out and  payment
+Add weather api functionality
+
+
+Task Assignments:
+Task Description
+Assigned to
+Add ability to pay
+nishanth
+Create show cart screen to display
+pranav
+Create section for weather on kiosk
+vishnu
+Integrate weather api
+namrata
+
+Minutes from Previous Meeting
+What we accomplished before meeting 2: We set up the basic website and environment and implemented some base functionality for ordering.
+
+What we need to get done before the next meeting: We need to finish the ordering functionality and deploy the website using vercel.
+
+Blockers:
+Getting used to Agile has been difficult due to the amount of checking in we have to do with each other. We had an exam for another class this week so it has been hard to work on the project.
+
