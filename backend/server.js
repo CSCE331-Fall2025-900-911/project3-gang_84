@@ -17,25 +17,17 @@ app.use(express.json());
  */
 app.get('/api/menu', async (req, res) => {
   try {
-    // 1. Get all menu items from your table
     const menuItemsPromise = pool.query('SELECT * FROM menu_items');
     
-    // 2. Get all unique categories from the 'menu_items' table.
-    //    I am assuming you have a 'category' column in your 'menu_items' table.
-    //    If it's named something else (e.g., 'item_type'), change it here.
     const categoriesPromise = pool.query('SELECT DISTINCT category FROM menu_items ORDER BY category');
 
-    // Wait for both queries to finish
     const [menuItemsResult, categoriesResult] = await Promise.all([
       menuItemsPromise,
       categoriesPromise,
     ]);
 
-    // Send the structured data
     res.json({
-      // Send back the categories, e.g., [{category: 'Milky Series'}, {category: 'Fruity Beverage'}]
       categories: categoriesResult.rows,
-      // Send back all the drinks
       menu_items: menuItemsResult.rows,
     });
     

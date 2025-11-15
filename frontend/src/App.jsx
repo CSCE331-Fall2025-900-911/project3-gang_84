@@ -2,7 +2,6 @@ import React, { useState, useMemo, useEffect } from 'react';
 
 // A single drink item in the grid
 function DrinkCard({ drink, onAddToCart }) {
-  // Use 'Name' and 'Price' from your 'menu_items' table (case-sensitive)
   return (
     <div
       className="flex flex-col items-center justify-between p-4 bg-white rounded-lg shadow-md cursor-pointer transition-transform transform hover:scale-105"
@@ -12,7 +11,6 @@ function DrinkCard({ drink, onAddToCart }) {
         <span className="text-4xl">🥤</span>
       </div>
       <span className="text-center font-medium">{drink.Name}</span>
-      {/* Ensure your price column is named 'Price' and is a number */}
       <span className="text-gray-600">${parseFloat(drink.Price).toFixed(2)}</span>
     </div>
   );
@@ -70,7 +68,6 @@ export default function App() {
 
   // --- Data Fetching ---
   useEffect(() => {
-    // This function fetches data from your backend
     const fetchMenu = async () => {
       try {
         const response = await fetch('http://localhost:3001/api/menu');
@@ -115,7 +112,6 @@ export default function App() {
   // Add a drink to the cart
   const handleAddToCart = (drink) => {
     setCart((prevCart) => {
-      // 'MenuItemID' is the primary key from your 'menu_items' table
       const existingItem = prevCart.find((item) => item.MenuItemID === drink.MenuItemID);
       if (existingItem) {
         return prevCart.map((item) =>
@@ -167,7 +163,7 @@ export default function App() {
         <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
           {visibleDrinks.map((drink) => (
             <DrinkCard
-              key={drink.MenuItemID} // 'MenuItemID' from your 'menu_items' table
+              key={drink.MenuItemID}
               drink={drink}
               onAddToCart={handleAddToCart}
             />
