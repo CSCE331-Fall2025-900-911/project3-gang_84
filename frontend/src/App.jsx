@@ -278,7 +278,7 @@ function Cart({ cartItems, total, highContrast, getTranslatedText }) {
 
 // The main Kiosk App
 export default function App() {
-  const [activeTab, setActiveTab] = useState('menu'); // 'menu' or 'weather'
+  const [activeTab, setActiveTab] = useState('menu');
   const [categories, setCategories] = useState([]);
   const [drinks, setDrinks] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
@@ -294,7 +294,7 @@ export default function App() {
   const [isTranslating, setIsTranslating] = useState(false);
   
   // Accessibility states for Carol
-  const [fontSize, setFontSize] = useState('normal'); // 'normal', 'large', 'extra-large'
+  const [fontSize, setFontSize] = useState('normal');
   const [highContrast, setHighContrast] = useState(false);
 
   // Get font size classes
@@ -315,7 +315,6 @@ export default function App() {
 
   // --- Data Fetching ---
   useEffect(() => {
-    // This function fetches data from your backend
     const fetchMenu = async () => {
       try {
         const response = await fetch(API_ENDPOINTS.menu);
@@ -352,7 +351,7 @@ export default function App() {
     };
 
     fetchMenu();
-  }, []); // The empty array [] means this effect runs once when the component mounts
+  }, []);
 
   // Filter drinks based on the selected category
   const visibleDrinks = useMemo(() => {
@@ -396,14 +395,14 @@ export default function App() {
     } catch (err) {
       console.error('Translation error:', err);
     }
-    return text; // Return original if translation fails
+    return text;
   };
 
   // Handle language change
   const handleLanguageChange = async (lang) => {
     setSelectedLanguage(lang);
     if (lang === 'en') {
-      setTranslatedData({}); // Clear translations for English
+      setTranslatedData({});
       return;
     }
 
