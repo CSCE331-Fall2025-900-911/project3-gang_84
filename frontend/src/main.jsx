@@ -1,7 +1,20 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { ClerkProvider, SignedIn, SignedOut } from '@clerk/clerk-react'
 import App from './App.jsx'
+import RoleSelector from './components/auth/RoleSelector.jsx'
+import ManagerLogin from './components/auth/ManagerLogin.jsx'
+import CashierLogin from './components/auth/CashierLogin.jsx'
+import { ProtectedRoute } from './components/auth/RoleGuard.jsx'
 import './index.css'
+
+// Get Clerk publishable key from environment
+const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
+
+if (!CLERK_PUBLISHABLE_KEY) {
+  console.warn('Missing Clerk Publishable Key. Set VITE_CLERK_PUBLISHABLE_KEY in your .env file')
+}
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

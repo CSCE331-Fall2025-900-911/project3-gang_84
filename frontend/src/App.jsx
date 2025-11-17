@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { useUser, UserButton } from '@clerk/clerk-react';
 import Weather from './components/Weather';
 import { API_ENDPOINTS } from './config/api';
 
@@ -277,7 +278,8 @@ function Cart({ cartItems, total, highContrast, getTranslatedText }) {
 }
 
 // The main Kiosk App
-export default function App() {
+export default function App({ role = 'customer' }) {
+  const { user } = useUser();
   const [activeTab, setActiveTab] = useState('menu');
   const [categories, setCategories] = useState([]);
   const [drinks, setDrinks] = useState([]);
@@ -549,8 +551,36 @@ export default function App() {
       {/* Top Navigation Tabs */}
       <header className={`shadow-md ${highContrast ? 'bg-gray-900 border-b-4 border-yellow-400' : 'bg-white'}`}>
         <div className="flex items-center justify-between px-8 py-4">
-          <h1 className={`text-3xl font-bold ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>{getTranslatedText('Kiosk System')}</h1>
+          <div className="flex items-center gap-4">
+            <h1 className={`text-3xl font-bold ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>{getTranslatedText('Kiosk System')}</h1>
+            {/* Role Badge */}
+            {role !== 'customer' && (
+              <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                role === 'manager' 
+                  ? 'bg-purple-100 text-purple-800' 
+                  : 'bg-green-100 text-green-800'
+              }`}>
+                {role.charAt(0).toUpperCase() + role.slice(1)}
+              </span>
+            )}
+          </div>
           <div className="flex items-center gap-6">
+            {/* User Profile (if authenticated) */}
+            {user && (
+              <div className="flex items-center gap-3 border-r pr-6">
+                <span className={`text-sm ${highContrast ? 'text-white' : 'text-gray-700'}`}>
+                  {user.firstName || user.username}
+                </span>
+                <UserButton 
+                  afterSignOutUrl="/"
+                  appearance={{
+                    elements: {
+                      avatarBox: "w-10 h-10"
+                    }
+                  }}
+                />
+              </div>
+            )}
             {/* Accessibility Controls for Carol */}
             <div className="flex items-center gap-3 border-r pr-6">
               <span className={`text-sm font-semibold ${highContrast ? 'text-yellow-400' : 'text-gray-700'}`}>♿ {getTranslatedText('Accessibility:')}</span>
