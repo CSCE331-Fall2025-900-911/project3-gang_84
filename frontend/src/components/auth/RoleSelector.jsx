@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 /**
  * Landing page that allows users to choose their role
@@ -31,12 +32,12 @@ export default function RoleSelector() {
               <p className="text-gray-600 mb-6">
                 Browse menu and place orders
               </p>
-              <a
-                href="/customer"
+              <Link
+                to="/customer"
                 className="block w-full bg-gradient-to-r from-pink-500 to-red-500 text-white font-semibold py-3 px-6 rounded-lg hover:from-pink-600 hover:to-red-600 transition-colors"
               >
                 Start Ordering
-              </a>
+              </Link>
               <p className="text-sm text-gray-500 mt-3">No login required</p>
             </div>
           </div>
@@ -53,12 +54,12 @@ export default function RoleSelector() {
               <p className="text-gray-600 mb-6">
                 Process orders and payments
               </p>
-              <a
-                href="/auth/cashier"
+              <Link
+                to="/auth/cashier"
                 className="block w-full bg-gradient-to-r from-green-500 to-teal-500 text-white font-semibold py-3 px-6 rounded-lg hover:from-green-600 hover:to-teal-600 transition-colors"
               >
                 Cashier Login
-              </a>
+              </Link>
               <p className="text-sm text-gray-500 mt-3">Authentication required</p>
             </div>
           </div>
@@ -76,12 +77,12 @@ export default function RoleSelector() {
               <p className="text-gray-600 mb-6">
                 Full system access and reports
               </p>
-              <a
-                href="/auth/manager"
+              <Link
+                to="/auth/manager"
                 className="block w-full bg-gradient-to-r from-purple-500 to-blue-500 text-white font-semibold py-3 px-6 rounded-lg hover:from-purple-600 hover:to-blue-600 transition-colors"
               >
                 Manager Login
-              </a>
+              </Link>
               <p className="text-sm text-gray-500 mt-3">Authentication required</p>
             </div>
           </div>

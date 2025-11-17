@@ -1,5 +1,6 @@
 import React from 'react';
 import { SignIn } from '@clerk/clerk-react';
+import { Link } from 'react-router-dom';
 
 /**
  * Cashier Login Page
@@ -28,12 +29,12 @@ export default function CashierLogin() {
         </div>
 
         <div className="mt-6 text-center">
-          <a href="/auth/manager" className="text-white hover:text-green-200 mr-4">
+          <Link to="/auth/manager" className="text-white hover:text-green-200 mr-4">
             Manager Login
-          </a>
-          <a href="/" className="text-white hover:text-green-200">
+          </Link>
+          <Link to="/" className="text-white hover:text-green-200">
             Customer Mode
-          </a>
+          </Link>
         </div>
       </div>
     </div>

@@ -1,5 +1,6 @@
 import React from 'react';
 import { SignIn } from '@clerk/clerk-react';
+import { Link } from 'react-router-dom';
 
 /**
  * Manager Login Page
@@ -28,12 +29,12 @@ export default function ManagerLogin() {
         </div>
 
         <div className="mt-6 text-center">
-          <a href="/auth/cashier" className="text-white hover:text-blue-200 mr-4">
+          <Link to="/auth/cashier" className="text-white hover:text-blue-200 mr-4">
             Cashier Login
-          </a>
-          <a href="/" className="text-white hover:text-blue-200">
+          </Link>
+          <Link to="/" className="text-white hover:text-blue-200">
             Customer Mode
-          </a>
+          </Link>
         </div>
       </div>
     </div>
