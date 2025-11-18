@@ -9,10 +9,112 @@ export default function Weather() {
   const [weatherData, setWeatherData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [drinks, setDrinks] = useState([
+    // Default drinks to show immediately while fetching from API
+    { name: 'Classic Milk Tea', price: '5.99', category: 'Milk series', type: 'hot' },
+    { name: 'Mango Smoothie', price: '6.49', category: 'Ice blend', type: 'cold' },
+    { name: 'Strawberry Fruit Tea', price: '5.49', category: 'Fruit series', type: 'cold' },
+    { name: 'Hot Coffee', price: '4.99', category: 'Coffee', type: 'hot' },
+  ]);
 
   useEffect(() => {
     fetchWeather();
+    fetchDrinks();
   }, []);
+
+  /**
+   * Fetch drinks from database
+   */
+  const fetchDrinks = async () => {
+    try {
+      const response = await fetch(API_ENDPOINTS.menu);
+      if (!response.ok) {
+        throw new Error('Failed to fetch drinks');
+      }
+      const data = await response.json();
+      // The backend sends { categories: [], menu_items: [], toppings: [], sweetness_options: [], ice_options: [] }
+      setDrinks(data.menu_items || []);
+    } catch (err) {
+      console.error('Failed to fetch drinks:', err);
+      // Keep the default drinks if fetch fails
+    }
+  };
+
+  /**
+   * Get drink recommendation based on weather conditions
+   * Uses actual drinks from the database
+   */
+  const getDrinkRecommendation = (temp, condition) => {
+    const tempF = Math.round(temp);
+    const isRainy = condition.toLowerCase().includes('rain');
+    const isSnowy = condition.toLowerCase().includes('snow');
+    
+    // Filter drinks by category (exact match with database categories)
+    const milkSeries = drinks.filter(d => d.category?.toLowerCase() === 'milk series');
+    const coffeeSeries = drinks.filter(d => d.category?.toLowerCase() === 'coffee');
+    const fruitSeries = drinks.filter(d => d.category?.toLowerCase() === 'fruit series');
+    const iceBlend = drinks.filter(d => d.category?.toLowerCase() === 'ice blend');
+
+    // Helper to get random drink from array
+    const getRandomDrink = (arr) => arr.length > 0 ? arr[Math.floor(Math.random() * arr.length)] : null;
+
+    let recommendedDrink = null;
+    let reason = '';
+    let icon = '🧋';
+    let color = 'from-amber-400 to-yellow-600';
+
+    // Hot weather (> 75°F) - Recommend ice blend
+    if (tempF > 75) {
+      recommendedDrink = getRandomDrink(iceBlend);
+      reason = 'Perfect icy refreshment for hot weather!';
+      icon = '🧊';
+      color = 'from-cyan-400 to-blue-500';
+    }
+    // Warm weather (60-75°F) - Recommend fruit series
+    else if (tempF > 60) {
+      recommendedDrink = getRandomDrink(fruitSeries);
+      reason = 'Light and fruity for pleasant weather';
+      icon = '🍓';
+      color = 'from-pink-400 to-red-400';
+    }
+    // Cool weather (45-60°F) - Recommend milk series
+    else if (tempF > 45) {
+      recommendedDrink = getRandomDrink(milkSeries);
+      reason = 'Smooth and comforting for cool days';
+      icon = '🥛';
+      color = 'from-amber-400 to-yellow-600';
+    }
+    // Cold weather (< 45°F) - Recommend coffee
+    else {
+      recommendedDrink = getRandomDrink(coffeeSeries);
+      reason = 'Warm coffee to beat the cold';
+      icon = '☕';
+      color = 'from-amber-600 to-brown-600';
+    }
+
+    // Weather condition overrides
+    if (isRainy || isSnowy) {
+      recommendedDrink = getRandomDrink(coffeeSeries);
+      reason = isSnowy ? 'Warm coffee for snowy weather' : 'Cozy coffee for rainy days';
+      icon = '☕';
+      color = 'from-amber-600 to-brown-600';
+    }
+
+    // Fallback to any drink if nothing found
+    if (!recommendedDrink && drinks.length > 0) {
+      recommendedDrink = getRandomDrink(drinks);
+      reason = 'Always a great choice!';
+    }
+
+    return {
+      name: recommendedDrink?.name || 'Classic Milk Tea',
+      price: recommendedDrink?.price || '5.99',
+      category: recommendedDrink?.category || 'Milk Series',
+      reason,
+      icon,
+      color
+    };
+  };
 
   const fetchWeather = async () => {
     try {
@@ -121,6 +223,37 @@ export default function Weather() {
           </div>
         </div>
       </div>
+
+      {/* Drink Recommendation Based on Weather */}
+      {(() => {
+        const recommendation = getDrinkRecommendation(current.temp_f, current.condition.text);
+        return (
+          <div className={`bg-gradient-to-r ${recommendation.color} rounded-2xl shadow-lg p-8 mb-6`}>
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <div className="flex items-center mb-2">
+                  <span className="text-4xl mr-3">{recommendation.icon}</span>
+                  <h3 className="text-2xl font-bold text-white drop-shadow-lg">Recommended Drink</h3>
+                </div>
+                <p className="text-3xl font-bold mb-1 text-white drop-shadow-lg">{recommendation.name}</p>
+                <p className="text-xl mb-2 text-white drop-shadow-md">${parseFloat(recommendation.price).toFixed(2)}</p>
+                <p className="text-lg mb-1 text-white drop-shadow-md">{recommendation.reason}</p>
+                <div className="mt-3 inline-block bg-black bg-opacity-30 px-4 py-2 rounded-full text-sm text-white font-semibold">
+                  {recommendation.category}
+                </div>
+                <div className="mt-4 text-sm text-white drop-shadow-md">
+                  Based on current conditions: {tempF}°F, {current.condition.text}
+                </div>
+              </div>
+              <div className="hidden md:block">
+                <svg className="w-32 h-32 opacity-20 text-white" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M20 3H4v10c0 2.21 1.79 4 4 4h6c2.21 0 4-1.79 4-4v-3h2c1.11 0 2-.9 2-2V5c0-1.11-.89-2-2-2zm-5 10c0 1.1-.9 2-2 2H7c-1.1 0-2-.9-2-2V5h10v8zM9 11c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm4 0c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Forecast */}
       {forecast && forecast.forecastday && forecast.forecastday.length > 0 && (
