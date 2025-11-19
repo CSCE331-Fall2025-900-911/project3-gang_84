@@ -2,7 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { ClerkProvider, SignedIn, SignedOut } from '@clerk/clerk-react'
-import App from './App.jsx'
+import Kiosk from './Kiosk.jsx'
 import RoleSelector from './components/auth/RoleSelector.jsx'
 import ManagerLogin from './components/auth/ManagerLogin.jsx'
 import CashierLogin from './components/auth/CashierLogin.jsx'
@@ -29,14 +29,14 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/auth/cashier" element={<CashierLogin />} />
           
           {/* Customer route - no authentication required */}
-          <Route path="/customer" element={<App role="customer" />} />
+          <Route path="/customer" element={<Kiosk role="customer" />} />
           
           {/* Cashier route - requires cashier authentication */}
           <Route 
             path="/cashier" 
             element={
               <ProtectedRoute requiredRole="cashier">
-                <App role="cashier" />
+                <Kiosk role="cashier" />
               </ProtectedRoute>
             } 
           />
@@ -46,7 +46,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
             path="/manager" 
             element={
               <ProtectedRoute requiredRole="manager">
-                <App role="manager" />
+                <Kiosk role="manager" />
               </ProtectedRoute>
             } 
           />
