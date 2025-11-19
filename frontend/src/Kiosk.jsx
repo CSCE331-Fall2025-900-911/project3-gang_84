@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useUser, UserButton } from '@clerk/clerk-react';
 import Weather from './components/Weather';
+import CustomerAuthModal from './components/CustomerAuthModal';
 import { API_ENDPOINTS } from './config/api';
 
 // Customization Modal
@@ -44,7 +45,11 @@ function CustomizationModal({ drink, onClose, onAddToCart, sweetnessOptions, ice
   };
 
   return (
-    <div className="fixed inset-0 bg-opacity-30 flex items-center justify-center z-50" style={{ backgroundColor: highContrast ? 'rgba(0,0,0,0.8)' : '#f8ffe9' }} onClick={onClose}>
+    <div 
+      className="fixed inset-0 flex items-center justify-center z-50" 
+      style={{ backgroundColor: highContrast ? 'rgba(0, 0, 0, 0.8)' : 'rgba(0, 0, 0, 0.4)' }} 
+      onClick={onClose}
+    >
       <div className={`rounded-lg p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto ${
         highContrast ? 'bg-gray-900 border-4 border-yellow-400' : 'bg-white'
       }`} onClick={(e) => e.stopPropagation()}>
@@ -299,6 +304,11 @@ export default function Kiosk({ role = 'customer' }) {
   const [fontSize, setFontSize] = useState('normal');
   const [highContrast, setHighContrast] = useState(false);
 
+  // Customer authentication states
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [customer, setCustomer] = useState(null);
+  const [authPromptShown, setAuthPromptShown] = useState(false);
+
   // Get font size classes
   const getFontSizeClass = () => {
     switch(fontSize) {
@@ -354,6 +364,31 @@ export default function Kiosk({ role = 'customer' }) {
 
     fetchMenu();
   }, []);
+
+  // Show customer auth modal for customer role only, once per session
+  useEffect(() => {
+    if (role === 'customer' && !authPromptShown && !isLoading) {
+      // Small delay to let the page load first
+      const timer = setTimeout(() => {
+        setShowAuthModal(true);
+        setAuthPromptShown(true);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [role, authPromptShown, isLoading]);
+
+  // Handle successful authentication
+  const handleAuthenticated = (customerData) => {
+    setCustomer(customerData);
+    setShowAuthModal(false);
+    console.log('Customer authenticated:', customerData);
+  };
+
+  // Handle guest continuation
+  const handleGuest = () => {
+    setShowAuthModal(false);
+    console.log('Continuing as guest');
+  };
 
   // Filter drinks based on the selected category
   const visibleDrinks = useMemo(() => {
@@ -565,7 +600,33 @@ export default function Kiosk({ role = 'customer' }) {
             )}
           </div>
           <div className="flex items-center gap-6">
-            {/* User Profile (if authenticated) */}
+            {/* Customer Rewards Info (if logged in as customer) */}
+            {role === 'customer' && customer && (
+              <div className={`flex items-center gap-3 border-r pr-6 ${
+                highContrast ? 'border-yellow-400' : 'border-gray-300'
+              }`}>
+                <div className="text-right">
+                  <div className={`text-sm font-semibold ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
+                    {customer.name}
+                  </div>
+                  <div className={`text-xs ${highContrast ? 'text-white' : 'text-green-600'}`}>
+                    🎁 {customer.loyaltyPoints} points
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowAuthModal(true)}
+                  className={`text-xs px-2 py-1 rounded ${
+                    highContrast 
+                      ? 'bg-gray-800 text-yellow-400 border border-yellow-400 hover:bg-gray-700'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                  title="Switch Account"
+                >
+                  Switch
+                </button>
+              </div>
+            )}
+            {/* User Profile (if authenticated as staff) */}
             {user && (
               <div className="flex items-center gap-3 border-r pr-6">
                 <span className={`text-sm ${highContrast ? 'text-white' : 'text-gray-700'}`}>
@@ -758,6 +819,15 @@ export default function Kiosk({ role = 'customer' }) {
           toppingOptions={toppings}
           getTranslatedText={getTranslatedText}
           highContrast={highContrast}
+        />
+      )}
+
+      {/* Customer Authentication Modal */}
+      {showAuthModal && role === 'customer' && (
+        <CustomerAuthModal
+          onClose={() => setShowAuthModal(false)}
+          onAuthenticated={handleAuthenticated}
+          onGuest={handleGuest}
         />
       )}
     </div>

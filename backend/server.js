@@ -307,6 +307,99 @@ app.post('/api/translate', async (req, res) => {
   }
 });
 
+/**
+ * POST /api/customer/login
+ * Customer login with phone number and PIN
+ */
+app.post('/api/customer/login', async (req, res) => {
+  try {
+    const { phoneNumber, pin } = req.body;
+
+    if (!phoneNumber || !pin) {
+      return res.status(400).json({ error: 'Phone number and PIN are required' });
+    }
+
+    // Query database for customer
+    const result = await pool.query(
+      'SELECT customerid, name, phonenumber, loyaltypoints FROM customers WHERE phonenumber = $1 AND pin = $2',
+      [phoneNumber, pin]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(401).json({ error: 'Invalid phone number or PIN' });
+    }
+
+    const customer = result.rows[0];
+    res.json({ 
+      success: true,
+      customer: {
+        customerId: customer.customerid,
+        name: customer.name,
+        phoneNumber: customer.phonenumber,
+        loyaltyPoints: customer.loyaltypoints
+      }
+    });
+
+  } catch (err) {
+    console.error('Customer login error:', err);
+    res.status(500).json({ error: 'An error occurred during login' });
+  }
+});
+
+/**
+ * POST /api/customer/signup
+ * Create a new customer account
+ */
+app.post('/api/customer/signup', async (req, res) => {
+  try {
+    const { name, phoneNumber, pin } = req.body;
+
+    // Validation
+    if (!name || !phoneNumber || !pin) {
+      return res.status(400).json({ error: 'Name, phone number, and PIN are required' });
+    }
+
+    if (phoneNumber.length !== 10) {
+      return res.status(400).json({ error: 'Phone number must be 10 digits' });
+    }
+
+    if (pin.length !== 4 || !/^\d{4}$/.test(pin)) {
+      return res.status(400).json({ error: 'PIN must be exactly 4 digits' });
+    }
+
+    // Check if phone number already exists
+    const existingCustomer = await pool.query(
+      'SELECT customerid FROM customers WHERE phonenumber = $1',
+      [phoneNumber]
+    );
+
+    if (existingCustomer.rows.length > 0) {
+      return res.status(409).json({ error: 'An account with this phone number already exists' });
+    }
+
+    // Insert new customer (loyaltypoints defaults to 0)
+    const result = await pool.query(
+      'INSERT INTO customers (name, phonenumber, pin, loyaltypoints) VALUES ($1, $2, $3, 0) RETURNING customerid, name, phonenumber, loyaltypoints',
+      [name, phoneNumber, pin]
+    );
+
+    const newCustomer = result.rows[0];
+    res.status(201).json({ 
+      success: true,
+      customer: {
+        customerId: newCustomer.customerid,
+        name: newCustomer.name,
+        phoneNumber: newCustomer.phonenumber,
+        loyaltyPoints: newCustomer.loyaltypoints
+      }
+    });
+
+  } catch (err) {
+    console.error('Customer signup error:', err);
+    res.status(500).json({ error: 'An error occurred during signup' });
+  }
+});
+
 app.listen(port, () => {
   console.log(`Kiosk backend server running on http://localhost:${port}`);
 });
