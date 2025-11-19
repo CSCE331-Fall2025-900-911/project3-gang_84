@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useUser, UserButton } from '@clerk/clerk-react';
 import WeatherWidget from './components/WeatherWidget';
 import CustomerAuthModal from './components/CustomerAuthModal';
@@ -213,7 +214,13 @@ function DrinkCard({ drink, onDrinkClick, getTranslatedText, highContrast }) {
 }
 
 // The sidebar showing the cart
-function Cart({ cartItems, total, highContrast, getTranslatedText, onPay }) {
+function Cart({ cartItems, total, highContrast, getTranslatedText, onPay, largeClickTargets }) {
+  const getButtonSizeClass = () => {
+    return largeClickTargets
+      ? 'min-h-[80px] px-8 py-6 text-xl'
+      : 'min-h-[60px] px-6 py-4 text-lg';
+  };
+
   return (
     <div className={`w-1/4 p-6 shadow-lg rounded-lg ${
       highContrast ? 'bg-gray-900 border-4 border-yellow-400' : 'bg-white'
@@ -275,14 +282,13 @@ function Cart({ cartItems, total, highContrast, getTranslatedText, onPay }) {
         <button 
           onClick={onPay}
           disabled={cartItems.length === 0}
-          className={`w-full py-5 rounded-lg text-xl font-bold shadow-lg transition-colors ${
+          className={`w-full rounded-lg font-bold shadow-lg transition-colors ${getButtonSizeClass()} ${
             cartItems.length === 0
               ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
               : highContrast 
                 ? 'bg-yellow-400 text-black border-4 border-yellow-400 hover:bg-yellow-300' 
                 : 'bg-green-600 text-white hover:bg-green-700'
           }`}
-          style={{ minHeight: '60px' }}
         >
           {getTranslatedText('Pay')} ${total.toFixed(2)}
         </button>
@@ -294,6 +300,7 @@ function Cart({ cartItems, total, highContrast, getTranslatedText, onPay }) {
 // The main Kiosk component
 export default function Kiosk({ role = 'customer' }) {
   const { user } = useUser();
+  const navigate = useNavigate();
   const [categories, setCategories] = useState([]);
   const [drinks, setDrinks] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
@@ -308,10 +315,12 @@ export default function Kiosk({ role = 'customer' }) {
   const [translatedData, setTranslatedData] = useState({});
   const [isTranslating, setIsTranslating] = useState(false);
   
-  // Accessibility states for Carol
+  // Accessibility states for Carol (vision impairment, tremor)
   const [fontSize, setFontSize] = useState('normal');
   const [highContrast, setHighContrast] = useState(false);
   const [showAccessibilityMenu, setShowAccessibilityMenu] = useState(false);
+  const [reduceMotion, setReduceMotion] = useState(false);
+  const [largeClickTargets, setLargeClickTargets] = useState(false);
 
   // Customer authentication states
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -329,6 +338,7 @@ export default function Kiosk({ role = 'customer' }) {
   const [showAddMoreModal, setShowAddMoreModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [lastOrderNumber, setLastOrderNumber] = useState(null);
+  const [selectedRewards, setSelectedRewards] = useState([]); // Track selected rewards
 
   // Get weather-based drink recommendation
   const getWeatherRecommendation = () => {
@@ -409,20 +419,26 @@ export default function Kiosk({ role = 'customer' }) {
 
   const weatherRecommendation = useMemo(() => getWeatherRecommendation(), [currentWeather, drinks]);
 
-  // Get font size classes
+  // Get font size classes (improved for Carol's macular degeneration)
   const getFontSizeClass = () => {
     switch(fontSize) {
-      case 'large': return 'text-lg';
-      case 'extra-large': return 'text-xl';
-      default: return 'text-base';
+      case 'large': return 'text-xl';
+      case 'extra-large': return 'text-2xl';
+      default: return 'text-lg'; // Default slightly larger for readability
     }
+  };
+
+  // Get button size class (for Carol's tremor)
+  const getButtonSizeClass = () => {
+    return largeClickTargets ? 'min-h-[80px] px-8 py-6 text-xl' : 'min-h-[60px] px-6 py-4 text-lg';
   };
 
   // Get container class with accessibility settings
   const getContainerClass = () => {
     const baseClass = 'flex flex-col w-full min-h-screen font-sans';
     const bgClass = highContrast ? 'bg-black' : 'bg-lime-50';
-    return `${baseClass} ${bgClass} ${getFontSizeClass()}`;
+    const motionClass = reduceMotion ? '' : 'transition-all duration-200';
+    return `${baseClass} ${bgClass} ${getFontSizeClass()} ${motionClass}`;
   };
 
   // --- Data Fetching ---
@@ -760,16 +776,70 @@ export default function Kiosk({ role = 'customer' }) {
     setShowPaymentModal(false);
     
     try {
+      // Calculate reward discount
+      const rewards = [
+        {
+          id: 'free_drink',
+          pointsCost: 100,
+          discount: (items) => {
+            const mostExpensive = items.reduce((max, item) => 
+              parseFloat(item.price) > parseFloat(max.price) ? item : max
+            , items[0]);
+            return mostExpensive ? parseFloat(mostExpensive.price) : 0;
+          }
+        },
+        {
+          id: 'free_topping',
+          pointsCost: 50,
+          discount: 0.75
+        },
+        {
+          id: 'discount_20',
+          pointsCost: 150,
+          discount: (items, total) => total * 0.20
+        },
+        {
+          id: 'bogo',
+          pointsCost: 75,
+          discount: (items) => {
+            const cheapest = items.reduce((min, item) => 
+              parseFloat(item.price) < parseFloat(min.price) ? item : min
+            , items[0]);
+            return cheapest ? parseFloat(cheapest.price) : 0;
+          }
+        }
+      ];
+
+      let totalDiscount = 0;
+      let totalPointsCost = 0;
+      
+      selectedRewards.forEach(rewardId => {
+        const reward = rewards.find(r => r.id === rewardId);
+        if (reward) {
+          totalPointsCost += reward.pointsCost;
+          if (typeof reward.discount === 'function') {
+            totalDiscount += reward.discount(cart, cartTotal);
+          } else {
+            totalDiscount += reward.discount;
+          }
+        }
+      });
+
+      const finalTotal = Math.max(0, cartTotal - totalDiscount);
+      
       // Submit order to backend
       const response = await fetch(API_ENDPOINTS.orders, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           cartItems: cart,
-          totalCost: cartTotal,
+          totalCost: finalTotal, // Send discounted total
           customerId: customer?.customerId || null,
-          employeeId: user ? 1 : null, // Use 1 as placeholder for staff, null for customer
-          paymentType: paymentType
+          employeeId: user ? 1 : null,
+          paymentType: paymentType,
+          rewardsUsed: selectedRewards, // Send used rewards
+          rewardDiscount: totalDiscount,
+          pointsRedeemed: totalPointsCost
         })
       });
 
@@ -779,14 +849,16 @@ export default function Kiosk({ role = 'customer' }) {
         // Order successful
         setLastOrderNumber(data.orderId);
         setCart([]); // Clear cart
+        setSelectedRewards([]); // Clear selected rewards
         setCurrentView('thankYou');
         
         // Update customer points if logged in
         if (customer) {
-          const pointsEarned = Math.floor(cartTotal);
+          const pointsEarned = Math.floor(finalTotal); // Points based on final total
+          const pointsSpent = totalPointsCost;
           setCustomer(prev => ({
             ...prev,
-            loyaltyPoints: prev.loyaltyPoints + pointsEarned
+            loyaltyPoints: prev.loyaltyPoints + pointsEarned - pointsSpent
           }));
         }
       } else {
@@ -803,7 +875,169 @@ export default function Kiosk({ role = 'customer' }) {
   const handleNewOrder = () => {
     setCurrentView('menu');
     setLastOrderNumber(null);
+    setSelectedRewards([]); // Reset rewards for new order
   };
+
+  // Handle reward toggle
+  const handleRewardToggle = (rewardId) => {
+    setSelectedRewards(prev => {
+      if (prev.includes(rewardId)) {
+        // Remove reward if already selected
+        return prev.filter(id => id !== rewardId);
+      } else {
+        // Add reward
+        return [...prev, rewardId];
+      }
+    });
+  };
+
+  // Accessibility Menu Component (reusable across all views)
+  const AccessibilityMenu = () => (
+    <div 
+      className="fixed inset-0 flex items-center justify-center z-50" 
+      style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+      onClick={() => setShowAccessibilityMenu(false)}
+    >
+      <div 
+        className={`rounded-lg p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto ${
+          highContrast ? 'bg-gray-900 border-4 border-yellow-400' : 'bg-white'
+        }`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex justify-between items-center mb-6">
+          <h2 className={`text-3xl font-bold ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
+            ♿ {getTranslatedText('Accessibility')}
+          </h2>
+          <button
+            onClick={() => setShowAccessibilityMenu(false)}
+            className={`text-2xl ${highContrast ? 'text-yellow-400 hover:text-yellow-300' : 'text-gray-500 hover:text-gray-700'}`}
+            style={{ minWidth: '44px', minHeight: '44px' }}
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Font Size Controls */}
+        <div className="mb-6">
+          <h3 className={`text-xl font-semibold mb-3 ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
+            📝 {getTranslatedText('Text Size')} <span className="text-sm font-normal">({getTranslatedText('For easier reading')})</span>
+          </h3>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setFontSize('normal')}
+              className={`flex-1 px-6 py-6 rounded-lg font-bold transition-colors ${
+                fontSize === 'normal'
+                  ? highContrast ? 'bg-yellow-400 text-black border-4 border-yellow-400' : 'bg-green-600 text-white'
+                  : highContrast ? 'bg-gray-800 text-yellow-400 border-4 border-yellow-400' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+              style={{ minHeight: '80px' }}
+            >
+              <div className="text-base">A</div>
+              <div className="text-sm mt-2">{getTranslatedText('Normal')}</div>
+            </button>
+            <button
+              onClick={() => setFontSize('large')}
+              className={`flex-1 px-6 py-6 rounded-lg font-bold transition-colors ${
+                fontSize === 'large'
+                  ? highContrast ? 'bg-yellow-400 text-black border-4 border-yellow-400' : 'bg-green-600 text-white'
+                  : highContrast ? 'bg-gray-800 text-yellow-400 border-4 border-yellow-400' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+              style={{ minHeight: '80px' }}
+            >
+              <div className="text-xl">A</div>
+              <div className="text-sm mt-2">{getTranslatedText('Large')}</div>
+            </button>
+            <button
+              onClick={() => setFontSize('extra-large')}
+              className={`flex-1 px-6 py-6 rounded-lg font-bold transition-colors ${
+                fontSize === 'extra-large'
+                  ? highContrast ? 'bg-yellow-400 text-black border-4 border-yellow-400' : 'bg-green-600 text-white'
+                  : highContrast ? 'bg-gray-800 text-yellow-400 border-4 border-yellow-400' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+              style={{ minHeight: '80px' }}
+            >
+              <div className="text-2xl">A</div>
+              <div className="text-sm mt-2">{getTranslatedText('Extra Large')}</div>
+            </button>
+          </div>
+        </div>
+
+        {/* High Contrast Toggle */}
+        <div className="mb-6">
+          <h3 className={`text-xl font-semibold mb-3 ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
+            🎨 {getTranslatedText('Display Mode')} <span className="text-sm font-normal">({getTranslatedText('For better visibility')})</span>
+          </h3>
+          <button
+            onClick={() => setHighContrast(!highContrast)}
+            className={`w-full py-6 rounded-lg font-bold transition-colors text-xl ${
+              highContrast
+                ? 'bg-yellow-400 text-black border-4 border-yellow-400'
+                : 'bg-gray-800 text-white hover:bg-gray-700'
+            }`}
+            style={{ minHeight: '80px' }}
+          >
+            {highContrast ? '🌞 ' + getTranslatedText('High Contrast ON') : '🌙 ' + getTranslatedText('Normal Mode')}
+          </button>
+        </div>
+
+        {/* Large Click Targets for tremor */}
+        <div className="mb-6">
+          <h3 className={`text-xl font-semibold mb-3 ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
+            👆 {getTranslatedText('Button Size')} <span className="text-sm font-normal">({getTranslatedText('Easier to press')})</span>
+          </h3>
+          <button
+            onClick={() => setLargeClickTargets(!largeClickTargets)}
+            className={`w-full py-6 rounded-lg font-bold transition-colors text-xl ${
+              largeClickTargets
+                ? highContrast ? 'bg-yellow-400 text-black border-4 border-yellow-400' : 'bg-green-600 text-white'
+                : highContrast ? 'bg-gray-800 text-yellow-400 border-4 border-yellow-400' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}
+            style={{ minHeight: '80px' }}
+          >
+            {largeClickTargets ? '✓ ' + getTranslatedText('Large Buttons') : getTranslatedText('Standard Buttons')}
+          </button>
+        </div>
+
+        {/* Reduce Motion */}
+        <div className="mb-6">
+          <h3 className={`text-xl font-semibold mb-3 ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
+            🎬 {getTranslatedText('Animation')} <span className="text-sm font-normal">({getTranslatedText('Reduce distractions')})</span>
+          </h3>
+          <button
+            onClick={() => setReduceMotion(!reduceMotion)}
+            className={`w-full py-6 rounded-lg font-bold transition-colors text-xl ${
+              reduceMotion
+                ? highContrast ? 'bg-yellow-400 text-black border-4 border-yellow-400' : 'bg-green-600 text-white'
+                : highContrast ? 'bg-gray-800 text-yellow-400 border-4 border-yellow-400' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}
+            style={{ minHeight: '80px' }}
+          >
+            {reduceMotion ? '🚫 ' + getTranslatedText('No Animation') : '✨ ' + getTranslatedText('Animation ON')}
+          </button>
+        </div>
+
+        {/* Helpful Info */}
+        <div className={`p-4 rounded-lg ${highContrast ? 'bg-gray-800 border-2 border-yellow-400' : 'bg-blue-50 border-2 border-blue-200'}`}>
+          <p className={`text-sm ${highContrast ? 'text-white' : 'text-gray-700'}`}>
+            💡 {getTranslatedText('These settings make the kiosk easier to use. Try different options to find what works best for you!')}
+          </p>
+        </div>
+
+        {/* Close Button */}
+        <button
+          onClick={() => setShowAccessibilityMenu(false)}
+          className={`w-full mt-4 py-4 rounded-lg font-semibold transition-colors ${
+            highContrast
+              ? 'bg-gray-800 text-yellow-400 border-2 border-yellow-400 hover:bg-gray-700'
+              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+          }`}
+          style={{ minHeight: '60px' }}
+        >
+          {getTranslatedText('Close')}
+        </button>
+      </div>
+    </div>
+  );
 
   // --- Render Logic ---
   if (isLoading) {
@@ -817,13 +1051,34 @@ export default function Kiosk({ role = 'customer' }) {
   // Render different views based on currentView state
   if (currentView === 'thankYou') {
     return (
-      <ThankYouScreen
-        orderNumber={lastOrderNumber}
-        customerName={customer?.name}
-        onNewOrder={handleNewOrder}
-        highContrast={highContrast}
-        getTranslatedText={getTranslatedText}
-      />
+      <>
+        <ThankYouScreen
+          orderNumber={lastOrderNumber}
+          customerName={customer?.name}
+          onNewOrder={handleNewOrder}
+          highContrast={highContrast}
+          getTranslatedText={getTranslatedText}
+        />
+        
+        {/* Accessibility Button - Available on all screens */}
+        <button
+          onClick={() => setShowAccessibilityMenu(true)}
+          className={`fixed bottom-8 left-8 p-4 rounded-full shadow-2xl transition-all transform hover:scale-110 ${
+            highContrast
+              ? 'bg-yellow-400 text-black border-4 border-yellow-400'
+              : 'bg-green-600 text-white hover:bg-green-700'
+          }`}
+          style={{ minWidth: '64px', minHeight: '64px', zIndex: 50 }}
+          title="Accessibility Options"
+        >
+          <span className="text-3xl">♿</span>
+        </button>
+
+        {/* Accessibility Menu Modal */}
+        {showAccessibilityMenu && (
+          <AccessibilityMenu />
+        )}
+      </>
     );
   }
 
@@ -837,6 +1092,9 @@ export default function Kiosk({ role = 'customer' }) {
           onBack={handleBackToMenu}
           highContrast={highContrast}
           getTranslatedText={getTranslatedText}
+          customer={customer}
+          selectedRewards={selectedRewards}
+          onRewardToggle={handleRewardToggle}
         />
         
         {/* Drink Customization Modal */}
@@ -875,6 +1133,25 @@ export default function Kiosk({ role = 'customer' }) {
             getTranslatedText={getTranslatedText}
           />
         )}
+        
+        {/* Accessibility Button - Available on all screens */}
+        <button
+          onClick={() => setShowAccessibilityMenu(true)}
+          className={`fixed bottom-8 left-8 p-4 rounded-full shadow-2xl transition-all transform hover:scale-110 ${
+            highContrast
+              ? 'bg-yellow-400 text-black border-4 border-yellow-400'
+              : 'bg-green-600 text-white hover:bg-green-700'
+          }`}
+          style={{ minWidth: '64px', minHeight: '64px', zIndex: 50 }}
+          title="Accessibility Options"
+        >
+          <span className="text-3xl">♿</span>
+        </button>
+
+        {/* Accessibility Menu Modal */}
+        {showAccessibilityMenu && (
+          <AccessibilityMenu />
+        )}
       </>
     );
   }
@@ -886,9 +1163,22 @@ export default function Kiosk({ role = 'customer' }) {
       {/* Top Navigation Tabs */}
       <header className={`shadow-md ${highContrast ? 'bg-gray-900 border-b-4 border-yellow-400' : 'bg-white'}`}>
         <div className="flex items-center justify-between px-8 py-4">
-          {/* Left: Kiosk Title + Role Badge + User Info */}
+          {/* Left: Back Button + Kiosk Title + Role Badge + User Info */}
           <div className="flex items-center gap-8">
-            <h1 className={`text-3xl font-bold ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>{getTranslatedText('Kiosk')}</h1>
+            {/* Back to Role Selection Button */}
+            <button
+              onClick={() => navigate('/')}
+              className={`px-4 py-2 rounded-lg font-semibold transition-colors flex items-center gap-2 ${getButtonSizeClass()} ${
+                highContrast
+                  ? 'bg-gray-800 text-yellow-400 border-2 border-yellow-400 hover:bg-gray-700'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+              title="Back to Role Selection"
+            >
+              ← {getTranslatedText('Back')}
+            </button>
+
+            <h1 className={`text-3xl font-bold ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>{getTranslatedText('ShareTea')}</h1>
             
             {/* Role Badge (for staff) */}
             {role !== 'customer' && (
@@ -917,13 +1207,12 @@ export default function Kiosk({ role = 'customer' }) {
                     </div>
                     <button
                       onClick={() => setShowAuthModal(true)}
-                      className={`text-xs px-3 py-2 rounded ${
+                      className={`text-xs px-3 py-2 rounded ${getButtonSizeClass()} ${
                         highContrast 
                           ? 'bg-gray-800 text-yellow-400 border border-yellow-400 hover:bg-gray-700'
                           : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                       }`}
                       title="Switch Account"
-                      style={{ minHeight: '36px' }}
                     >
                       Switch
                     </button>
@@ -932,12 +1221,11 @@ export default function Kiosk({ role = 'customer' }) {
                   // Show Log In button when in guest mode
                   <button
                     onClick={() => setShowAuthModal(true)}
-                    className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+                    className={`px-4 py-2 rounded-lg font-semibold transition-colors ${getButtonSizeClass()} ${
                       highContrast
                         ? 'bg-yellow-400 text-black border-2 border-yellow-400 hover:bg-yellow-300'
                         : 'bg-green-600 text-white hover:bg-green-700'
                     }`}
-                    style={{ minHeight: '44px' }}
                   >
                     🎁 Log In
                   </button>
@@ -1058,12 +1346,11 @@ export default function Kiosk({ role = 'customer' }) {
               <li key={categoryName} className="mb-3">
                 <button
                   onClick={() => setSelectedCategory(categoryName)}
-                  className={`w-full text-left p-5 rounded-lg font-semibold transition-colors ${
+                  className={`w-full text-left p-5 rounded-lg font-semibold transition-colors ${getButtonSizeClass()} ${
                     selectedCategory === categoryName
                       ? highContrast ? 'bg-yellow-400 text-black border-4 border-yellow-400 shadow-lg' : 'bg-green-600 text-white shadow-md'
                       : highContrast ? 'bg-gray-900 text-yellow-400 border-2 border-yellow-400 hover:bg-gray-800' : 'bg-white text-gray-700 hover:bg-gray-100 border-2 border-gray-200'
                   }`}
-                  style={{ minHeight: '60px' }}
                 >
                   {getTranslatedText(categoryName)}
                 </button>
@@ -1095,7 +1382,14 @@ export default function Kiosk({ role = 'customer' }) {
         </main>
 
         {/* Right-hand Cart Sidebar */}
-        <Cart cartItems={cart} total={cartTotal} highContrast={highContrast} getTranslatedText={getTranslatedText} onPay={handlePayClick} />
+        <Cart 
+          cartItems={cart} 
+          total={cartTotal} 
+          highContrast={highContrast} 
+          getTranslatedText={getTranslatedText} 
+          onPay={handlePayClick} 
+          largeClickTargets={largeClickTargets}
+        />
       </div>
 
       {/* Customization Modal */}
@@ -1122,7 +1416,7 @@ export default function Kiosk({ role = 'customer' }) {
         />
       )}
 
-      {/* Accessibility Button - Bottom Left */}
+      {/* Accessibility Button - Available on all screens */}
       <button
         onClick={() => setShowAccessibilityMenu(true)}
         className={`fixed bottom-8 left-8 p-4 rounded-full shadow-2xl transition-all transform hover:scale-110 ${
@@ -1130,7 +1424,7 @@ export default function Kiosk({ role = 'customer' }) {
             ? 'bg-yellow-400 text-black border-4 border-yellow-400'
             : 'bg-green-600 text-white hover:bg-green-700'
         }`}
-        style={{ minWidth: '64px', minHeight: '64px', zIndex: 40 }}
+        style={{ minWidth: '64px', minHeight: '64px', zIndex: 50 }}
         title="Accessibility Options"
       >
         <span className="text-3xl">♿</span>
@@ -1138,114 +1432,19 @@ export default function Kiosk({ role = 'customer' }) {
 
       {/* Accessibility Menu Modal */}
       {showAccessibilityMenu && (
-        <div 
-          className="fixed inset-0 flex items-center justify-center z-50 p-4"
-          style={{ backgroundColor: 'rgba(0, 0, 0, 0.4)' }}
-          onClick={() => setShowAccessibilityMenu(false)}
-        >
-          <div 
-            className={`rounded-xl shadow-2xl max-w-lg w-full p-8 ${
-              highContrast ? 'bg-gray-900 border-4 border-yellow-400' : 'bg-white'
-            }`}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex justify-between items-center mb-6">
-              <h2 className={`text-3xl font-bold ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
-                ♿ {getTranslatedText('Accessibility')}
-              </h2>
-              <button
-                onClick={() => setShowAccessibilityMenu(false)}
-                className={`text-2xl ${highContrast ? 'text-yellow-400 hover:text-yellow-300' : 'text-gray-500 hover:text-gray-700'}`}
-                style={{ minWidth: '44px', minHeight: '44px' }}
-              >
-                ✕
-              </button>
-            </div>
+        <AccessibilityMenu />
+      )}
 
-            {/* Font Size Controls */}
-            <div className="mb-6">
-              <h3 className={`text-xl font-semibold mb-3 ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
-                {getTranslatedText('Text Size')}
-              </h3>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setFontSize('normal')}
-                  className={`flex-1 px-4 py-4 rounded-lg font-bold transition-colors ${
-                    fontSize === 'normal'
-                      ? highContrast ? 'bg-yellow-400 text-black border-2 border-yellow-400' : 'bg-green-600 text-white'
-                      : highContrast ? 'bg-gray-800 text-yellow-400 border-2 border-yellow-400' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
-                  style={{ minHeight: '60px' }}
-                >
-                  <div className="text-sm">A</div>
-                  <div className="text-xs mt-1">{getTranslatedText('Normal')}</div>
-                </button>
-                <button
-                  onClick={() => setFontSize('large')}
-                  className={`flex-1 px-4 py-4 rounded-lg font-bold transition-colors ${
-                    fontSize === 'large'
-                      ? highContrast ? 'bg-yellow-400 text-black border-2 border-yellow-400' : 'bg-green-600 text-white'
-                      : highContrast ? 'bg-gray-800 text-yellow-400 border-2 border-yellow-400' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
-                  style={{ minHeight: '60px' }}
-                >
-                  <div className="text-lg">A</div>
-                  <div className="text-xs mt-1">{getTranslatedText('Large')}</div>
-                </button>
-                <button
-                  onClick={() => setFontSize('extra-large')}
-                  className={`flex-1 px-4 py-4 rounded-lg font-bold transition-colors ${
-                    fontSize === 'extra-large'
-                      ? highContrast ? 'bg-yellow-400 text-black border-2 border-yellow-400' : 'bg-green-600 text-white'
-                      : highContrast ? 'bg-gray-800 text-yellow-400 border-2 border-yellow-400' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
-                  style={{ minHeight: '60px' }}
-                >
-                  <div className="text-xl">A</div>
-                  <div className="text-xs mt-1">{getTranslatedText('Extra Large')}</div>
-                </button>
-              </div>
-            </div>
-
-            {/* High Contrast Toggle */}
-            <div className="mb-6">
-              <h3 className={`text-xl font-semibold mb-3 ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
-                {getTranslatedText('Display Mode')}
-              </h3>
-              <button
-                onClick={() => setHighContrast(!highContrast)}
-                className={`w-full py-5 rounded-lg font-bold transition-colors text-lg ${
-                  highContrast
-                    ? 'bg-yellow-400 text-black border-4 border-yellow-400'
-                    : 'bg-gray-800 text-white hover:bg-gray-700'
-                }`}
-                style={{ minHeight: '70px' }}
-              >
-                {highContrast 
-                  ? `🌞 ${getTranslatedText('Switch to Normal Mode')}` 
-                  : `🌓 ${getTranslatedText('Enable High Contrast Mode')}`}
-              </button>
-              <p className={`text-sm mt-2 ${highContrast ? 'text-white' : 'text-gray-600'}`}>
-                {highContrast 
-                  ? getTranslatedText('High contrast mode is currently enabled for better visibility')
-                  : getTranslatedText('Enable high contrast mode for improved readability')}
-              </p>
-            </div>
-
-            {/* Close Button */}
-            <button
-              onClick={() => setShowAccessibilityMenu(false)}
-              className={`w-full py-4 rounded-lg font-semibold transition-colors ${
-                highContrast
-                  ? 'bg-gray-800 text-yellow-400 border-2 border-yellow-400 hover:bg-gray-700'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
-              style={{ minHeight: '60px' }}
-            >
-              {getTranslatedText('Close')}
-            </button>
-          </div>
-        </div>
+      {/* Customer Authentication Modal */}
+      {showAuthModal && (
+        <CustomerAuthModal
+          onClose={() => setShowAuthModal(false)}
+          onAuthenticated={handleAuthenticated}
+          onGuest={handleGuest}
+          currentCustomer={customer}
+          highContrast={highContrast}
+          getTranslatedText={getTranslatedText}
+        />
       )}
     </div>
   );

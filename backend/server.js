@@ -413,7 +413,10 @@ app.post('/api/orders', async (req, res) => {
       totalCost, 
       customerId, 
       employeeId, 
-      paymentType 
+      paymentType,
+      rewardsUsed = [],
+      rewardDiscount = 0,
+      pointsRedeemed = 0
     } = req.body;
 
     // Validation
@@ -421,12 +424,28 @@ app.post('/api/orders', async (req, res) => {
       return res.status(400).json({ error: 'Cart is empty' });
     }
 
-    if (!totalCost || totalCost <= 0) {
+    if (!totalCost || totalCost < 0) {
       return res.status(400).json({ error: 'Invalid total cost' });
     }
 
     if (!paymentType) {
       return res.status(400).json({ error: 'Payment type is required' });
+    }
+
+    // If rewards are used, verify customer has enough points
+    if (pointsRedeemed > 0 && customerId) {
+      const customerCheck = await client.query(
+        'SELECT loyaltypoints FROM customers WHERE customerid = $1',
+        [customerId]
+      );
+      
+      if (customerCheck.rows.length === 0) {
+        return res.status(400).json({ error: 'Customer not found' });
+      }
+      
+      if (customerCheck.rows[0].loyaltypoints < pointsRedeemed) {
+        return res.status(400).json({ error: 'Insufficient loyalty points' });
+      }
     }
 
     // Start transaction
@@ -538,14 +557,18 @@ app.post('/api/orders', async (req, res) => {
 
     // Update customer loyalty points if customer is logged in
     if (customerId) {
-      // Add 1 point per dollar spent (rounded down)
+      // Add 1 point per dollar spent (rounded down) on FINAL total (after discounts)
       const pointsToAdd = Math.floor(totalCost);
+      
+      // Deduct redeemed points and add earned points in one query
       await client.query(
         `UPDATE customers 
-         SET loyaltypoints = loyaltypoints + $1 
-         WHERE customerid = $2`,
-        [pointsToAdd, customerId]
+         SET loyaltypoints = loyaltypoints + $1 - $2 
+         WHERE customerid = $3`,
+        [pointsToAdd, pointsRedeemed, customerId]
       );
+      
+      console.log(`Customer ${customerId}: Earned ${pointsToAdd} points, Spent ${pointsRedeemed} points`);
     }
 
     // Commit transaction

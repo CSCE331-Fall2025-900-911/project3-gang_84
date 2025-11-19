@@ -10,8 +10,78 @@ export default function CartView({
   onCheckout, 
   onBack, 
   highContrast, 
-  getTranslatedText 
+  getTranslatedText,
+  customer,
+  selectedRewards,
+  onRewardToggle
 }) {
+  // Define available rewards
+  const rewards = [
+    {
+      id: 'free_drink',
+      name: 'Free Drink',
+      description: 'Get any drink for free',
+      pointsCost: 100,
+      icon: '🥤',
+      discount: (items) => {
+        // Find most expensive drink
+        const mostExpensive = items.reduce((max, item) => 
+          parseFloat(item.price) > parseFloat(max.price) ? item : max
+        , items[0]);
+        return mostExpensive ? parseFloat(mostExpensive.price) : 0;
+      }
+    },
+    {
+      id: 'free_topping',
+      name: 'Free Topping',
+      description: 'Add a free topping to any drink',
+      pointsCost: 50,
+      icon: '🧋',
+      discount: 0.75 // Fixed discount for topping value
+    },
+    {
+      id: 'discount_20',
+      name: '20% Off',
+      description: '20% off your entire order',
+      pointsCost: 150,
+      icon: '💰',
+      discount: (items, currentTotal) => currentTotal * 0.20
+    },
+    {
+      id: 'bogo',
+      name: 'Buy One Get One',
+      description: 'Get the cheapest drink free',
+      pointsCost: 75,
+      icon: '🎁',
+      discount: (items) => {
+        // Find cheapest drink
+        const cheapest = items.reduce((min, item) => 
+          parseFloat(item.price) < parseFloat(min.price) ? item : min
+        , items[0]);
+        return cheapest ? parseFloat(cheapest.price) : 0;
+      }
+    }
+  ];
+
+  // Calculate total discount from selected rewards
+  const calculateRewardDiscount = () => {
+    let totalDiscount = 0;
+    selectedRewards.forEach(rewardId => {
+      const reward = rewards.find(r => r.id === rewardId);
+      if (reward) {
+        if (typeof reward.discount === 'function') {
+          totalDiscount += reward.discount(cartItems, total);
+        } else {
+          totalDiscount += reward.discount;
+        }
+      }
+    });
+    return totalDiscount;
+  };
+
+  const rewardDiscount = calculateRewardDiscount();
+  const finalTotal = Math.max(0, total - rewardDiscount);
+
   return (
     <div className={`min-h-screen ${highContrast ? 'bg-black' : 'bg-lime-50'}`}>
       {/* Header */}
@@ -124,12 +194,146 @@ export default function CartView({
               ))}
             </div>
 
+            {/* Rewards Section - Only show if customer is logged in */}
+            {customer && customer.loyaltyPoints > 0 && (
+              <div className={`p-8 rounded-xl shadow-lg mb-8 ${
+                highContrast 
+                  ? 'bg-gray-900 border-4 border-yellow-400' 
+                  : 'bg-gradient-to-br from-purple-50 to-pink-50'
+              }`}>
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className={`text-3xl font-bold ${
+                    highContrast ? 'text-yellow-400' : 'text-purple-800'
+                  }`}>
+                    🎁 {getTranslatedText('Rewards')}
+                  </h2>
+                  <div className={`px-6 py-3 rounded-full ${
+                    highContrast 
+                      ? 'bg-yellow-400 text-black border-2 border-yellow-400' 
+                      : 'bg-purple-600 text-white'
+                  }`}>
+                    <span className="font-bold text-xl">{customer.loyaltyPoints} {getTranslatedText('points')}</span>
+                  </div>
+                </div>
+                
+                <p className={`text-lg mb-6 ${
+                  highContrast ? 'text-white' : 'text-gray-700'
+                }`}>
+                  {getTranslatedText('Redeem your points for rewards!')}
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {rewards.map(reward => {
+                    const canAfford = customer.loyaltyPoints >= reward.pointsCost;
+                    const isSelected = selectedRewards.includes(reward.id);
+                    const pointsAfterRedemption = customer.loyaltyPoints - 
+                      selectedRewards.reduce((sum, id) => {
+                        const r = rewards.find(rw => rw.id === id);
+                        return sum + (r ? r.pointsCost : 0);
+                      }, 0);
+                    const canSelect = canAfford && (isSelected || pointsAfterRedemption >= reward.pointsCost);
+
+                    return (
+                      <button
+                        key={reward.id}
+                        onClick={() => canSelect && onRewardToggle(reward.id)}
+                        disabled={!canSelect}
+                        className={`p-6 rounded-lg text-left transition-all ${
+                          isSelected
+                            ? highContrast
+                              ? 'bg-yellow-400 text-black border-4 border-yellow-500 shadow-xl'
+                              : 'bg-green-600 text-white border-4 border-green-700 shadow-xl'
+                            : canSelect
+                              ? highContrast
+                                ? 'bg-gray-800 text-yellow-400 border-2 border-yellow-400 hover:bg-gray-700'
+                                : 'bg-white text-gray-800 border-2 border-purple-300 hover:border-purple-500 hover:shadow-lg'
+                              : highContrast
+                                ? 'bg-gray-950 text-gray-600 border-2 border-gray-700 opacity-50 cursor-not-allowed'
+                                : 'bg-gray-100 text-gray-400 border-2 border-gray-200 opacity-50 cursor-not-allowed'
+                        }`}
+                        style={{ minHeight: '140px' }}
+                      >
+                        <div className="flex items-start justify-between mb-3">
+                          <span className="text-5xl">{reward.icon}</span>
+                          <div className={`px-3 py-1 rounded-full text-sm font-bold ${
+                            isSelected
+                              ? highContrast ? 'bg-black text-yellow-400' : 'bg-green-800 text-white'
+                              : canSelect
+                                ? highContrast ? 'bg-yellow-400 text-black' : 'bg-purple-600 text-white'
+                                : 'bg-gray-300 text-gray-600'
+                          }`}>
+                            {reward.pointsCost} pts
+                          </div>
+                        </div>
+                        <h3 className="text-xl font-bold mb-2">
+                          {isSelected && '✓ '}{getTranslatedText(reward.name)}
+                        </h3>
+                        <p className={`text-sm ${
+                          isSelected
+                            ? highContrast ? 'text-black' : 'text-white'
+                            : canSelect
+                              ? highContrast ? 'text-gray-300' : 'text-gray-600'
+                              : 'text-gray-400'
+                        }`}>
+                          {getTranslatedText(reward.description)}
+                        </p>
+                        {!canSelect && !isSelected && (
+                          <p className={`text-xs mt-2 font-semibold ${
+                            highContrast ? 'text-gray-500' : 'text-gray-500'
+                          }`}>
+                            {getTranslatedText('Not enough points')}
+                          </p>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Total and Checkout */}
             <div className={`p-8 rounded-xl shadow-lg ${
               highContrast 
                 ? 'bg-gray-900 border-4 border-yellow-400' 
                 : 'bg-white'
             }`}>
+              {/* Subtotal */}
+              {rewardDiscount > 0 && (
+                <>
+                  <div className="flex justify-between items-center mb-3">
+                    <span className={`text-2xl font-semibold ${
+                      highContrast ? 'text-white' : 'text-gray-600'
+                    }`}>
+                      {getTranslatedText('Subtotal')}:
+                    </span>
+                    <span className={`text-3xl font-bold ${
+                      highContrast ? 'text-white' : 'text-gray-800'
+                    }`}>
+                      ${total.toFixed(2)}
+                    </span>
+                  </div>
+                  
+                  {/* Reward Discount */}
+                  <div className="flex justify-between items-center mb-3">
+                    <span className={`text-2xl font-semibold ${
+                      highContrast ? 'text-yellow-400' : 'text-green-600'
+                    }`}>
+                      🎁 {getTranslatedText('Rewards Savings')}:
+                    </span>
+                    <span className={`text-3xl font-bold ${
+                      highContrast ? 'text-yellow-400' : 'text-green-600'
+                    }`}>
+                      -${rewardDiscount.toFixed(2)}
+                    </span>
+                  </div>
+                  
+                  <div className={`border-t-2 pt-4 mt-4 ${
+                    highContrast ? 'border-yellow-400' : 'border-gray-300'
+                  }`}></div>
+                </>
+              )}
+              
+              {/* Final Total */}
               <div className="flex justify-between items-center mb-6">
                 <span className={`text-3xl font-bold ${
                   highContrast ? 'text-yellow-400' : 'text-gray-800'
@@ -139,7 +343,7 @@ export default function CartView({
                 <span className={`text-5xl font-bold ${
                   highContrast ? 'text-yellow-400' : 'text-green-600'
                 }`}>
-                  ${total.toFixed(2)}
+                  ${finalTotal.toFixed(2)}
                 </span>
               </div>
               
