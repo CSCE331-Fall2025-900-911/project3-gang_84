@@ -342,22 +342,42 @@ export default function Kiosk({ role = 'customer' }) {
 
   // Get weather-based drink recommendation
   const getWeatherRecommendation = () => {
-    if (!currentWeather) return null;
+    if (!currentWeather || !drinks || drinks.length === 0) return null;
 
     const temp = currentWeather.temp_f;
     const condition = currentWeather.condition.text.toLowerCase();
 
-    // Cold weather (below 60°F) - recommend hot drinks
-    if (temp < 60) {
+    // Very cold weather (below 50°F) - recommend hot drinks
+    if (temp < 50) {
       const hotDrinks = drinks.filter(d => 
         d.name.toLowerCase().includes('hot') || 
-        d.name.toLowerCase().includes('milk tea')
+        d.name.toLowerCase().includes('milk tea') ||
+        d.name.toLowerCase().includes('coffee') ||
+        d.name.toLowerCase().includes('matcha')
       );
       if (hotDrinks.length > 0) {
         const randomDrink = hotDrinks[Math.floor(Math.random() * hotDrinks.length)];
         return {
           icon: '🔥',
-          message: `It's ${Math.round(temp)}°F outside - warm up with a`,
+          message: `It's chilly at ${Math.round(temp)}°F - warm up with a`,
+          drink: randomDrink
+        };
+      }
+    }
+    
+    // Cold weather (50-65°F) - recommend warm or mild drinks
+    if (temp >= 50 && temp < 65) {
+      const mildDrinks = drinks.filter(d => 
+        d.name.toLowerCase().includes('milk tea') ||
+        d.name.toLowerCase().includes('taro') ||
+        d.name.toLowerCase().includes('matcha') ||
+        d.name.toLowerCase().includes('classic')
+      );
+      if (mildDrinks.length > 0) {
+        const randomDrink = mildDrinks[Math.floor(Math.random() * mildDrinks.length)];
+        return {
+          icon: '☕',
+          message: `Perfect weather at ${Math.round(temp)}°F for a`,
           drink: randomDrink
         };
       }
@@ -368,41 +388,79 @@ export default function Kiosk({ role = 'customer' }) {
       const coldDrinks = drinks.filter(d => 
         d.name.toLowerCase().includes('ice') || 
         d.name.toLowerCase().includes('smoothie') ||
-        d.name.toLowerCase().includes('slush')
+        d.name.toLowerCase().includes('slush') ||
+        d.name.toLowerCase().includes('fruit')
       );
       if (coldDrinks.length > 0) {
         const randomDrink = coldDrinks[Math.floor(Math.random() * coldDrinks.length)];
         return {
           icon: '🧊',
-          message: `Beat the heat at ${Math.round(temp)}°F with a`,
+          message: `Beat the heat at ${Math.round(temp)}°F with a refreshing`,
           drink: randomDrink
         };
       }
     }
 
     // Rainy/stormy weather - recommend comfort drinks
-    if (condition.includes('rain') || condition.includes('storm') || condition.includes('drizzle')) {
+    if (condition.includes('rain') || condition.includes('storm') || condition.includes('drizzle') || condition.includes('shower')) {
       const comfortDrinks = drinks.filter(d => 
         d.name.toLowerCase().includes('milk tea') ||
         d.name.toLowerCase().includes('matcha') ||
-        d.name.toLowerCase().includes('taro')
+        d.name.toLowerCase().includes('taro') ||
+        d.name.toLowerCase().includes('coffee')
       );
       if (comfortDrinks.length > 0) {
         const randomDrink = comfortDrinks[Math.floor(Math.random() * comfortDrinks.length)];
         return {
           icon: '☔',
-          message: `Perfect rainy day for a`,
+          message: `Perfect rainy day for a cozy`,
           drink: randomDrink
         };
       }
     }
 
-    // Sunny weather - recommend refreshing drinks
+    // Foggy/misty/cloudy weather - recommend comforting drinks
+    if (condition.includes('fog') || condition.includes('mist') || condition.includes('overcast') || condition.includes('cloudy')) {
+      const comfortDrinks = drinks.filter(d => 
+        d.name.toLowerCase().includes('milk tea') ||
+        d.name.toLowerCase().includes('taro') ||
+        d.name.toLowerCase().includes('classic') ||
+        d.name.toLowerCase().includes('brown sugar')
+      );
+      if (comfortDrinks.length > 0) {
+        const randomDrink = comfortDrinks[Math.floor(Math.random() * comfortDrinks.length)];
+        return {
+          icon: '🌫️',
+          message: `Cozy up on this ${condition} day with a`,
+          drink: randomDrink
+        };
+      }
+    }
+
+    // Snowy/icy weather - recommend hot drinks
+    if (condition.includes('snow') || condition.includes('ice') || condition.includes('sleet') || condition.includes('blizzard')) {
+      const hotDrinks = drinks.filter(d => 
+        d.name.toLowerCase().includes('hot') ||
+        d.name.toLowerCase().includes('milk tea') ||
+        d.name.toLowerCase().includes('coffee')
+      );
+      if (hotDrinks.length > 0) {
+        const randomDrink = hotDrinks[Math.floor(Math.random() * hotDrinks.length)];
+        return {
+          icon: '❄️',
+          message: `Stay warm in this ${condition} with a hot`,
+          drink: randomDrink
+        };
+      }
+    }
+
+    // Sunny/clear weather - recommend refreshing drinks
     if (condition.includes('sunny') || condition.includes('clear')) {
       const refreshingDrinks = drinks.filter(d => 
         d.name.toLowerCase().includes('fruit') ||
         d.name.toLowerCase().includes('lemon') ||
-        d.name.toLowerCase().includes('green tea')
+        d.name.toLowerCase().includes('green tea') ||
+        d.name.toLowerCase().includes('peach')
       );
       if (refreshingDrinks.length > 0) {
         const randomDrink = refreshingDrinks[Math.floor(Math.random() * refreshingDrinks.length)];
@@ -412,6 +470,66 @@ export default function Kiosk({ role = 'customer' }) {
           drink: randomDrink
         };
       }
+    }
+
+    // Partly cloudy - recommend popular drinks
+    if (condition.includes('partly') || condition.includes('scattered')) {
+      const popularDrinks = drinks.filter(d => 
+        d.name.toLowerCase().includes('milk tea') ||
+        d.name.toLowerCase().includes('fruit tea') ||
+        d.name.toLowerCase().includes('classic')
+      );
+      if (popularDrinks.length > 0) {
+        const randomDrink = popularDrinks[Math.floor(Math.random() * popularDrinks.length)];
+        return {
+          icon: '⛅',
+          message: `Perfect day for our popular`,
+          drink: randomDrink
+        };
+      }
+    }
+
+    // Default fallback - recommend based on temperature if no specific condition matched
+    if (temp > 75) {
+      // Warm/hot - recommend cold drinks
+      const coldDrinks = drinks.filter(d => 
+        d.name.toLowerCase().includes('fruit') ||
+        d.name.toLowerCase().includes('tea') ||
+        d.name.toLowerCase().includes('smoothie')
+      );
+      if (coldDrinks.length > 0) {
+        const randomDrink = coldDrinks[Math.floor(Math.random() * coldDrinks.length)];
+        return {
+          icon: '🍹',
+          message: `At ${Math.round(temp)}°F, try a cool`,
+          drink: randomDrink
+        };
+      }
+    } else {
+      // Cool/moderate - recommend any popular drink
+      const popularDrinks = drinks.filter(d => 
+        d.name.toLowerCase().includes('milk tea') ||
+        d.name.toLowerCase().includes('classic') ||
+        d.name.toLowerCase().includes('taro')
+      );
+      if (popularDrinks.length > 0) {
+        const randomDrink = popularDrinks[Math.floor(Math.random() * popularDrinks.length)];
+        return {
+          icon: '🥤',
+          message: `Enjoy our signature`,
+          drink: randomDrink
+        };
+      }
+    }
+
+    // Ultimate fallback - just pick any random drink
+    if (drinks.length > 0) {
+      const randomDrink = drinks[Math.floor(Math.random() * drinks.length)];
+      return {
+        icon: '✨',
+        message: `Try our delicious`,
+        drink: randomDrink
+      };
     }
 
     return null;
@@ -759,6 +877,61 @@ export default function Kiosk({ role = 'customer' }) {
   // State for recommended drinks
   const [recommendedDrinks, setRecommendedDrinks] = useState([]);
 
+  // Calculate reward discount and final total
+  const calculateFinalTotal = () => {
+    const rewards = [
+      {
+        id: 'free_drink',
+        pointsCost: 100,
+        discount: (items) => {
+          const mostExpensive = items.reduce((max, item) => 
+            parseFloat(item.price) > parseFloat(max.price) ? item : max
+          , items[0]);
+          return mostExpensive ? parseFloat(mostExpensive.price) : 0;
+        }
+      },
+      {
+        id: 'free_topping',
+        pointsCost: 50,
+        discount: 0.75
+      },
+      {
+        id: 'discount_20',
+        pointsCost: 150,
+        discount: (items, total) => total * 0.20
+      },
+      {
+        id: 'bogo',
+        pointsCost: 75,
+        discount: (items) => {
+          const cheapest = items.reduce((min, item) => 
+            parseFloat(item.price) < parseFloat(min.price) ? item : min
+          , items[0]);
+          return cheapest ? parseFloat(cheapest.price) : 0;
+        }
+      }
+    ];
+
+    let totalDiscount = 0;
+    let totalPointsCost = 0;
+    
+    selectedRewards.forEach(rewardId => {
+      const reward = rewards.find(r => r.id === rewardId);
+      if (reward) {
+        totalPointsCost += reward.pointsCost;
+        if (typeof reward.discount === 'function') {
+          totalDiscount += reward.discount(cart, cartTotal);
+        } else {
+          totalDiscount += reward.discount;
+        }
+      }
+    });
+
+    const finalTotal = Math.max(0, cartTotal - totalDiscount);
+    
+    return { finalTotal, totalDiscount, totalPointsCost };
+  };
+
   // Handle adding drink from upsell modal
   const handleAddFromUpsell = (drink) => {
     setShowAddMoreModal(false);
@@ -776,56 +949,8 @@ export default function Kiosk({ role = 'customer' }) {
     setShowPaymentModal(false);
     
     try {
-      // Calculate reward discount
-      const rewards = [
-        {
-          id: 'free_drink',
-          pointsCost: 100,
-          discount: (items) => {
-            const mostExpensive = items.reduce((max, item) => 
-              parseFloat(item.price) > parseFloat(max.price) ? item : max
-            , items[0]);
-            return mostExpensive ? parseFloat(mostExpensive.price) : 0;
-          }
-        },
-        {
-          id: 'free_topping',
-          pointsCost: 50,
-          discount: 0.75
-        },
-        {
-          id: 'discount_20',
-          pointsCost: 150,
-          discount: (items, total) => total * 0.20
-        },
-        {
-          id: 'bogo',
-          pointsCost: 75,
-          discount: (items) => {
-            const cheapest = items.reduce((min, item) => 
-              parseFloat(item.price) < parseFloat(min.price) ? item : min
-            , items[0]);
-            return cheapest ? parseFloat(cheapest.price) : 0;
-          }
-        }
-      ];
-
-      let totalDiscount = 0;
-      let totalPointsCost = 0;
-      
-      selectedRewards.forEach(rewardId => {
-        const reward = rewards.find(r => r.id === rewardId);
-        if (reward) {
-          totalPointsCost += reward.pointsCost;
-          if (typeof reward.discount === 'function') {
-            totalDiscount += reward.discount(cart, cartTotal);
-          } else {
-            totalDiscount += reward.discount;
-          }
-        }
-      });
-
-      const finalTotal = Math.max(0, cartTotal - totalDiscount);
+      // Calculate final total with discounts
+      const { finalTotal, totalDiscount, totalPointsCost } = calculateFinalTotal();
       
       // Submit order to backend
       const response = await fetch(API_ENDPOINTS.orders, {
@@ -1126,7 +1251,7 @@ export default function Kiosk({ role = 'customer' }) {
         {/* Payment Modal */}
         {showPaymentModal && (
           <PaymentModal
-            total={cartTotal}
+            total={calculateFinalTotal().finalTotal}
             onPaymentSelect={handlePaymentSelect}
             onCancel={() => setShowPaymentModal(false)}
             highContrast={highContrast}
@@ -1293,10 +1418,10 @@ export default function Kiosk({ role = 'customer' }) {
       </header>
 
       {/* Main Content Area */}
-      <div className="flex flex-1 p-8">
+      <div className="flex flex-1 p-8 relative">
         {/* Weather Recommendation Banner */}
         {weatherRecommendation && (
-          <div className={`absolute top-24 left-1/2 transform -translate-x-1/2 z-10 ${
+          <div className={`absolute top-4 left-1/2 transform -translate-x-1/2 z-10 ${
             highContrast 
               ? 'bg-yellow-400 text-black border-4 border-yellow-500' 
               : 'bg-gradient-to-r from-green-400 to-blue-400 text-white'
