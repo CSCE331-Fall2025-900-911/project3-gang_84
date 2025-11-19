@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { ClerkProvider, SignedIn, SignedOut } from '@clerk/clerk-react'
 import Kiosk from './Kiosk.jsx'
+import Cashier from './Cashier.jsx'
 import RoleSelector from './components/auth/RoleSelector.jsx'
 import ManagerLogin from './components/auth/ManagerLogin.jsx'
 import CashierLogin from './components/auth/CashierLogin.jsx'
@@ -35,9 +36,11 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route 
             path="/cashier" 
             element={
-              <ProtectedRoute requiredRole="cashier">
-                <Kiosk role="cashier" />
-              </ProtectedRoute>
+              // <ProtectedRoute requiredRole="cashier">
+              <SignedIn>
+                <Cashier />
+                </SignedIn>
+              // </ProtectedRoute>
             } 
           />
           

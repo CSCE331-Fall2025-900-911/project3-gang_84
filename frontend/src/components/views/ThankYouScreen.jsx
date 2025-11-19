@@ -49,7 +49,7 @@ export default function ThankYouScreen({
           <p className={`text-5xl font-bold ${
             highContrast ? 'text-yellow-400' : 'text-green-600'
           }`}>
-            #{orderNumber}
+            #{orderNumber || 'N/A'}
           </p>
         </div>
 

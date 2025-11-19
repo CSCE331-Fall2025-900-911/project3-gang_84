@@ -30,5 +30,8 @@ export const API_ENDPOINTS = {
   translate: `${API_BASE_URL}/api/translate`,
   customerLogin: `${API_BASE_URL}/api/customer/login`,
   customerSignup: `${API_BASE_URL}/api/customer/signup`,
+  customerSetPin: `${API_BASE_URL}/api/customer/set-pin`,
+  customerCheck: `${API_BASE_URL}/api/customer/check`,
+  customers: `${API_BASE_URL}/api/customers`,
   orders: `${API_BASE_URL}/api/orders`,
 };
