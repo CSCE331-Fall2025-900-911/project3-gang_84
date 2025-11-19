@@ -24,7 +24,7 @@ if (process.env.DATABASE_URL) {
 } else {
   // Fall back to config.js for local development
   try {
-    const { db } = require('./config');
+    const { db } = require('./database/config');
     dbConfig = db;
   } catch (err) {
     console.error('❌ No database configuration found. Set environment variables or create config.js');

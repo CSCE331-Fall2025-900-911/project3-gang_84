@@ -2,11 +2,11 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser, UserButton } from '@clerk/clerk-react';
 import WeatherWidget from './components/WeatherWidget';
-import CustomerAuthModal from './components/CustomerAuthModal';
-import CartView from './components/CartView';
-import AddMoreItemsModal from './components/AddMoreItemsModal';
-import PaymentModal from './components/PaymentModal';
-import ThankYouScreen from './components/ThankYouScreen';
+import CustomerAuthModal from './components/modals/CustomerAuthModal';
+import CartView from './components/views/CartView';
+import AddMoreItemsModal from './components/modals/AddMoreItemsModal';
+import PaymentModal from './components/modals/PaymentModal';
+import ThankYouScreen from './components/views/ThankYouScreen';
 import { API_ENDPOINTS } from './config/api';
 
 // Customization Modal
