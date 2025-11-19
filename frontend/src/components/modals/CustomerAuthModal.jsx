@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { API_ENDPOINTS } from '../../config/api';
 
 /**
  * Customer Authentication Modal
@@ -49,7 +50,7 @@ export default function CustomerAuthModal({ onClose, onAuthenticated, onGuest, c
         return;
       }
 
-      const response = await fetch('http://localhost:3001/api/customer/login', {
+      const response = await fetch(API_ENDPOINTS.customerLogin, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -106,7 +107,7 @@ export default function CustomerAuthModal({ onClose, onAuthenticated, onGuest, c
         return;
       }
 
-      const response = await fetch('http://localhost:3001/api/customer/signup', {
+      const response = await fetch(API_ENDPOINTS.customerSignup, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
