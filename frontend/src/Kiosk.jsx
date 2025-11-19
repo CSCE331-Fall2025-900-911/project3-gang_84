@@ -277,8 +277,8 @@ function Cart({ cartItems, total, highContrast, getTranslatedText }) {
   );
 }
 
-// The main Kiosk App
-export default function App({ role = 'customer' }) {
+// The main Kiosk component
+export default function Kiosk({ role = 'customer' }) {
   const { user } = useUser();
   const [activeTab, setActiveTab] = useState('menu');
   const [categories, setCategories] = useState([]);
