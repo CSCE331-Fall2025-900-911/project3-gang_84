@@ -1,7 +1,11 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useUser, UserButton } from '@clerk/clerk-react';
-import Weather from './components/Weather';
+import WeatherWidget from './components/WeatherWidget';
 import CustomerAuthModal from './components/CustomerAuthModal';
+import CartView from './components/CartView';
+import AddMoreItemsModal from './components/AddMoreItemsModal';
+import PaymentModal from './components/PaymentModal';
+import ThankYouScreen from './components/ThankYouScreen';
 import { API_ENDPOINTS } from './config/api';
 
 // Customization Modal
@@ -209,7 +213,7 @@ function DrinkCard({ drink, onDrinkClick, getTranslatedText, highContrast }) {
 }
 
 // The sidebar showing the cart
-function Cart({ cartItems, total, highContrast, getTranslatedText }) {
+function Cart({ cartItems, total, highContrast, getTranslatedText, onPay }) {
   return (
     <div className={`w-1/4 p-6 shadow-lg rounded-lg ${
       highContrast ? 'bg-gray-900 border-4 border-yellow-400' : 'bg-white'
@@ -268,12 +272,17 @@ function Cart({ cartItems, total, highContrast, getTranslatedText }) {
           <span>{getTranslatedText('Total')}</span>
           <span>${total.toFixed(2)}</span>
         </div>
-        <button className={`w-full py-5 rounded-lg text-xl font-bold shadow-lg transition-colors ${
-          highContrast 
-            ? 'bg-yellow-400 text-black border-4 border-yellow-400 hover:bg-yellow-300' 
-            : 'bg-green-600 text-white hover:bg-green-700'
-        }`}
-        style={{ minHeight: '60px' }}
+        <button 
+          onClick={onPay}
+          disabled={cartItems.length === 0}
+          className={`w-full py-5 rounded-lg text-xl font-bold shadow-lg transition-colors ${
+            cartItems.length === 0
+              ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+              : highContrast 
+                ? 'bg-yellow-400 text-black border-4 border-yellow-400 hover:bg-yellow-300' 
+                : 'bg-green-600 text-white hover:bg-green-700'
+          }`}
+          style={{ minHeight: '60px' }}
         >
           {getTranslatedText('Pay')} ${total.toFixed(2)}
         </button>
@@ -285,7 +294,6 @@ function Cart({ cartItems, total, highContrast, getTranslatedText }) {
 // The main Kiosk component
 export default function Kiosk({ role = 'customer' }) {
   const { user } = useUser();
-  const [activeTab, setActiveTab] = useState('menu');
   const [categories, setCategories] = useState([]);
   const [drinks, setDrinks] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
@@ -303,11 +311,103 @@ export default function Kiosk({ role = 'customer' }) {
   // Accessibility states for Carol
   const [fontSize, setFontSize] = useState('normal');
   const [highContrast, setHighContrast] = useState(false);
+  const [showAccessibilityMenu, setShowAccessibilityMenu] = useState(false);
 
   // Customer authentication states
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [customer, setCustomer] = useState(null);
+
+  // Weather state for recommendations
+  const [currentWeather, setCurrentWeather] = useState(null);
   const [authPromptShown, setAuthPromptShown] = useState(false);
+
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Checkout flow states
+  const [currentView, setCurrentView] = useState('menu'); // 'menu', 'cart', 'thankYou'
+  const [showAddMoreModal, setShowAddMoreModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [lastOrderNumber, setLastOrderNumber] = useState(null);
+
+  // Get weather-based drink recommendation
+  const getWeatherRecommendation = () => {
+    if (!currentWeather) return null;
+
+    const temp = currentWeather.temp_f;
+    const condition = currentWeather.condition.text.toLowerCase();
+
+    // Cold weather (below 60°F) - recommend hot drinks
+    if (temp < 60) {
+      const hotDrinks = drinks.filter(d => 
+        d.name.toLowerCase().includes('hot') || 
+        d.name.toLowerCase().includes('milk tea')
+      );
+      if (hotDrinks.length > 0) {
+        const randomDrink = hotDrinks[Math.floor(Math.random() * hotDrinks.length)];
+        return {
+          icon: '🔥',
+          message: `It's ${Math.round(temp)}°F outside - warm up with a`,
+          drink: randomDrink
+        };
+      }
+    }
+    
+    // Hot weather (above 80°F) - recommend cold/iced drinks
+    if (temp > 80) {
+      const coldDrinks = drinks.filter(d => 
+        d.name.toLowerCase().includes('ice') || 
+        d.name.toLowerCase().includes('smoothie') ||
+        d.name.toLowerCase().includes('slush')
+      );
+      if (coldDrinks.length > 0) {
+        const randomDrink = coldDrinks[Math.floor(Math.random() * coldDrinks.length)];
+        return {
+          icon: '🧊',
+          message: `Beat the heat at ${Math.round(temp)}°F with a`,
+          drink: randomDrink
+        };
+      }
+    }
+
+    // Rainy/stormy weather - recommend comfort drinks
+    if (condition.includes('rain') || condition.includes('storm') || condition.includes('drizzle')) {
+      const comfortDrinks = drinks.filter(d => 
+        d.name.toLowerCase().includes('milk tea') ||
+        d.name.toLowerCase().includes('matcha') ||
+        d.name.toLowerCase().includes('taro')
+      );
+      if (comfortDrinks.length > 0) {
+        const randomDrink = comfortDrinks[Math.floor(Math.random() * comfortDrinks.length)];
+        return {
+          icon: '☔',
+          message: `Perfect rainy day for a`,
+          drink: randomDrink
+        };
+      }
+    }
+
+    // Sunny weather - recommend refreshing drinks
+    if (condition.includes('sunny') || condition.includes('clear')) {
+      const refreshingDrinks = drinks.filter(d => 
+        d.name.toLowerCase().includes('fruit') ||
+        d.name.toLowerCase().includes('lemon') ||
+        d.name.toLowerCase().includes('green tea')
+      );
+      if (refreshingDrinks.length > 0) {
+        const randomDrink = refreshingDrinks[Math.floor(Math.random() * refreshingDrinks.length)];
+        return {
+          icon: '☀️',
+          message: `Sunny and ${Math.round(temp)}°F - try a refreshing`,
+          drink: randomDrink
+        };
+      }
+    }
+
+    return null;
+  };
+
+  const weatherRecommendation = useMemo(() => getWeatherRecommendation(), [currentWeather, drinks]);
 
   // Get font size classes
   const getFontSizeClass = () => {
@@ -339,15 +439,18 @@ export default function Kiosk({ role = 'customer' }) {
         // The categories are objects like { category: 'Milky Series' }
         const categoryNames = data.categories.map(cat => cat.category);
         
-        setCategories(categoryNames);
+        // Add "All Drinks" as the first category
+        const allCategories = ['All Drinks', ...categoryNames];
+        
+        setCategories(allCategories);
         setDrinks(data.menu_items);
         setToppings(data.toppings || []);
         setSweetnessOptions(data.sweetness_options || []);
         setIceOptions(data.ice_options || []);
         
-        // Set the default selected category
-        if (categoryNames.length > 0) {
-          setSelectedCategory(categoryNames[0]);
+        // Set the default selected category to "All Drinks"
+        if (allCategories.length > 0) {
+          setSelectedCategory(allCategories[0]);
         }
       } catch (err) {
         setError(err.message);
@@ -384,17 +487,50 @@ export default function Kiosk({ role = 'customer' }) {
     console.log('Customer authenticated:', customerData);
   };
 
-  // Handle guest continuation
+  // Handle guest continuation or logout
   const handleGuest = () => {
+    if (customer) {
+      // If logged in, log them out
+      setCustomer(null);
+      console.log('Customer logged out');
+    } else {
+      console.log('Continuing as guest');
+    }
     setShowAuthModal(false);
-    console.log('Continuing as guest');
   };
 
-  // Filter drinks based on the selected category
+  // Handle logout from switch button
+  const handleSwitchAccount = () => {
+    setShowAuthModal(true);
+  };
+
+  // Filter drinks based on the selected category and search query
   const visibleDrinks = useMemo(() => {
-    // Filter by lowercase 'category' column from database
-    return drinks.filter((d) => d.category === selectedCategory);
-  }, [selectedCategory, drinks]);
+    let filteredDrinks = drinks;
+
+    // Filter by category
+    if (selectedCategory === 'All Drinks') {
+      // Show all items where type = 'Drink' but exclude Miscellaneous category
+      filteredDrinks = drinks.filter((d) => 
+        d.type === 'Drink' && d.category !== 'Miscellaneous'
+      );
+    } else {
+      // Filter by selected category and ensure it's a Drink type
+      filteredDrinks = drinks.filter((d) => 
+        d.category === selectedCategory && d.type === 'Drink'
+      );
+    }
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filteredDrinks = filteredDrinks.filter((d) => 
+        d.name.toLowerCase().includes(query)
+      );
+    }
+
+    return filteredDrinks;
+  }, [selectedCategory, drinks, searchQuery]);
 
   // Calculate cart total
   const cartTotal = useMemo(() => {
@@ -571,6 +707,104 @@ export default function Kiosk({ role = 'customer' }) {
     });
   };
 
+  // Handle Pay button click - navigate to cart view
+  const handlePayClick = () => {
+    if (cart.length === 0) return;
+    setCurrentView('cart');
+  };
+
+  // Handle back to menu from cart view
+  const handleBackToMenu = () => {
+    setCurrentView('menu');
+  };
+
+  // Handle checkout button from cart view - show upsell modal
+  const handleCheckoutClick = () => {
+    // Get 3 random drinks not in cart
+    const drinksInCart = new Set(cart.map(item => item.menuitemid));
+    const availableDrinks = drinks.filter(d => 
+      d.type === 'Drink' && 
+      !drinksInCart.has(d.menuitemid)
+    );
+    
+    // If all drinks are in cart, just show any 3 drinks
+    const drinksToShow = availableDrinks.length >= 3 
+      ? availableDrinks.slice(0, 3)
+      : drinks.filter(d => d.type === 'Drink').slice(0, 3);
+    
+    // Shuffle and take 3
+    const shuffled = [...drinksToShow].sort(() => 0.5 - Math.random());
+    const recommendedDrinks = shuffled.slice(0, 3);
+    
+    setRecommendedDrinks(recommendedDrinks);
+    setShowAddMoreModal(true);
+  };
+
+  // State for recommended drinks
+  const [recommendedDrinks, setRecommendedDrinks] = useState([]);
+
+  // Handle adding drink from upsell modal
+  const handleAddFromUpsell = (drink) => {
+    setShowAddMoreModal(false);
+    setSelectedDrink(drink);
+  };
+
+  // Handle continue to payment from upsell modal
+  const handleContinueToPayment = () => {
+    setShowAddMoreModal(false);
+    setShowPaymentModal(true);
+  };
+
+  // Handle payment selection
+  const handlePaymentSelect = async (paymentType) => {
+    setShowPaymentModal(false);
+    
+    try {
+      // Submit order to backend
+      const response = await fetch(API_ENDPOINTS.orders, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cartItems: cart,
+          totalCost: cartTotal,
+          customerId: customer?.customerId || null,
+          employeeId: user ? 1 : null, // Use 1 as placeholder for staff, null for customer
+          paymentType: paymentType
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Order successful
+        setLastOrderNumber(data.orderId);
+        setCart([]); // Clear cart
+        setCurrentView('thankYou');
+        
+        // Update customer points if logged in
+        if (customer) {
+          const pointsEarned = Math.floor(cartTotal);
+          setCustomer(prev => ({
+            ...prev,
+            loyaltyPoints: prev.loyaltyPoints + pointsEarned
+          }));
+        }
+      } else {
+        console.error('Order failed:', data.error);
+        alert('Failed to place order. Please try again.');
+      }
+    } catch (err) {
+      console.error('Order submission error:', err);
+      alert('Failed to connect to server. Please try again.');
+    }
+  };
+
+  // Handle new order from thank you screen
+  const handleNewOrder = () => {
+    setCurrentView('menu');
+    setLastOrderNumber(null);
+  };
+
   // --- Render Logic ---
   if (isLoading) {
     return <div className="flex items-center justify-center min-h-screen">Loading menu...</div>;
@@ -580,15 +814,83 @@ export default function Kiosk({ role = 'customer' }) {
     return <div className="flex items-center justify-center min-h-screen text-red-500">Error: {error}</div>;
   }
 
+  // Render different views based on currentView state
+  if (currentView === 'thankYou') {
+    return (
+      <ThankYouScreen
+        orderNumber={lastOrderNumber}
+        customerName={customer?.name}
+        onNewOrder={handleNewOrder}
+        highContrast={highContrast}
+        getTranslatedText={getTranslatedText}
+      />
+    );
+  }
+
+  if (currentView === 'cart') {
+    return (
+      <>
+        <CartView
+          cartItems={cart}
+          total={cartTotal}
+          onCheckout={handleCheckoutClick}
+          onBack={handleBackToMenu}
+          highContrast={highContrast}
+          getTranslatedText={getTranslatedText}
+        />
+        
+        {/* Drink Customization Modal */}
+        {selectedDrink && (
+          <CustomizationModal
+            drink={selectedDrink}
+            onClose={() => setSelectedDrink(null)}
+            onAddToCart={handleAddToCart}
+            sweetnessOptions={sweetnessOptions}
+            iceOptions={iceOptions}
+            toppingOptions={toppings}
+            getTranslatedText={getTranslatedText}
+            highContrast={highContrast}
+          />
+        )}
+        
+        {/* Add More Items Modal */}
+        {showAddMoreModal && (
+          <AddMoreItemsModal
+            recommendedDrinks={recommendedDrinks}
+            onAddDrink={handleAddFromUpsell}
+            onContinue={handleContinueToPayment}
+            onClose={() => setShowAddMoreModal(false)}
+            highContrast={highContrast}
+            getTranslatedText={getTranslatedText}
+          />
+        )}
+
+        {/* Payment Modal */}
+        {showPaymentModal && (
+          <PaymentModal
+            total={cartTotal}
+            onPaymentSelect={handlePaymentSelect}
+            onCancel={() => setShowPaymentModal(false)}
+            highContrast={highContrast}
+            getTranslatedText={getTranslatedText}
+          />
+        )}
+      </>
+    );
+  }
+
+  // Default: Menu View
   return (
     <div className={getContainerClass()}>
       
       {/* Top Navigation Tabs */}
       <header className={`shadow-md ${highContrast ? 'bg-gray-900 border-b-4 border-yellow-400' : 'bg-white'}`}>
         <div className="flex items-center justify-between px-8 py-4">
-          <div className="flex items-center gap-4">
-            <h1 className={`text-3xl font-bold ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>{getTranslatedText('Kiosk System')}</h1>
-            {/* Role Badge */}
+          {/* Left: Kiosk Title + Role Badge + User Info */}
+          <div className="flex items-center gap-8">
+            <h1 className={`text-3xl font-bold ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>{getTranslatedText('Kiosk')}</h1>
+            
+            {/* Role Badge (for staff) */}
             {role !== 'customer' && (
               <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
                 role === 'manager' 
@@ -598,37 +900,54 @@ export default function Kiosk({ role = 'customer' }) {
                 {role.charAt(0).toUpperCase() + role.slice(1)}
               </span>
             )}
-          </div>
-          <div className="flex items-center gap-6">
-            {/* Customer Rewards Info (if logged in as customer) */}
-            {role === 'customer' && customer && (
-              <div className={`flex items-center gap-3 border-r pr-6 ${
-                highContrast ? 'border-yellow-400' : 'border-gray-300'
-              }`}>
-                <div className="text-right">
-                  <div className={`text-sm font-semibold ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
-                    {customer.name}
-                  </div>
-                  <div className={`text-xs ${highContrast ? 'text-white' : 'text-green-600'}`}>
-                    🎁 {customer.loyaltyPoints} points
-                  </div>
-                </div>
-                <button
-                  onClick={() => setShowAuthModal(true)}
-                  className={`text-xs px-2 py-1 rounded ${
-                    highContrast 
-                      ? 'bg-gray-800 text-yellow-400 border border-yellow-400 hover:bg-gray-700'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                  title="Switch Account"
-                >
-                  Switch
-                </button>
+
+            {/* Customer Info or Log In button */}
+            {role === 'customer' && (
+              <div className="flex items-center gap-3">
+                {customer ? (
+                  // Show customer info and switch button when logged in
+                  <>
+                    <div className="text-left">
+                      <div className={`text-sm font-semibold ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
+                        {customer.name}
+                      </div>
+                      <div className={`text-xs ${highContrast ? 'text-white' : 'text-green-600'}`}>
+                        🎁 {customer.loyaltyPoints} points
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setShowAuthModal(true)}
+                      className={`text-xs px-3 py-2 rounded ${
+                        highContrast 
+                          ? 'bg-gray-800 text-yellow-400 border border-yellow-400 hover:bg-gray-700'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                      title="Switch Account"
+                      style={{ minHeight: '36px' }}
+                    >
+                      Switch
+                    </button>
+                  </>
+                ) : (
+                  // Show Log In button when in guest mode
+                  <button
+                    onClick={() => setShowAuthModal(true)}
+                    className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+                      highContrast
+                        ? 'bg-yellow-400 text-black border-2 border-yellow-400 hover:bg-yellow-300'
+                        : 'bg-green-600 text-white hover:bg-green-700'
+                    }`}
+                    style={{ minHeight: '44px' }}
+                  >
+                    🎁 Log In
+                  </button>
+                )}
               </div>
             )}
-            {/* User Profile (if authenticated as staff) */}
+
+            {/* Staff User Profile */}
             {user && (
-              <div className="flex items-center gap-3 border-r pr-6">
+              <div className="flex items-center gap-3">
                 <span className={`text-sm ${highContrast ? 'text-white' : 'text-gray-700'}`}>
                   {user.firstName || user.username}
                 </span>
@@ -642,68 +961,19 @@ export default function Kiosk({ role = 'customer' }) {
                 />
               </div>
             )}
-            {/* Accessibility Controls for Carol */}
-            <div className="flex items-center gap-3 border-r pr-6">
-              <span className={`text-sm font-semibold ${highContrast ? 'text-yellow-400' : 'text-gray-700'}`}>♿ {getTranslatedText('Accessibility:')}</span>
-              
-              {/* Font Size Controls */}
-              <div className="flex items-center gap-2">
-                <span className={`text-xs ${highContrast ? 'text-white' : 'text-gray-600'}`}>{getTranslatedText('Text Size:')}</span>
-                <button
-                  onClick={() => setFontSize('normal')}
-                  className={`px-3 py-2 rounded-lg font-bold transition-colors ${
-                    fontSize === 'normal'
-                      ? highContrast ? 'bg-yellow-400 text-black' : 'bg-green-600 text-white'
-                      : highContrast ? 'bg-gray-700 text-yellow-400 border-2 border-yellow-400' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
-                  style={{ minWidth: '50px', minHeight: '44px' }}
-                  title={getTranslatedText('Normal')}
-                >
-                  A
-                </button>
-                <button
-                  onClick={() => setFontSize('large')}
-                  className={`px-3 py-2 rounded-lg font-bold transition-colors text-lg ${
-                    fontSize === 'large'
-                      ? highContrast ? 'bg-yellow-400 text-black' : 'bg-green-600 text-white'
-                      : highContrast ? 'bg-gray-700 text-yellow-400 border-2 border-yellow-400' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
-                  style={{ minWidth: '50px', minHeight: '44px' }}
-                  title={getTranslatedText('Large')}
-                >
-                  A
-                </button>
-                <button
-                  onClick={() => setFontSize('extra-large')}
-                  className={`px-3 py-2 rounded-lg font-bold transition-colors text-xl ${
-                    fontSize === 'extra-large'
-                      ? highContrast ? 'bg-yellow-400 text-black' : 'bg-green-600 text-white'
-                      : highContrast ? 'bg-gray-700 text-yellow-400 border-2 border-yellow-400' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
-                  style={{ minWidth: '50px', minHeight: '44px' }}
-                  title={getTranslatedText('Extra Large')}
-                >
-                  A
-                </button>
-              </div>
+          </div>
 
-              {/* High Contrast Toggle */}
-              <button
-                onClick={() => setHighContrast(!highContrast)}
-                className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
-                  highContrast
-                    ? 'bg-yellow-400 text-black border-2 border-yellow-400'
-                    : 'bg-gray-800 text-white hover:bg-gray-700'
-                }`}
-                style={{ minHeight: '44px' }}
-              >
-                {highContrast ? `🌞 ${getTranslatedText('Normal')} ${getTranslatedText('High Contrast')}` : `🌓 ${getTranslatedText('High Contrast')}`}
-              </button>
-            </div>
+          {/* Right: Weather Widget and Language Selector */}
+          <div className="flex items-center gap-6">
+            {/* Weather Widget */}
+            <WeatherWidget 
+              highContrast={highContrast}
+              onWeatherUpdate={setCurrentWeather}
+            />
 
             {/* Language Selector */}
             <div className="flex items-center gap-2">
-              <span className={`text-sm ${highContrast ? 'text-yellow-400' : 'text-gray-600'}`}>🌐 {getTranslatedText('Language:')}</span>
+              <span className={`text-sm ${highContrast ? 'text-yellow-400' : 'text-gray-600'}`}>🌐</span>
               <select
                 value={selectedLanguage}
                 onChange={(e) => handleLanguageChange(e.target.value)}
@@ -716,96 +986,116 @@ export default function Kiosk({ role = 'customer' }) {
                 disabled={isTranslating}
               >
                 <option value="en">English</option>
-                <option value="es">Español (Spanish)</option>
-                <option value="fr">Français (French)</option>
-                <option value="de">Deutsch (German)</option>
-                <option value="zh-CN">中文 (Chinese)</option>
-                <option value="ja">日本語 (Japanese)</option>
-                <option value="ko">한국어 (Korean)</option>
-                <option value="vi">Tiếng Việt (Vietnamese)</option>
-                <option value="ar">العربية (Arabic)</option>
-                <option value="hi">हिन्दी (Hindi)</option>
+                <option value="es">Español</option>
+                <option value="fr">Français</option>
+                <option value="de">Deutsch</option>
+                <option value="zh-CN">中文</option>
+                <option value="ja">日本語</option>
+                <option value="ko">한국어</option>
+                <option value="vi">Tiếng Việt</option>
+                <option value="ar">العربية</option>
+                <option value="hi">हिन्दी</option>
               </select>
               {isTranslating && (
-                <span className="text-sm text-gray-500">Translating...</span>
+                <span className={`text-sm ${highContrast ? 'text-yellow-400' : 'text-gray-500'}`}>...</span>
               )}
             </div>
-            <button
-              onClick={() => setActiveTab('menu')}
-              className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
-                activeTab === 'menu'
-                  ? highContrast ? 'bg-yellow-400 text-black border-4 border-yellow-400 shadow-lg' : 'bg-green-600 text-white shadow-md'
-                  : highContrast ? 'bg-gray-800 text-yellow-400 border-2 border-yellow-400' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-              style={{ minHeight: '50px', minWidth: '120px' }}
-            >
-              🥤 {getTranslatedText('Menu')}
-            </button>
-            <button
-              onClick={() => setActiveTab('weather')}
-              className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
-                activeTab === 'weather'
-                  ? highContrast ? 'bg-yellow-400 text-black border-4 border-yellow-400 shadow-lg' : 'bg-blue-600 text-white shadow-md'
-                  : highContrast ? 'bg-gray-800 text-yellow-400 border-2 border-yellow-400' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-              style={{ minHeight: '50px', minWidth: '120px' }}
-            >
-              ☀️ Weather
-            </button>
           </div>
         </div>
       </header>
 
       {/* Main Content Area */}
       <div className="flex flex-1 p-8">
-        {activeTab === 'menu' ? (
-          <>
-            {/* Left-hand Category Navigation */}
-            <nav className="w-1/5 pr-6">
-              <h2 className={`text-2xl font-bold mb-6 ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>Menu</h2>
-              <ul>
-                {categories.map((categoryName) => (
-                  <li key={categoryName} className="mb-3">
-                    <button
-                      onClick={() => setSelectedCategory(categoryName)}
-                      className={`w-full text-left p-5 rounded-lg font-semibold transition-colors ${
-                        selectedCategory === categoryName
-                          ? highContrast ? 'bg-yellow-400 text-black border-4 border-yellow-400 shadow-lg' : 'bg-green-600 text-white shadow-md'
-                          : highContrast ? 'bg-gray-900 text-yellow-400 border-2 border-yellow-400 hover:bg-gray-800' : 'bg-white text-gray-700 hover:bg-gray-100 border-2 border-gray-200'
-                      }`}
-                      style={{ minHeight: '60px' }}
-                    >
-                      {getTranslatedText(categoryName)}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </nav>
-
-            {/* Center Drink Grid */}
-            <main className="w-3/5 px-6">
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-                {visibleDrinks.map((drink) => (
-                  <DrinkCard
-                    key={drink.menuitemid}
-                    drink={drink}
-                    onDrinkClick={handleDrinkClick}
-                    getTranslatedText={getTranslatedText}
-                    highContrast={highContrast}
-                  />
-                ))}
-              </div>
-            </main>
-
-            {/* Right-hand Cart Sidebar */}
-            <Cart cartItems={cart} total={cartTotal} highContrast={highContrast} getTranslatedText={getTranslatedText} />
-          </>
-        ) : (
-          /* Weather Tab */
-          <div className="flex-1">
-            <Weather />
+        {/* Weather Recommendation Banner */}
+        {weatherRecommendation && (
+          <div className={`absolute top-24 left-1/2 transform -translate-x-1/2 z-10 ${
+            highContrast 
+              ? 'bg-yellow-400 text-black border-4 border-yellow-500' 
+              : 'bg-gradient-to-r from-green-400 to-blue-400 text-white'
+          } px-6 py-3 rounded-lg shadow-lg flex items-center gap-3 cursor-pointer hover:scale-105 transition-transform`}
+            onClick={() => handleDrinkClick(weatherRecommendation.drink)}
+          >
+            <span className="text-2xl">{weatherRecommendation.icon}</span>
+            <div>
+              <span className="font-semibold">{weatherRecommendation.message}</span>{' '}
+              <span className="underline font-bold">{weatherRecommendation.drink.name}</span>
+            </div>
           </div>
         )}
+
+        {/* Left-hand Category Navigation */}
+        <nav className="w-1/5 pr-6">
+          <h2 className={`text-2xl font-bold mb-6 ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>Menu</h2>
+          
+          {/* Search Bar */}
+          <div className="mb-6">
+            <input
+              type="text"
+              placeholder="Search drinks..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className={`w-full px-4 py-3 rounded-lg border-2 font-medium focus:outline-none focus:ring-4 ${
+                highContrast
+                  ? 'bg-black text-yellow-400 border-yellow-400 placeholder-yellow-600 focus:ring-yellow-400'
+                  : 'bg-white text-gray-800 border-gray-300 placeholder-gray-400 focus:ring-green-500'
+              }`}
+              style={{ minHeight: '50px' }}
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className={`mt-2 text-sm underline ${
+                  highContrast ? 'text-yellow-400' : 'text-gray-600 hover:text-gray-800'
+                }`}
+              >
+                Clear search
+              </button>
+            )}
+          </div>
+
+          <ul>
+            {categories.map((categoryName) => (
+              <li key={categoryName} className="mb-3">
+                <button
+                  onClick={() => setSelectedCategory(categoryName)}
+                  className={`w-full text-left p-5 rounded-lg font-semibold transition-colors ${
+                    selectedCategory === categoryName
+                      ? highContrast ? 'bg-yellow-400 text-black border-4 border-yellow-400 shadow-lg' : 'bg-green-600 text-white shadow-md'
+                      : highContrast ? 'bg-gray-900 text-yellow-400 border-2 border-yellow-400 hover:bg-gray-800' : 'bg-white text-gray-700 hover:bg-gray-100 border-2 border-gray-200'
+                  }`}
+                  style={{ minHeight: '60px' }}
+                >
+                  {getTranslatedText(categoryName)}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
+        {/* Center Drink Grid */}
+        <main className="w-3/5 px-6">
+          {/* Search Results Info */}
+          {searchQuery && (
+            <div className={`mb-4 text-sm ${highContrast ? 'text-yellow-400' : 'text-gray-600'}`}>
+              Found {visibleDrinks.length} drink{visibleDrinks.length !== 1 ? 's' : ''} matching "{searchQuery}"
+            </div>
+          )}
+          
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+            {visibleDrinks.map((drink) => (
+              <DrinkCard
+                key={drink.menuitemid}
+                drink={drink}
+                onDrinkClick={handleDrinkClick}
+                getTranslatedText={getTranslatedText}
+                highContrast={highContrast}
+              />
+            ))}
+          </div>
+        </main>
+
+        {/* Right-hand Cart Sidebar */}
+        <Cart cartItems={cart} total={cartTotal} highContrast={highContrast} getTranslatedText={getTranslatedText} onPay={handlePayClick} />
       </div>
 
       {/* Customization Modal */}
@@ -828,7 +1118,134 @@ export default function Kiosk({ role = 'customer' }) {
           onClose={() => setShowAuthModal(false)}
           onAuthenticated={handleAuthenticated}
           onGuest={handleGuest}
+          currentCustomer={customer}
         />
+      )}
+
+      {/* Accessibility Button - Bottom Left */}
+      <button
+        onClick={() => setShowAccessibilityMenu(true)}
+        className={`fixed bottom-8 left-8 p-4 rounded-full shadow-2xl transition-all transform hover:scale-110 ${
+          highContrast
+            ? 'bg-yellow-400 text-black border-4 border-yellow-400'
+            : 'bg-green-600 text-white hover:bg-green-700'
+        }`}
+        style={{ minWidth: '64px', minHeight: '64px', zIndex: 40 }}
+        title="Accessibility Options"
+      >
+        <span className="text-3xl">♿</span>
+      </button>
+
+      {/* Accessibility Menu Modal */}
+      {showAccessibilityMenu && (
+        <div 
+          className="fixed inset-0 flex items-center justify-center z-50 p-4"
+          style={{ backgroundColor: 'rgba(0, 0, 0, 0.4)' }}
+          onClick={() => setShowAccessibilityMenu(false)}
+        >
+          <div 
+            className={`rounded-xl shadow-2xl max-w-lg w-full p-8 ${
+              highContrast ? 'bg-gray-900 border-4 border-yellow-400' : 'bg-white'
+            }`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-6">
+              <h2 className={`text-3xl font-bold ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
+                ♿ {getTranslatedText('Accessibility')}
+              </h2>
+              <button
+                onClick={() => setShowAccessibilityMenu(false)}
+                className={`text-2xl ${highContrast ? 'text-yellow-400 hover:text-yellow-300' : 'text-gray-500 hover:text-gray-700'}`}
+                style={{ minWidth: '44px', minHeight: '44px' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Font Size Controls */}
+            <div className="mb-6">
+              <h3 className={`text-xl font-semibold mb-3 ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
+                {getTranslatedText('Text Size')}
+              </h3>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setFontSize('normal')}
+                  className={`flex-1 px-4 py-4 rounded-lg font-bold transition-colors ${
+                    fontSize === 'normal'
+                      ? highContrast ? 'bg-yellow-400 text-black border-2 border-yellow-400' : 'bg-green-600 text-white'
+                      : highContrast ? 'bg-gray-800 text-yellow-400 border-2 border-yellow-400' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                  style={{ minHeight: '60px' }}
+                >
+                  <div className="text-sm">A</div>
+                  <div className="text-xs mt-1">{getTranslatedText('Normal')}</div>
+                </button>
+                <button
+                  onClick={() => setFontSize('large')}
+                  className={`flex-1 px-4 py-4 rounded-lg font-bold transition-colors ${
+                    fontSize === 'large'
+                      ? highContrast ? 'bg-yellow-400 text-black border-2 border-yellow-400' : 'bg-green-600 text-white'
+                      : highContrast ? 'bg-gray-800 text-yellow-400 border-2 border-yellow-400' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                  style={{ minHeight: '60px' }}
+                >
+                  <div className="text-lg">A</div>
+                  <div className="text-xs mt-1">{getTranslatedText('Large')}</div>
+                </button>
+                <button
+                  onClick={() => setFontSize('extra-large')}
+                  className={`flex-1 px-4 py-4 rounded-lg font-bold transition-colors ${
+                    fontSize === 'extra-large'
+                      ? highContrast ? 'bg-yellow-400 text-black border-2 border-yellow-400' : 'bg-green-600 text-white'
+                      : highContrast ? 'bg-gray-800 text-yellow-400 border-2 border-yellow-400' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                  style={{ minHeight: '60px' }}
+                >
+                  <div className="text-xl">A</div>
+                  <div className="text-xs mt-1">{getTranslatedText('Extra Large')}</div>
+                </button>
+              </div>
+            </div>
+
+            {/* High Contrast Toggle */}
+            <div className="mb-6">
+              <h3 className={`text-xl font-semibold mb-3 ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
+                {getTranslatedText('Display Mode')}
+              </h3>
+              <button
+                onClick={() => setHighContrast(!highContrast)}
+                className={`w-full py-5 rounded-lg font-bold transition-colors text-lg ${
+                  highContrast
+                    ? 'bg-yellow-400 text-black border-4 border-yellow-400'
+                    : 'bg-gray-800 text-white hover:bg-gray-700'
+                }`}
+                style={{ minHeight: '70px' }}
+              >
+                {highContrast 
+                  ? `🌞 ${getTranslatedText('Switch to Normal Mode')}` 
+                  : `🌓 ${getTranslatedText('Enable High Contrast Mode')}`}
+              </button>
+              <p className={`text-sm mt-2 ${highContrast ? 'text-white' : 'text-gray-600'}`}>
+                {highContrast 
+                  ? getTranslatedText('High contrast mode is currently enabled for better visibility')
+                  : getTranslatedText('Enable high contrast mode for improved readability')}
+              </p>
+            </div>
+
+            {/* Close Button */}
+            <button
+              onClick={() => setShowAccessibilityMenu(false)}
+              className={`w-full py-4 rounded-lg font-semibold transition-colors ${
+                highContrast
+                  ? 'bg-gray-800 text-yellow-400 border-2 border-yellow-400 hover:bg-gray-700'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+              style={{ minHeight: '60px' }}
+            >
+              {getTranslatedText('Close')}
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -30,4 +30,5 @@ export const API_ENDPOINTS = {
   translate: `${API_BASE_URL}/api/translate`,
   customerLogin: `${API_BASE_URL}/api/customer/login`,
   customerSignup: `${API_BASE_URL}/api/customer/signup`,
+  orders: `${API_BASE_URL}/api/orders`,
 };

@@ -4,7 +4,7 @@ import React, { useState } from 'react';
  * Customer Authentication Modal
  * Handles login, signup, and guest continuation for customer rewards
  */
-export default function CustomerAuthModal({ onClose, onAuthenticated, onGuest }) {
+export default function CustomerAuthModal({ onClose, onAuthenticated, onGuest, currentCustomer }) {
   const [view, setView] = useState('initial'); // 'initial', 'login', 'signup'
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -132,49 +132,105 @@ export default function CustomerAuthModal({ onClose, onAuthenticated, onGuest })
   };
 
   // Initial view - choose action
-  const renderInitialView = () => (
-    <div className="text-center">
-      <div className="mb-6">
-        <div className="w-20 h-20 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-          <span className="text-4xl">🎁</span>
+  const renderInitialView = () => {
+    // If user is already logged in, show different options
+    if (currentCustomer) {
+      return (
+        <div className="text-center">
+          <div className="mb-6">
+            <div className="w-20 h-20 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-4xl">👤</span>
+            </div>
+            <h2 className="text-3xl font-bold text-gray-800 mb-3">Switch Account</h2>
+            <p className="text-gray-600 text-lg mb-2">
+              Currently logged in as:
+            </p>
+            <p className="text-xl font-semibold text-green-600">
+              {currentCustomer.name}
+            </p>
+            <p className="text-sm text-gray-500">
+              🎁 {currentCustomer.loyaltyPoints} points
+            </p>
+          </div>
+
+          <div className="space-y-3 mb-6">
+            <button
+              onClick={() => setView('login')}
+              className="w-full bg-green-600 text-white font-semibold py-4 px-6 rounded-lg hover:bg-green-700 transition-colors shadow-md text-lg"
+              style={{ minHeight: '60px' }}
+            >
+              Log In to Different Account
+            </button>
+            
+            <button
+              onClick={() => setView('signup')}
+              className="w-full bg-white text-green-600 border-2 border-green-600 font-semibold py-4 px-6 rounded-lg hover:bg-green-50 transition-colors shadow-md text-lg"
+              style={{ minHeight: '60px' }}
+            >
+              Create New Account
+            </button>
+            
+            <button
+              onClick={onGuest}
+              className="w-full bg-red-600 text-white font-semibold py-4 px-6 rounded-lg hover:bg-red-700 transition-colors shadow-md text-lg"
+              style={{ minHeight: '60px' }}
+            >
+              Log Out (Continue as Guest)
+            </button>
+          </div>
+
+          <p className="text-sm text-gray-500">
+            Logging out will remove your rewards tracking for this session
+          </p>
         </div>
-        <h2 className="text-3xl font-bold text-gray-800 mb-3">Earn Rewards!</h2>
-        <p className="text-gray-600 text-lg">
-          Sign up or log in to earn points with every purchase
+      );
+    }
+
+    // If not logged in, show normal options
+    return (
+      <div className="text-center">
+        <div className="mb-6">
+          <div className="w-20 h-20 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span className="text-4xl">🎁</span>
+          </div>
+          <h2 className="text-3xl font-bold text-gray-800 mb-3">Earn Rewards!</h2>
+          <p className="text-gray-600 text-lg">
+            Sign up or log in to earn points with every purchase
+          </p>
+        </div>
+
+        <div className="space-y-3 mb-6">
+          <button
+            onClick={() => setView('login')}
+            className="w-full bg-green-600 text-white font-semibold py-4 px-6 rounded-lg hover:bg-green-700 transition-colors shadow-md text-lg"
+            style={{ minHeight: '60px' }}
+          >
+            Log In to Account
+          </button>
+          
+          <button
+            onClick={() => setView('signup')}
+            className="w-full bg-white text-green-600 border-2 border-green-600 font-semibold py-4 px-6 rounded-lg hover:bg-green-50 transition-colors shadow-md text-lg"
+            style={{ minHeight: '60px' }}
+          >
+            Create New Account
+          </button>
+          
+          <button
+            onClick={onGuest}
+            className="w-full bg-gray-200 text-gray-700 font-semibold py-4 px-6 rounded-lg hover:bg-gray-300 transition-colors shadow-md text-lg"
+            style={{ minHeight: '60px' }}
+          >
+            Continue as Guest
+          </button>
+        </div>
+
+        <p className="text-sm text-gray-500">
+          You can always sign up later to start earning rewards!
         </p>
       </div>
-
-      <div className="space-y-3 mb-6">
-        <button
-          onClick={() => setView('login')}
-          className="w-full bg-green-600 text-white font-semibold py-4 px-6 rounded-lg hover:bg-green-700 transition-colors shadow-md text-lg"
-          style={{ minHeight: '60px' }}
-        >
-          Log In to Account
-        </button>
-        
-        <button
-          onClick={() => setView('signup')}
-          className="w-full bg-white text-green-600 border-2 border-green-600 font-semibold py-4 px-6 rounded-lg hover:bg-green-50 transition-colors shadow-md text-lg"
-          style={{ minHeight: '60px' }}
-        >
-          Create New Account
-        </button>
-        
-        <button
-          onClick={onGuest}
-          className="w-full bg-gray-200 text-gray-700 font-semibold py-4 px-6 rounded-lg hover:bg-gray-300 transition-colors shadow-md text-lg"
-          style={{ minHeight: '60px' }}
-        >
-          Continue as Guest
-        </button>
-      </div>
-
-      <p className="text-sm text-gray-500">
-        You can always sign up later to start earning rewards!
-      </p>
-    </div>
-  );
+    );
+  };
 
   // Login view
   const renderLoginView = () => (

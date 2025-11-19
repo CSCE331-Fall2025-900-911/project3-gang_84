@@ -400,6 +400,176 @@ app.post('/api/customer/signup', async (req, res) => {
   }
 });
 
+/**
+ * POST /api/orders
+ * Create a new order with order items and payment
+ */
+app.post('/api/orders', async (req, res) => {
+  const client = await pool.connect();
+  
+  try {
+    const { 
+      cartItems, 
+      totalCost, 
+      customerId, 
+      employeeId, 
+      paymentType 
+    } = req.body;
+
+    // Validation
+    if (!cartItems || cartItems.length === 0) {
+      return res.status(400).json({ error: 'Cart is empty' });
+    }
+
+    if (!totalCost || totalCost <= 0) {
+      return res.status(400).json({ error: 'Invalid total cost' });
+    }
+
+    if (!paymentType) {
+      return res.status(400).json({ error: 'Payment type is required' });
+    }
+
+    // Start transaction
+    await client.query('BEGIN');
+
+    // Get current date and time
+    const currentDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    const currentTime = new Date().toTimeString().split(' ')[0]; // HH:MM:SS
+
+    // Insert into orders table
+    const orderResult = await client.query(
+      `INSERT INTO orders (date, time, totalcost, employeeid, customerid) 
+       VALUES ($1, $2, $3, $4, $5) 
+       RETURNING orderid`,
+      [currentDate, currentTime, totalCost, employeeId || null, customerId || null]
+    );
+
+    const orderId = orderResult.rows[0].orderid;
+
+    // Mapping toppings to ingredients
+    const toppingToIngredient = {
+      'Pearls (tapioca balls)': 'Tapioca pearls (raw)',
+      'Crystal Boba': 'Crystal boba (raw)',
+      'Lychee Jelly': 'Lychee jelly cubes',
+      'Strawberry Popping Boba': 'Strawberry popping boba',
+      'Mango Popping Boba': 'Mango popping boba',
+      'Pudding': 'Pudding mix',
+      'Creama': 'Cream foam powder',
+      'Coconut Jelly': 'Coconut milk',
+      'Banana Milk': 'Banana Milk'
+    };
+
+    // Insert order items and deduct stock
+    for (const item of cartItems) {
+      // Format customizations
+      const modifications = item.customizations 
+        ? `Sweetness: ${item.customizations.sweetness}, Ice: ${item.customizations.ice}`
+        : '';
+      
+      const toppings = item.customizations && item.customizations.toppings.length > 0
+        ? item.customizations.toppings.join(', ')
+        : '';
+
+      // Insert each item (respecting quantity)
+      for (let i = 0; i < item.quantity; i++) {
+        await client.query(
+          `INSERT INTO order_items (orderid, drink, modifications, toppings, price) 
+           VALUES ($1, $2, $3, $4, $5)`,
+          [orderId, item.name, modifications, toppings, item.price]
+        );
+
+        // Deduct ingredients for the drink from recipes table
+        const recipeResult = await client.query(
+          `SELECT ingredientid, quantity FROM recipes WHERE menuitemname = $1`,
+          [item.name]
+        );
+
+        for (const recipe of recipeResult.rows) {
+          await client.query(
+            `UPDATE ingredients 
+             SET stock = stock - $1 
+             WHERE ingredientid = $2`,
+            [recipe.quantity, recipe.ingredientid]
+          );
+        }
+
+        // Deduct ingredients for toppings
+        if (item.customizations && item.customizations.toppings.length > 0) {
+          for (const topping of item.customizations.toppings) {
+            const ingredientName = toppingToIngredient[topping];
+            if (ingredientName) {
+              // Assume 1 unit per topping serving
+              await client.query(
+                `UPDATE ingredients 
+                 SET stock = stock - 1 
+                 WHERE ingredientname = $1`,
+                [ingredientName]
+              );
+            }
+          }
+        }
+
+        // Deduct ice (standard amount per drink)
+        await client.query(
+          `UPDATE ingredients 
+           SET stock = stock - 1 
+           WHERE ingredientname = 'Ice'`
+        );
+
+        // Deduct cups, lids, straws, napkins (1 of each per drink)
+        const supplies = ['Plastic cups (16oz)', 'Cup lids', 'Straws', 'Napkins'];
+        for (const supply of supplies) {
+          await client.query(
+            `UPDATE ingredients 
+             SET stock = stock - 1 
+             WHERE ingredientname = $1`,
+            [supply]
+          );
+        }
+      }
+    }
+
+    // Insert payment record
+    await client.query(
+      `INSERT INTO payments (order_id, payment_type, amount, payment_status) 
+       VALUES ($1, $2, $3, $4)`,
+      [orderId, paymentType, totalCost, 'Completed']
+    );
+
+    // Update customer loyalty points if customer is logged in
+    if (customerId) {
+      // Add 1 point per dollar spent (rounded down)
+      const pointsToAdd = Math.floor(totalCost);
+      await client.query(
+        `UPDATE customers 
+         SET loyaltypoints = loyaltypoints + $1 
+         WHERE customerid = $2`,
+        [pointsToAdd, customerId]
+      );
+    }
+
+    // Commit transaction
+    await client.query('COMMIT');
+
+    res.status(201).json({ 
+      success: true,
+      orderId: orderId,
+      message: 'Order created successfully'
+    });
+
+  } catch (err) {
+    // Rollback on error
+    await client.query('ROLLBACK');
+    console.error('Order creation error:', err);
+    res.status(500).json({ 
+      error: 'An error occurred while creating the order',
+      details: err.message 
+    });
+  } finally {
+    client.release();
+  }
+});
+
 app.listen(port, () => {
   console.log(`Kiosk backend server running on http://localhost:${port}`);
 });
