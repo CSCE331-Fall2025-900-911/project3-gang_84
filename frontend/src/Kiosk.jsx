@@ -342,10 +342,24 @@ export default function Kiosk({ role = 'customer' }) {
 
   // Get weather-based drink recommendation
   const getWeatherRecommendation = () => {
-    if (!currentWeather || !drinks || drinks.length === 0) return null;
+    console.log('🌤️ Getting weather recommendation...', { 
+      hasWeather: !!currentWeather, 
+      hasDrinks: !!drinks, 
+      drinksCount: drinks?.length 
+    });
+    
+    if (!currentWeather || !drinks || drinks.length === 0) {
+      console.log('❌ No weather recommendation: missing data', {
+        currentWeather,
+        drinksLength: drinks?.length
+      });
+      return null;
+    }
 
     const temp = currentWeather.temp_f;
     const condition = currentWeather.condition.text.toLowerCase();
+    
+    console.log('🌡️ Weather data:', { temp, condition });
 
     // Very cold weather (below 50°F) - recommend hot drinks
     if (temp < 50) {
