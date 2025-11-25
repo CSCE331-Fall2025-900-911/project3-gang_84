@@ -1,0 +1,92 @@
+SCRUM Meeting 2 for Project 3
+Prepared by: Namrata Iyer
+Meeting Date: 11/17/25
+Meeting Attendees
+Namrata Iyer
+Nishanth Gandhe
+Pranav Harwadekar
+Vishnu Nayak 
+Meeting Agenda Items
+Discuss manager view implementation
+Plan google auth specifics 
+Status Update Since Last Meeting
+Accomplishments:
+ Finished cashier view
+Fixed weather api
+
+Tasks Completed:
+
+Task
+Assigned to
+Status
+create home screen to select view
+nishanth
+complete
+Implement cashier login screen
+namrata
+complete
+allow cashiers to search drinks
+namrata
+complete
+drink customization options
+vishnu
+complete
+add extra notes section
+vishnu
+complete
+add drink to cart function
+vishnu
+complete
+update cart on side
+namrata
+complete
+Integrate Google Auth for cashier login
+pranav
+complete
+Connect cashier view to database
+pranav
+complete
+Display customization details for each order
+nishanth
+complete
+
+
+Before The Next Meeting
+Plans:
+ Finish google auth
+Finish manager view frontend
+
+Task Assignments:
+
+Task
+Assigned to
+Create manager login screen
+namrata
+Integrate Google Auth for manager login
+pranav
+Create manager dashboard UI
+nishanth
+Display daily/weekly sales summary
+Vishnu
+View inventory levels
+namrata
+Allow manager to update prices
+pranav
+Allow manager to add/remove menu items
+nishanth
+Create view for transaction history
+Vishnu
+Add filter for date/time range in manager view
+Vishnu
+Implement logout for cashier and manager
+pranav
+Set up user roles & permissions
+Vishnu
+
+
+
+Minutes from Previous Meeting
+Accomplished: finished sprint 1 mvp and weather api integration
+Next week goals: finish cashier view and google auth for that side
+Blockers: none
+

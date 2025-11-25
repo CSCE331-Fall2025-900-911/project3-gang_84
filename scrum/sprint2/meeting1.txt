@@ -1,0 +1,62 @@
+SCRUM Meeting 1 for Project 3
+Prepared by: Namrata Iyer
+Meeting Date: 11/12/25
+Meeting Attendees
+Namrata Iyer
+Nishanth Gandhe
+Pranav Harwadekar
+Vishnu Nayak
+Meeting Agenda Items
+Discuss work distribution for sprint 2
+Define goals for the sprint and how our MVP should look
+Status Update Since Last Meeting
+Accomplishments:
+Finished Sprint 1 submissions
+Implemented accessibility features
+
+Tasks Completed:
+Task Description
+Assigned to
+Completed? (yes/no)
+Translation, High contrast, Text size mode
+Nishanth
+yes
+Sprint 1 submission corrections
+Namrata
+no
+
+Before The Next Meeting
+Plans:
+ Clean up the code from sprint 1
+Finish cashier view
+
+Task Assignments:
+Task Description
+Assigned to
+create home screen to select view
+nishanth
+Implement cashier login screen
+namrata
+allow cashiers to search drinks
+namrata
+drink customization options
+namrata
+add extra notes section
+namrata
+add drink to cart function
+namrata
+update cart on side
+namrata
+Integrate Google Auth for cashier login
+pranav
+Connect cashier view to database
+pranav
+Display customization details for each order
+nishanth
+
+Minutes from Previous Meeting
+
+Sprint 1 Meeting 3:
+What we accomplished: We finished the kiosk view and weather api integration
+What we are doing next: We are going to finish up sprint 1 submissions and include some accessibility features
+Blockers: We have an exam this week so we will be pretty busy
