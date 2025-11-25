@@ -1,5 +1,6 @@
 import React from 'react';
 import { useUser } from '@clerk/clerk-react';
+import { useNavigate } from 'react-router-dom';
 
 /**
  * Role-based access control hook
@@ -29,6 +30,7 @@ export function useUserRole() {
  */
 export function ProtectedRoute({ children, requiredRole }) {
   const { role, isLoading } = useUserRole();
+  const navigate = useNavigate();
 
   if (isLoading) {
     return (
@@ -42,8 +44,10 @@ export function ProtectedRoute({ children, requiredRole }) {
   }
 
   if (!role) {
-    // Not authenticated
-    window.location.href = '/auth/manager';
+    // Not authenticated - redirect using navigate for proper routing
+    React.useEffect(() => {
+      navigate('/auth/manager', { replace: true });
+    }, [navigate]);
     return null;
   }
 

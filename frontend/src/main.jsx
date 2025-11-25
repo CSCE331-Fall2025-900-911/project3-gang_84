@@ -36,11 +36,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route 
             path="/cashier" 
             element={
-              // <ProtectedRoute requiredRole="cashier">
-              <SignedIn>
+              <ProtectedRoute requiredRole="cashier">
                 <Cashier />
-                </SignedIn>
-              // </ProtectedRoute>
+              </ProtectedRoute>
             } 
           />
           
