@@ -1,8 +1,7 @@
 import React from 'react';
 
 /**
- * Thank You Screen
- * Shows after successful order placement
+ * Thank You Screen shows after successful order placement
  */
 export default function ThankYouScreen({
   orderNumber,
