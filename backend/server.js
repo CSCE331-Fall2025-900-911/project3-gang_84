@@ -22,7 +22,6 @@ if (process.env.DATABASE_URL) {
     port: parseInt(process.env.DB_PORT || '5432')
   };
 } else {
-  // Fall back to config.js for local development
   try {
     const { db } = require('./database/config');
     dbConfig = db;
