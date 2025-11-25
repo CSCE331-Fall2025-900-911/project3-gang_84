@@ -28,4 +28,7 @@ export const API_ENDPOINTS = {
   weather: `${API_BASE_URL}/api/weather`,
   health: `${API_BASE_URL}/api/health`,
   translate: `${API_BASE_URL}/api/translate`,
+  customerLogin: `${API_BASE_URL}/api/customer/login`,
+  customerSignup: `${API_BASE_URL}/api/customer/signup`,
+  orders: `${API_BASE_URL}/api/orders`,
 };

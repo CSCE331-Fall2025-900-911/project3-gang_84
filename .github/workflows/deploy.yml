@@ -51,6 +51,10 @@ jobs:
         env:
           # Set base path for GitHub Pages (your repo name)
           NODE_ENV: production
+          # Inject Clerk key from GitHub Secrets (secure!)
+          VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
+          # Backend API URL
+          VITE_API_URL: https://project3-gang-84-c2is.onrender.com
       
       - name: Setup Pages
         uses: actions/configure-pages@v5
