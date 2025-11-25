@@ -1,0 +1,92 @@
+SCRUM Meeting 3 for Project 3
+Prepared by: Namrata Iyer
+Meeting Date: 11/21/25
+Meeting Attendees
+ Namrata Iyer
+Nishanth Gandhe
+Pranav Harwadekar
+Vishnu Nayak
+Meeting Agenda Items
+ Discuss final touches for sprint 2
+Plan to fix database issues
+Status Update Since Last Meeting
+Accomplishments:
+Finished manager front end 
+Google auth is set up
+
+Tasks Completed:
+
+Task
+Assigned to
+Status
+Create manager login screen
+namrata
+complete
+Integrate Google Auth for manager login
+pranav
+complete
+Create manager dashboard UI
+nishanth
+complete
+Display daily/weekly sales summary
+Vishnu
+complete
+View inventory levels
+namrata
+complete
+Allow manager to update prices
+pranav
+complete
+Allow manager to add/remove menu items
+nishanth
+complete
+Create view for transaction history
+Vishnu
+complete
+Add filter for date/time range in manager view
+Vishnu
+complete
+Implement logout for cashier and manager
+pranav
+complete
+Set up user roles & permissions
+Vishnu
+complete
+
+
+Before The Next Meeting
+Plans:
+ Finish sprint 2 mvp
+Fix backend & frontend issues
+
+Task Assignments:
+
+Task
+Assigned to
+Connect manager dashboard to database
+nishanth
+Create analytics charts (sales by drink, peak hours)
+namrata
+Add alert for low inventory
+pranav
+Test and debug cashier flow
+pranav
+Test and debug manager flow
+namrata
+Connect manager dashboard to database
+nishanth
+Create analytics charts (sales by drink, peak hours)
+namrata
+Add alert for low inventory
+pranav
+Test and debug cashier flow
+pranav
+Test and debug manager flow
+namrata
+
+
+Minutes from Previous Meeting
+Accomplished: Finished cashier frontend 
+Next Week Goals: start manager frontend & google auth
+Blockers: None
+
