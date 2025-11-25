@@ -808,6 +808,531 @@ app.post('/api/orders', async (req, res) => {
   }
 });
 
+/**
+ * MANAGER API ENDPOINTS
+ */
+
+// GET /api/manager/inventory - Get all inventory items
+app.get('/api/manager/inventory', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT 
+        ingredientid,
+        ingredientname,
+        stock as quantity,
+        unit,
+        20 as reorder_level
+      FROM ingredients
+      ORDER BY ingredientname
+    `);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching inventory:', err);
+    res.status(500).json({ error: 'Failed to fetch inventory' });
+  }
+});
+
+// POST /api/manager/inventory - Add new inventory item
+app.post('/api/manager/inventory', async (req, res) => {
+  try {
+    const { ingredientname, quantity, unit, reorder_level, supplierid } = req.body;
+    const result = await pool.query(
+      `INSERT INTO ingredients (ingredientname, stock, unit, supplierid)
+       VALUES ($1, $2, $3, $4)
+       RETURNING ingredientid, ingredientname, stock as quantity, unit, supplierid`,
+      [ingredientname, quantity, unit, supplierid || 1]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error('Error adding inventory item:', err);
+    res.status(500).json({ error: 'Failed to add inventory item' });
+  }
+});
+
+// PUT /api/manager/inventory/:id - Update inventory item
+app.put('/api/manager/inventory/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { ingredientname, quantity, unit, supplierid } = req.body;
+    const result = await pool.query(
+      `UPDATE ingredients 
+       SET ingredientname = $1, stock = $2, unit = $3, supplierid = $4
+       WHERE ingredientid = $5
+       RETURNING ingredientid, ingredientname, stock as quantity, unit, supplierid`,
+      [ingredientname, quantity, unit, supplierid, id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Inventory item not found' });
+    }
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Error updating inventory item:', err);
+    res.status(500).json({ error: 'Failed to update inventory item' });
+  }
+});
+
+// DELETE /api/manager/inventory/:id - Delete inventory item
+app.delete('/api/manager/inventory/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await pool.query(
+      'DELETE FROM ingredients WHERE ingredientid = $1 RETURNING ingredientid',
+      [id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Inventory item not found' });
+    }
+    res.json({ success: true, message: 'Inventory item deleted' });
+  } catch (err) {
+    console.error('Error deleting inventory item:', err);
+    res.status(500).json({ error: 'Failed to delete inventory item' });
+  }
+});
+
+// PUT /api/manager/menu/:id - Update menu item
+app.put('/api/manager/menu/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, price, category, available } = req.body;
+    const result = await pool.query(
+      `UPDATE menu_items 
+       SET name = $1, price = $2, category = $3, available = $4
+       WHERE menuitemid = $5
+       RETURNING *`,
+      [name, price, category, available, id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Menu item not found' });
+    }
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Error updating menu item:', err);
+    res.status(500).json({ error: 'Failed to update menu item' });
+  }
+});
+
+// POST /api/manager/menu - Add new menu item
+app.post('/api/manager/menu', async (req, res) => {
+  try {
+    const { name, price, category, type, available } = req.body;
+    const result = await pool.query(
+      `INSERT INTO menu_items (name, price, category, type, available)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING *`,
+      [name, price, category, type || 'Drink', available !== false]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error('Error adding menu item:', err);
+    res.status(500).json({ error: 'Failed to add menu item' });
+  }
+});
+
+// DELETE /api/manager/menu/:id - Delete menu item
+app.delete('/api/manager/menu/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await pool.query(
+      'DELETE FROM menu_items WHERE menuitemid = $1 RETURNING menuitemid',
+      [id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Menu item not found' });
+    }
+    res.json({ success: true, message: 'Menu item deleted' });
+  } catch (err) {
+    console.error('Error deleting menu item:', err);
+    res.status(500).json({ error: 'Failed to delete menu item' });
+  }
+});
+
+// GET /api/manager/employees - Get all employees
+app.get('/api/manager/employees', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT 
+        employeeid,
+        name,
+        role,
+        phonenumber
+      FROM employees
+      ORDER BY name
+    `);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching employees:', err);
+    res.status(500).json({ error: 'Failed to fetch employees' });
+  }
+});
+
+// POST /api/manager/employees - Add new employee
+app.post('/api/manager/employees', async (req, res) => {
+  try {
+    const { name, role, phonenumber } = req.body;
+    const result = await pool.query(
+      `INSERT INTO employees (name, role, phonenumber, login)
+       VALUES ($1, $2, $3, 0)
+       RETURNING *`,
+      [name, role || 'Cashier', phonenumber]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error('Error adding employee:', err);
+    res.status(500).json({ error: 'Failed to add employee' });
+  }
+});
+
+// PUT /api/manager/employees/:id - Update employee
+app.put('/api/manager/employees/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, role, phonenumber } = req.body;
+    const result = await pool.query(
+      `UPDATE employees 
+       SET name = $1, role = $2, phonenumber = $3
+       WHERE employeeid = $4
+       RETURNING *`,
+      [name, role, phonenumber, id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Employee not found' });
+    }
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Error updating employee:', err);
+    res.status(500).json({ error: 'Failed to update employee' });
+  }
+});
+
+// DELETE /api/manager/employees/:id - Delete employee
+app.delete('/api/manager/employees/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await pool.query(
+      'DELETE FROM employees WHERE employeeid = $1 RETURNING employeeid',
+      [id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Employee not found' });
+    }
+    res.json({ success: true, message: 'Employee deleted' });
+  } catch (err) {
+    console.error('Error deleting employee:', err);
+    res.status(500).json({ error: 'Failed to delete employee' });
+  }
+});
+
+// GET /api/manager/reports/sales - Get sales data for date range
+app.get('/api/manager/reports/sales', async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    const result = await pool.query(`
+      SELECT 
+        o.date,
+        COUNT(DISTINCT o.orderid) as orders,
+        SUM(o.totalcost) as revenue,
+        AVG(o.totalcost) as avg_order_value
+      FROM orders o
+      WHERE o.date >= $1 AND o.date <= $2
+      GROUP BY o.date
+      ORDER BY o.date
+    `, [startDate, endDate]);
+    res.json({ data: result.rows, summary: { totalRevenue: result.rows.reduce((sum, r) => sum + parseFloat(r.revenue || 0), 0), totalOrders: result.rows.reduce((sum, r) => sum + parseInt(r.orders || 0), 0), avgOrderValue: 0, totalCustomers: 0 } });
+  } catch (err) {
+    console.error('Error fetching sales data:', err);
+    res.status(500).json({ error: 'Failed to fetch sales data' });
+  }
+});
+
+// GET /api/manager/reports/hourly - Get hourly order distribution
+app.get('/api/manager/reports/hourly', async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    const result = await pool.query(`
+      SELECT 
+        EXTRACT(HOUR FROM time) as hour,
+        COUNT(*) as orders,
+        SUM(totalcost) as revenue
+      FROM orders
+      WHERE date >= $1 AND date <= $2
+      GROUP BY EXTRACT(HOUR FROM time)
+      ORDER BY hour
+    `, [startDate, endDate]);
+    res.json({ data: result.rows });
+  } catch (err) {
+    console.error('Error fetching hourly data:', err);
+    res.status(500).json({ error: 'Failed to fetch hourly data' });
+  }
+});
+
+// GET /api/manager/reports/categories - Get sales by category
+app.get('/api/manager/reports/categories', async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    const result = await pool.query(`
+      SELECT 
+        m.category,
+        COUNT(oi.orderitemid) as orders,
+        SUM(m.price) as revenue
+      FROM order_items oi
+      JOIN menu_items m ON oi.menuitemid = m.menuitemid
+      JOIN orders o ON oi.orderid = o.orderid
+      WHERE o.date >= $1 AND o.date <= $2
+      GROUP BY m.category
+      ORDER BY revenue DESC
+    `, [startDate, endDate]);
+    res.json({ data: result.rows });
+  } catch (err) {
+    console.error('Error fetching category data:', err);
+    res.status(500).json({ error: 'Failed to fetch category data' });
+  }
+});
+
+// GET /api/manager/reports/popular-items - Get popular items
+app.get('/api/manager/reports/popular-items', async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    const result = await pool.query(`
+      SELECT 
+        m.name,
+        m.category,
+        COUNT(oi.itemid) as orders,
+        SUM(oi.price) as revenue
+      FROM order_items oi
+      JOIN menu_items m ON oi.drink = m.name
+      JOIN orders o ON oi.orderid = o.orderid
+      WHERE o.date >= $1 AND o.date <= $2
+      GROUP BY m.menuitemid, m.name, m.category
+      ORDER BY orders DESC
+      LIMIT 10
+    `, [startDate, endDate]);
+    res.json({ items: result.rows });
+  } catch (err) {
+    console.error('Error fetching popular items:', err);
+    res.status(500).json({ error: 'Failed to fetch popular items' });
+  }
+});
+
+// GET /api/manager/reports/product - Get product performance report
+app.get('/api/manager/reports/product', async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    const result = await pool.query(`
+      SELECT 
+        m.name,
+        m.category,
+        COUNT(oi.orderitemid) as orders,
+        SUM(m.price) as revenue,
+        AVG(m.price) as avg_price
+      FROM order_items oi
+      JOIN menu_items m ON oi.menuitemid = m.menuitemid
+      JOIN orders o ON oi.orderid = o.orderid
+      WHERE o.date >= $1 AND o.date <= $2
+      GROUP BY m.menuitemid, m.name, m.category
+      ORDER BY revenue DESC
+    `, [startDate, endDate]);
+    res.json({ items: result.rows });
+  } catch (err) {
+    console.error('Error fetching product report:', err);
+    res.status(500).json({ error: 'Failed to fetch product report' });
+  }
+});
+
+// GET /api/manager/reports/employee - Get employee performance report
+app.get('/api/manager/reports/employee', async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    const result = await pool.query(`
+      SELECT 
+        e.name,
+        e.role,
+        COUNT(o.orderid) as orders,
+        SUM(o.totalcost) as revenue,
+        AVG(o.totalcost) as avg_order_value
+      FROM employees e
+      LEFT JOIN orders o ON e.employeeid = o.employeeid 
+        AND o.date >= $1 AND o.date <= $2
+      GROUP BY e.employeeid, e.name, e.role
+      ORDER BY revenue DESC
+    `, [startDate, endDate]);
+    res.json({ employees: result.rows });
+  } catch (err) {
+    console.error('Error fetching employee report:', err);
+    res.status(500).json({ error: 'Failed to fetch employee report' });
+  }
+});
+
+// GET /api/manager/reports/inventory - Get inventory status report
+app.get('/api/manager/reports/inventory', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT 
+        ingredientname,
+        stock,
+        unit,
+        20 as reorder_level,
+        CASE 
+          WHEN stock <= 20 THEN 'Low'
+          WHEN stock <= 50 THEN 'Medium'
+          ELSE 'Good'
+        END as status
+      FROM ingredients
+      ORDER BY stock ASC
+    `);
+    res.json({ items: result.rows });
+  } catch (err) {
+    console.error('Error fetching inventory report:', err);
+    res.status(500).json({ error: 'Failed to fetch inventory report' });
+  }
+});
+
+// GET /api/manager/reports/xreport - Get X-Report (current day summary without closing)
+app.get('/api/manager/reports/xreport', async (req, res) => {
+  try {
+    const { date } = req.query;
+    const reportDate = date || new Date().toISOString().split('T')[0];
+    
+    // Get sales summary
+    const salesResult = await pool.query(`
+      SELECT 
+        COUNT(DISTINCT o.orderid) as total_transactions,
+        COALESCE(SUM(p.amount), 0) as gross_sales,
+        COALESCE(AVG(p.amount), 0) as avg_order_value,
+        COUNT(DISTINCT oi.orderitemid) as total_items_sold
+      FROM orders o
+      LEFT JOIN payments p ON o.orderid = p.order_id
+      LEFT JOIN order_items oi ON o.orderid = oi.orderid
+      WHERE o.date = $1
+    `, [reportDate]);
+    
+    // Get payment breakdown
+    const paymentsResult = await pool.query(`
+      SELECT 
+        payment_type,
+        COUNT(*) as count,
+        SUM(amount) as amount
+      FROM payments p
+      JOIN orders o ON p.order_id = o.orderid
+      WHERE o.date = $1
+      GROUP BY payment_type
+    `, [reportDate]);
+    
+    // Get category breakdown
+    const categoriesResult = await pool.query(`
+      SELECT 
+        m.category as name,
+        COUNT(oi.orderitemid) as items,
+        SUM(m.price) as revenue
+      FROM order_items oi
+      JOIN menu_items m ON oi.menuitemid = m.menuitemid
+      JOIN orders o ON oi.orderid = o.orderid
+      WHERE o.date = $1
+      GROUP BY m.category
+    `, [reportDate]);
+    
+    res.json({
+      date: reportDate,
+      sales: salesResult.rows[0],
+      transactions: {
+        totalTransactions: parseInt(salesResult.rows[0].total_transactions),
+        cash: paymentsResult.rows.find(p => p.payment_type === 'cash') || { count: 0, amount: 0 },
+        credit: paymentsResult.rows.find(p => p.payment_type === 'credit') || { count: 0, amount: 0 },
+        debit: paymentsResult.rows.find(p => p.payment_type === 'debit') || { count: 0, amount: 0 }
+      },
+      products: {
+        totalItemsSold: parseInt(salesResult.rows[0].total_items_sold),
+        categories: categoriesResult.rows
+      }
+    });
+  } catch (err) {
+    console.error('Error fetching X-Report:', err);
+    res.status(500).json({ error: 'Failed to fetch X-Report' });
+  }
+});
+
+// GET /api/manager/reports/zreport - Get Z-Report (end of day report)
+app.get('/api/manager/reports/zreport', async (req, res) => {
+  try {
+    const { date } = req.query;
+    const reportDate = date || new Date().toISOString().split('T')[0];
+    
+    // Get comprehensive end-of-day data
+    const salesResult = await pool.query(`
+      SELECT 
+        COUNT(DISTINCT o.orderid) as total_transactions,
+        COALESCE(SUM(p.amount), 0) as gross_sales,
+        0 as total_discounts,
+        COALESCE(SUM(p.amount * 0.0825), 0) as total_taxes,
+        COALESCE(SUM(p.amount), 0) as net_sales,
+        COUNT(DISTINCT oi.orderitemid) as total_items_sold
+      FROM orders o
+      LEFT JOIN payments p ON o.orderid = p.order_id
+      LEFT JOIN order_items oi ON o.orderid = oi.orderid
+      WHERE o.date = $1
+    `, [reportDate]);
+    
+    // Get payment breakdown
+    const paymentsResult = await pool.query(`
+      SELECT 
+        payment_type,
+        COUNT(*) as count,
+        SUM(amount) as amount
+      FROM payments p
+      JOIN orders o ON p.order_id = o.orderid
+      WHERE o.date = $1
+      GROUP BY payment_type
+    `, [reportDate]);
+    
+    // Get category breakdown
+    const categoriesResult = await pool.query(`
+      SELECT 
+        m.category as name,
+        COUNT(oi.orderitemid) as items,
+        SUM(m.price) as revenue
+      FROM order_items oi
+      JOIN menu_items m ON oi.menuitemid = m.menuitemid
+      JOIN orders o ON oi.orderid = o.orderid
+      WHERE o.date = $1
+      GROUP BY m.category
+      ORDER BY revenue DESC
+    `, [reportDate]);
+    
+    // Get top sellers
+    const topSellersResult = await pool.query(`
+      SELECT 
+        m.name,
+        COUNT(oi.orderitemid) as quantity,
+        SUM(m.price) as revenue
+      FROM order_items oi
+      JOIN menu_items m ON oi.menuitemid = m.menuitemid
+      JOIN orders o ON oi.orderid = o.orderid
+      WHERE o.date = $1
+      GROUP BY m.menuitemid, m.name
+      ORDER BY quantity DESC
+      LIMIT 3
+    `, [reportDate]);
+    
+    res.json({
+      date: reportDate,
+      sales: salesResult.rows[0],
+      transactions: {
+        totalTransactions: parseInt(salesResult.rows[0].total_transactions),
+        cash: paymentsResult.rows.find(p => p.payment_type === 'cash') || { count: 0, amount: 0 },
+        credit: paymentsResult.rows.find(p => p.payment_type === 'credit') || { count: 0, amount: 0 },
+        debit: paymentsResult.rows.find(p => p.payment_type === 'debit') || { count: 0, amount: 0 }
+      },
+      products: {
+        totalItemsSold: parseInt(salesResult.rows[0].total_items_sold),
+        categories: categoriesResult.rows
+      },
+      topSellers: topSellersResult.rows
+    });
+  } catch (err) {
+    console.error('Error fetching Z-Report:', err);
+    res.status(500).json({ error: 'Failed to fetch Z-Report' });
+  }
+});
+
 app.listen(port, () => {
   console.log(`Kiosk backend server running on http://localhost:${port}`);
 });

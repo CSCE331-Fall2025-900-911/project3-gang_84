@@ -34,4 +34,23 @@ export const API_ENDPOINTS = {
   customerCheck: `${API_BASE_URL}/api/customer/check`,
   customers: `${API_BASE_URL}/api/customers`,
   orders: `${API_BASE_URL}/api/orders`,
+  
+  // Manager endpoints
+  manager: {
+    inventory: `${API_BASE_URL}/api/manager/inventory`,
+    menu: `${API_BASE_URL}/api/manager/menu`,
+    employees: `${API_BASE_URL}/api/manager/employees`,
+    reports: {
+      sales: `${API_BASE_URL}/api/manager/reports/sales`,
+      hourly: `${API_BASE_URL}/api/manager/reports/hourly`,
+      categories: `${API_BASE_URL}/api/manager/reports/categories`,
+      popularItems: `${API_BASE_URL}/api/manager/reports/popular-items`,
+      product: `${API_BASE_URL}/api/manager/reports/product`,
+      employee: `${API_BASE_URL}/api/manager/reports/employee`,
+      inventory: `${API_BASE_URL}/api/manager/reports/inventory`,
+      xreport: `${API_BASE_URL}/api/manager/reports/xreport`,
+      zreport: `${API_BASE_URL}/api/manager/reports/zreport`,
+    }
+  }
 };
+

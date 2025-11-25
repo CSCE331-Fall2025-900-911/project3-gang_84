@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { ClerkProvider, SignedIn, SignedOut } from '@clerk/clerk-react'
 import Kiosk from './Kiosk.jsx'
 import Cashier from './Cashier.jsx'
+import Manager from './Manager.jsx'
 import RoleSelector from './components/auth/RoleSelector.jsx'
 import ManagerLogin from './components/auth/ManagerLogin.jsx'
 import CashierLogin from './components/auth/CashierLogin.jsx'
@@ -47,7 +48,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
             path="/manager" 
             element={
               <ProtectedRoute requiredRole="manager">
-                <Kiosk role="manager" />
+                <Manager />
               </ProtectedRoute>
             } 
           />
