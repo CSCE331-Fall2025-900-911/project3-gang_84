@@ -6,7 +6,6 @@ require('dotenv').config();
 const app = express();
 const port = process.env.PORT || 3001;
 
-// Database config - use env vars in production, config.js for local dev
 let dbConfig;
 if (process.env.DATABASE_URL) {
   dbConfig = {
