@@ -9,7 +9,6 @@ import CashierLogin from './components/auth/CashierLogin.jsx'
 import { ProtectedRoute } from './components/auth/RoleGuard.jsx'
 import './index.css'
 
-// Get Clerk publishable key from environment
 const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
 
 if (!CLERK_PUBLISHABLE_KEY) {
