@@ -23,9 +23,8 @@ export default function CashierLogin() {
                 card: "shadow-none",
               }
             }}
-            routing="path"
-            path="/auth/cashier"
-            signUpUrl="/auth/cashier"
+            afterSignInUrl="/cashier"
+            afterSignUpUrl="/cashier"
           />
         </div>
 

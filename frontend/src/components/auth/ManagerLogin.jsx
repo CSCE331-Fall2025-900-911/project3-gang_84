@@ -23,9 +23,8 @@ export default function ManagerLogin() {
                 card: "shadow-none",
               }
             }}
-            routing="path"
-            path="/auth/manager"
-            signUpUrl="/auth/manager"
+            afterSignInUrl="/manager"
+            afterSignUpUrl="/manager"
           />
         </div>
 
