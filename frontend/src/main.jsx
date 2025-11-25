@@ -20,7 +20,10 @@ if (!CLERK_PUBLISHABLE_KEY) {
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY || ''}>
+    <ClerkProvider 
+      publishableKey={CLERK_PUBLISHABLE_KEY || ''}
+      navigate={(to) => window.location.href = to}
+    >
       <BrowserRouter basename={import.meta.env.BASE_URL}>
         <Routes>
           {/* Landing page - role selection */}
@@ -33,17 +36,17 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           {/* Customer route - no authentication required */}
           <Route path="/customer" element={<Kiosk role="customer" />} />
           
-          {/* Cashier route - requires cashier authentication */}
+          {/* Cashier route - requires cashier OR manager role */}
           <Route 
             path="/cashier" 
             element={
-              <ProtectedRoute requiredRole="cashier">
+              <ProtectedRoute requiredRole={["cashier", "manager"]}>
                 <Cashier />
               </ProtectedRoute>
             } 
           />
           
-          {/* Manager route - requires manager authentication */}
+          {/* Manager route - requires manager role only */}
           <Route 
             path="/manager" 
             element={
