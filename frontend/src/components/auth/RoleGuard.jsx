@@ -10,25 +10,30 @@ import { useNavigate } from 'react-router-dom';
 export function useUserRole() {
   const { user, isLoaded } = useUser();
   
-  if (!isLoaded || !user) {
-    return { roles: [], isLoading: !isLoaded };
+  if (!isLoaded) {
+    return { roles: [], isLoading: true };
+  }
+  
+  if (!user) {
+    return { roles: [], isLoading: false, isAuthenticated: false };
   }
 
   // Roles can be stored as array or single string in user's public metadata
   const rolesData = user.publicMetadata?.roles || user.publicMetadata?.role;
-  const roles = Array.isArray(rolesData) ? rolesData : (rolesData ? [rolesData] : ['customer']);
+  const roles = Array.isArray(rolesData) ? rolesData : (rolesData ? [rolesData] : []);
   
   // Helper function to check if user has a specific role
   const hasRole = (role) => roles.includes(role);
   
   return {
     roles,
-    primaryRole: roles[0], // First role is considered primary
+    primaryRole: roles[0] || null,
     isLoading: false,
+    isAuthenticated: true,
     hasRole,
     isManager: hasRole('manager'),
     isCashier: hasRole('cashier'),
-    isCustomer: hasRole('customer'),
+    isCustomer: roles.length === 0 || hasRole('customer'), // Customer if no roles or has customer role
   };
 }
 
@@ -37,7 +42,7 @@ export function useUserRole() {
  * Supports single required role or array of acceptable roles
  */
 export function ProtectedRoute({ children, requiredRole }) {
-  const { roles, primaryRole, hasRole, isLoading } = useUserRole();
+  const { roles, primaryRole, hasRole, isLoading, isAuthenticated } = useUserRole();
   const navigate = useNavigate();
 
   if (isLoading) {
@@ -51,12 +56,29 @@ export function ProtectedRoute({ children, requiredRole }) {
     );
   }
 
-  if (!primaryRole || roles.length === 0) {
-    // Not authenticated - redirect using navigate for proper routing
+  // Not authenticated at all
+  if (!isAuthenticated) {
     React.useEffect(() => {
       navigate('/auth/manager', { replace: true });
     }, [navigate]);
     return null;
+  }
+
+  // Authenticated but no roles assigned - show error
+  if (requiredRole && roles.length === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-yellow-50">
+        <div className="text-center p-8 max-w-md">
+          <h2 className="text-2xl font-bold text-yellow-600 mb-4">No Role Assigned</h2>
+          <p className="text-gray-700 mb-4">
+            Your account doesn't have any roles assigned yet. Please contact an administrator to assign you the appropriate role.
+          </p>
+          <a href="/" className="text-blue-600 hover:underline">
+            Return to Home
+          </a>
+        </div>
+      </div>
+    );
   }
 
   // Check if user has required role(s)
