@@ -23,8 +23,8 @@ export default function CashierLogin() {
                 card: "shadow-none",
               }
             }}
-            redirectUrl="/cashier"
-            signUpUrl="/auth/cashier/signup"
+            afterSignInUrl={`${import.meta.env.BASE_URL}cashier`}
+            afterSignUpUrl={`${import.meta.env.BASE_URL}cashier`}
           />
         </div>
 

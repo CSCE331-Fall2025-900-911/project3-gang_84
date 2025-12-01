@@ -23,8 +23,8 @@ export default function ManagerLogin() {
                 card: "shadow-none",
               }
             }}
-            redirectUrl="/manager"
-            signUpUrl="/auth/manager/signup"
+            afterSignInUrl={`${import.meta.env.BASE_URL}manager`}
+            afterSignUpUrl={`${import.meta.env.BASE_URL}manager`}
           />
         </div>
 
