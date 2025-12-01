@@ -55,6 +55,17 @@ export default function CustomerAuthModal({ onClose, onAuthenticated, onGuest, c
         headers: { 'Content-Type': 'application/json' }
       });
 
+      // Check if response is OK before parsing JSON
+      if (!response.ok) {
+        if (response.status === 404) {
+          setError('Phone number not found. Please sign up or try a different number.');
+        } else {
+          setError('Unable to connect to server. Please try again.');
+        }
+        setLoading(false);
+        return;
+      }
+
       const data = await response.json();
 
       if (!data.exists) {
