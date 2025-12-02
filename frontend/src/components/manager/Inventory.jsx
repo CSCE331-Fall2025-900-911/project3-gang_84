@@ -12,11 +12,9 @@ export default function Inventory() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [formData, setFormData] = useState({
-    name: '',
+    ingredientname: '',
     quantity: '',
-    unit: '',
-    reorder_level: '',
-    cost: ''
+    unit: ''
   });
 
   useEffect(() => {
@@ -39,7 +37,7 @@ export default function Inventory() {
 
   const handleAdd = () => {
     setEditItem(null);
-    setFormData({ name: '', quantity: '', unit: '', reorder_level: '', cost: '' });
+    setFormData({ ingredientname: '', quantity: '', unit: '' });
     setShowAddModal(true);
   };
 
@@ -56,23 +54,32 @@ export default function Inventory() {
         : API_ENDPOINTS.manager.inventory;
       const method = editItem ? 'PUT' : 'POST';
       
+      const payload = {
+        ingredientname: formData.ingredientname,
+        quantity: parseInt(formData.quantity),
+        unit: formData.unit
+      };
+      
+      console.log('Saving inventory item:', payload);
+      
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ingredientname: formData.name,
-          quantity: parseInt(formData.quantity),
-          unit: formData.unit,
-          supplierid: 1
-        })
+        body: JSON.stringify(payload)
       });
       
-      if (!response.ok) throw new Error('Failed to save inventory item');
+      const data = await response.json();
+      console.log('Response:', response.status, data);
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to save inventory item');
+      }
+      
       setShowAddModal(false);
       fetchInventory();
     } catch (error) {
       console.error('Failed to save inventory item:', error);
-      alert('Failed to save inventory item');
+      alert(`Failed to save inventory item: ${error.message}`);
     }
   };
 
@@ -159,8 +166,6 @@ export default function Inventory() {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item Name</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reorder Level</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cost/Unit</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
             </tr>
@@ -171,10 +176,8 @@ export default function Inventory() {
                 <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">{item.ingredientname}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-gray-900">{item.quantity}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-gray-500">{item.unit}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-gray-500">{item.reorder_level || 20}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-gray-900">-</td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  {item.quantity <= (item.reorder_level || 20) ? (
+                  {item.quantity <= 20 ? (
                     <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Low Stock</span>
                   ) : (
                     <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">In Stock</span>
@@ -202,16 +205,16 @@ export default function Inventory() {
 
       {/* Add/Edit Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+        <div className="fixed inset-0 flex items-center justify-center z-50 p-4" style={{ backgroundColor: 'rgba(0, 0, 0, 0.4)' }}>
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-8 max-h-[90vh] overflow-y-auto">
             <h3 className="text-2xl font-bold mb-6">{editItem ? 'Edit' : 'Add'} Inventory Item</h3>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Item Name</label>
                 <input
                   type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  value={formData.ingredientname}
+                  onChange={(e) => setFormData({ ...formData, ingredientname: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                 />
               </div>
@@ -231,26 +234,7 @@ export default function Inventory() {
                   value={formData.unit}
                   onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  placeholder="oz, lbs, units"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Reorder Level</label>
-                <input
-                  type="number"
-                  value={formData.reorder_level}
-                  onChange={(e) => setFormData({ ...formData, reorder_level: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Cost per Unit ($)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={formData.cost}
-                  onChange={(e) => setFormData({ ...formData, cost: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  placeholder="ml/g, oz, lbs, units"
                 />
               </div>
             </div>

@@ -833,12 +833,12 @@ app.get('/api/manager/inventory', async (req, res) => {
 // POST /api/manager/inventory - Add new inventory item
 app.post('/api/manager/inventory', async (req, res) => {
   try {
-    const { ingredientname, quantity, unit, reorder_level, supplierid } = req.body;
+    const { ingredientname, quantity, unit } = req.body;
     const result = await pool.query(
-      `INSERT INTO ingredients (ingredientname, stock, unit, supplierid)
-       VALUES ($1, $2, $3, $4)
-       RETURNING ingredientid, ingredientname, stock as quantity, unit, supplierid`,
-      [ingredientname, quantity, unit, supplierid || 1]
+      `INSERT INTO ingredients (ingredientname, stock, unit)
+       VALUES ($1, $2, $3)
+       RETURNING ingredientid, ingredientname, stock as quantity, unit`,
+      [ingredientname, quantity, unit]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -851,13 +851,13 @@ app.post('/api/manager/inventory', async (req, res) => {
 app.put('/api/manager/inventory/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { ingredientname, quantity, unit, supplierid } = req.body;
+    const { ingredientname, quantity, unit } = req.body;
     const result = await pool.query(
       `UPDATE ingredients 
-       SET ingredientname = $1, stock = $2, unit = $3, supplierid = $4
-       WHERE ingredientid = $5
-       RETURNING ingredientid, ingredientname, stock as quantity, unit, supplierid`,
-      [ingredientname, quantity, unit, supplierid, id]
+       SET ingredientname = $1, stock = $2, unit = $3
+       WHERE ingredientid = $4
+       RETURNING ingredientid, ingredientname, stock as quantity, unit`,
+      [ingredientname, quantity, unit, id]
     );
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Inventory item not found' });
