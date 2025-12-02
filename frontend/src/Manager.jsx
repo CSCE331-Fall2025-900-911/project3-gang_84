@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { UserButton } from '@clerk/clerk-react';
 import Inventory from './components/manager/Inventory';
 import Menu from './components/manager/Menu';
@@ -13,6 +14,7 @@ import ZReport from './components/manager/ZReport';
  */
 export default function Manager() {
   const [activeTab, setActiveTab] = useState('inventory');
+  const navigate = useNavigate();
 
   const tabs = [
     { id: 'inventory', name: 'Inventory', icon: '📦' },
@@ -29,9 +31,21 @@ export default function Manager() {
       <header className="bg-gradient-to-r from-purple-600 to-purple-800 text-white shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold">Manager Dashboard</h1>
-              <p className="text-purple-100 mt-1">Kung Fu Tea - Management System</p>
+            <div className="flex items-center gap-4">
+              {/* Back Button */}
+              <button
+                onClick={() => navigate('/')}
+                className="px-6 py-4 rounded-lg font-semibold transition-colors flex items-center gap-2 text-lg bg-purple-700 text-white hover:bg-purple-900 border-2 border-purple-500"
+                style={{ minHeight: '60px' }}
+                title="Back to Role Selection"
+              >
+                ← Back
+              </button>
+              
+              <div>
+                <h1 className="text-3xl font-bold">Manager Dashboard</h1>
+                <p className="text-purple-100 mt-1">Kung Fu Tea - Management System</p>
+              </div>
             </div>
             <div className="flex items-center gap-4">
               <div className="px-4 py-2 bg-purple-700 rounded-lg">
