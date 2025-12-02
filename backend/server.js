@@ -889,40 +889,166 @@ app.delete('/api/manager/inventory/:id', async (req, res) => {
 
 // PUT /api/manager/menu/:id - Update menu item
 app.put('/api/manager/menu/:id', async (req, res) => {
+  const client = await pool.connect();
   try {
+    await client.query('BEGIN');
+    
     const { id } = req.params;
-    const { name, price, category, available } = req.body;
-    const result = await pool.query(
-      `UPDATE menu_items 
-       SET name = $1, price = $2, category = $3, available = $4
-       WHERE menuitemid = $5
-       RETURNING *`,
-      [name, price, category, available, id]
+    const { name, type, price, category, available, recipe } = req.body;
+    
+    // Get the old name and type first
+    const oldResult = await client.query(
+      'SELECT name, type FROM menu_items WHERE menuitemid = $1',
+      [id]
     );
-    if (result.rows.length === 0) {
+    const oldName = oldResult.rows[0]?.name;
+    const oldType = oldResult.rows[0]?.type;
+    
+    // Update menu item
+    const menuResult = await client.query(
+      `UPDATE menu_items 
+       SET name = $1, type = $2, price = $3, category = $4, available = $5
+       WHERE menuitemid = $6
+       RETURNING *`,
+      [name, type, price, category, available, id]
+    );
+    
+    if (menuResult.rows.length === 0) {
+      await client.query('ROLLBACK');
       return res.status(404).json({ error: 'Menu item not found' });
     }
-    res.json(result.rows[0]);
+    
+    // If it's a topping, update or create in ingredients table
+    if (type === 'Topping') {
+      // Check if ingredient exists with old name
+      const ingredientCheck = await client.query(
+        'SELECT ingredientid FROM ingredients WHERE ingredientname = $1',
+        [oldName]
+      );
+      
+      if (ingredientCheck.rows.length > 0) {
+        // Update existing ingredient name
+        await client.query(
+          'UPDATE ingredients SET ingredientname = $1 WHERE ingredientname = $2',
+          [name, oldName]
+        );
+      } else {
+        // Create new ingredient
+        await client.query(
+          'INSERT INTO ingredients (ingredientname, stock, unit) VALUES ($1, $2, $3)',
+          [name, 0, 'pieces']
+        );
+      }
+    }
+    
+    // Delete old recipe entries (using old name in case name changed)
+    await client.query(
+      'DELETE FROM recipes WHERE menuitemname = $1',
+      [oldName]
+    );
+    
+    // Insert new recipe entries
+    if (recipe && recipe.length > 0) {
+      for (const ingredient of recipe) {
+        if (ingredient.ingredientid && ingredient.quantity) {
+          await client.query(
+            `INSERT INTO recipes (menuitemname, ingredientid, quantity)
+             VALUES ($1, $2, $3)`,
+            [name, parseInt(ingredient.ingredientid), parseInt(ingredient.quantity)]
+          );
+        }
+      }
+    }
+    
+    await client.query('COMMIT');
+    res.json(menuResult.rows[0]);
   } catch (err) {
+    await client.query('ROLLBACK');
     console.error('Error updating menu item:', err);
     res.status(500).json({ error: 'Failed to update menu item' });
+  } finally {
+    client.release();
+  }
+});
+
+// GET /api/manager/menu/:id/recipe - Get recipe for a menu item
+app.get('/api/manager/menu/:id/recipe', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Get menu item name first
+    const menuResult = await pool.query(
+      'SELECT name FROM menu_items WHERE menuitemid = $1',
+      [id]
+    );
+    
+    if (menuResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Menu item not found' });
+    }
+    
+    const menuItemName = menuResult.rows[0].name;
+    
+    // Get recipe entries
+    const recipeResult = await pool.query(
+      'SELECT ingredientid, quantity FROM recipes WHERE menuitemname = $1',
+      [menuItemName]
+    );
+    
+    res.json(recipeResult.rows);
+  } catch (err) {
+    console.error('Error fetching recipe:', err);
+    res.status(500).json({ error: 'Failed to fetch recipe' });
   }
 });
 
 // POST /api/manager/menu - Add new menu item
 app.post('/api/manager/menu', async (req, res) => {
+  const client = await pool.connect();
   try {
-    const { name, price, category, type, available } = req.body;
-    const result = await pool.query(
-      `INSERT INTO menu_items (name, price, category, type, available)
+    await client.query('BEGIN');
+    
+    const { name, type, price, category, available, recipe } = req.body;
+    
+    // Insert menu item
+    const menuResult = await client.query(
+      `INSERT INTO menu_items (name, type, price, category, available)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING *`,
-      [name, price, category, type || 'Drink', available !== false]
+      [name, type || 'Drink', price, category || '', available !== false]
     );
-    res.status(201).json(result.rows[0]);
+    
+    const menuItem = menuResult.rows[0];
+    
+    // If it's a topping, also add it to ingredients table with quantity 0
+    if (type === 'Topping') {
+      await client.query(
+        `INSERT INTO ingredients (ingredientname, stock, unit)
+         VALUES ($1, $2, $3)`,
+        [name, 0, 'pieces']
+      );
+    }
+    
+    // Insert recipe entries if provided
+    if (recipe && recipe.length > 0) {
+      for (const ingredient of recipe) {
+        if (ingredient.ingredientid && ingredient.quantity) {
+          await client.query(
+            `INSERT INTO recipes (menuitemname, ingredientid, quantity)
+             VALUES ($1, $2, $3)`,
+            [name, parseInt(ingredient.ingredientid), parseInt(ingredient.quantity)]
+          );
+        }
+      }
+    }
+    
+    await client.query('COMMIT');
+    res.status(201).json(menuItem);
   } catch (err) {
+    await client.query('ROLLBACK');
     console.error('Error adding menu item:', err);
     res.status(500).json({ error: 'Failed to add menu item' });
+  } finally {
+    client.release();
   }
 });
 
