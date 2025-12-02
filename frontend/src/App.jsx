@@ -572,7 +572,7 @@ export default function App({ role = 'customer' }) {
                   {user.firstName || user.username}
                 </span>
                 <UserButton 
-                  afterSignOutUrl="/"
+                  afterSignOutUrl={import.meta.env.BASE_URL}
                   appearance={{
                     elements: {
                       avatarBox: "w-10 h-10"
