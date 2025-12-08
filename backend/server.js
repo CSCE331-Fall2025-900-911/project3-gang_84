@@ -1366,13 +1366,13 @@ app.get('/api/manager/reports/xreport', async (req, res) => {
     // Get payment breakdown
     const paymentsResult = await pool.query(`
       SELECT 
-        payment_type,
+        LOWER(payment_type) as payment_type,
         COUNT(*) as count,
         SUM(amount) as amount
       FROM payments p
       JOIN orders o ON p.order_id = o.orderid
       WHERE o.date = $1
-      GROUP BY payment_type
+      GROUP BY LOWER(payment_type)
     `, [reportDate]);
     
     // Get category breakdown
@@ -1464,13 +1464,13 @@ app.get('/api/manager/reports/zreport', async (req, res) => {
     // Get payment breakdown
     const paymentsResult = await pool.query(`
       SELECT 
-        payment_type,
+        LOWER(payment_type) as payment_type,
         COUNT(*) as count,
         SUM(amount) as amount
       FROM payments p
       JOIN orders o ON p.order_id = o.orderid
       WHERE o.date = $1
-      GROUP BY payment_type
+      GROUP BY LOWER(payment_type)
     `, [reportDate]);
     
     // Get category breakdown
