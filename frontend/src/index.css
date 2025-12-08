@@ -1,2 +1,51 @@
 /* index.css */
 @import "tailwindcss";
+
+/* ============================================
+   VIEW-SPECIFIC INPUT MODALITY ADAPTATIONS
+   ============================================ */
+
+/* CASHIER VIEW - Touchscreen Optimized (Experienced Power Users) */
+.cashier-view {
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+.cashier-view button {
+  min-height: 60px;
+  min-width: 60px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* CUSTOMER VIEW - Touchscreen Optimized (Casual Users) */
+.customer-view {
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  font-size: 1.125rem;
+}
+
+.customer-view button {
+  min-height: 70px;
+  min-width: 70px;
+}
+
+/* MANAGER VIEW - Keyboard/Mouse Optimized (Familiar End Users) */
+.manager-view {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.manager-view button:focus,
+.manager-view input:focus,
+.manager-view select:focus {
+  outline: 3px solid #9333ea;
+  outline-offset: 2px;
+}
+
+/* Focus visible for keyboard navigation */
+:focus-visible {
+  outline: 3px solid #3b82f6;
+  outline-offset: 2px;
+}

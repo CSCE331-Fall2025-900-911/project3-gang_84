@@ -187,7 +187,7 @@ export default function ZReport() {
           <div className="bg-white p-6 rounded-lg shadow-md print:shadow-none">
             <div className="text-center mb-6 print:mb-4">
               <h3 className="text-2xl font-bold text-gray-900">Z-REPORT</h3>
-              <p className="text-lg text-gray-700">Kung Fu Tea - End of Day Report</p>
+              <p className="text-lg text-gray-700">ShareNook - End of Day Report</p>
               <div className="mt-2 text-sm text-gray-600">
                 <p>Report Date: {new Date(reportPreview.date).toLocaleDateString()}</p>
                 <p>Generated: {reportPreview.generatedAt}</p>
