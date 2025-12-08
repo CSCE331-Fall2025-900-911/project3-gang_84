@@ -16,6 +16,14 @@ export default function Employees() {
     phonenumber: ''
   });
 
+  // Format phone number as user types (XXX-XXX-XXXX)
+  const formatPhoneNumber = (value) => {
+    const numbers = value.replace(/\D/g, '');
+    if (numbers.length <= 3) return numbers;
+    if (numbers.length <= 6) return `${numbers.slice(0, 3)}-${numbers.slice(3)}`;
+    return `${numbers.slice(0, 3)}-${numbers.slice(3, 6)}-${numbers.slice(6, 10)}`;
+  };
+
   useEffect(() => {
     fetchEmployees();
   }, []);
@@ -175,8 +183,8 @@ export default function Employees() {
 
       {/* Add/Edit Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 flex items-center justify-center z-50 p-4" style={{ backgroundColor: 'rgba(0, 0, 0, 0.4)' }}>
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-8 max-h-[90vh] overflow-y-auto">
             <h3 className="text-2xl font-bold mb-6">{editEmployee ? 'Edit' : 'Add'} Employee</h3>
             <div className="space-y-4">
               <div>
@@ -193,9 +201,10 @@ export default function Employees() {
                 <input
                   type="tel"
                   value={formData.phonenumber}
-                  onChange={(e) => setFormData({ ...formData, phonenumber: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, phonenumber: formatPhoneNumber(e.target.value) })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                   placeholder="555-123-4567"
+                  maxLength="12"
                 />
               </div>
               <div>
