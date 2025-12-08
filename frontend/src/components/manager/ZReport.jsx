@@ -24,6 +24,11 @@ export default function ZReport() {
 
       const data = await response.json();
       
+      // Check if already finalized
+      if (data.isFinalized) {
+        setIsFinalized(true);
+      }
+      
       // Transform API response to match component format
       setReportPreview({
         date: data.date,
@@ -41,25 +46,34 @@ export default function ZReport() {
         
         transactions: {
           totalTransactions: parseInt(data.transactions?.totalTransactions || 0),
-          cash: data.transactions?.cash || { count: 0, amount: 0 },
-          credit: data.transactions?.credit || { count: 0, amount: 0 },
-          debit: data.transactions?.debit || { count: 0, amount: 0 },
+          cash: {
+            count: parseInt(data.transactions?.cash?.count || 0),
+            amount: parseFloat(data.transactions?.cash?.amount || 0)
+          },
+          credit: {
+            count: parseInt(data.transactions?.credit?.count || 0),
+            amount: parseFloat(data.transactions?.credit?.amount || 0)
+          },
+          debit: {
+            count: parseInt(data.transactions?.debit?.count || 0),
+            amount: parseFloat(data.transactions?.debit?.amount || 0)
+          },
         },
         
         products: {
           totalItemsSold: parseInt(data.products?.totalItemsSold || 0),
-          categories: data.products?.categories || [],
+          categories: (data.products?.categories || []).map(cat => ({
+            name: cat.name,
+            items: parseInt(cat.items || 0),
+            revenue: parseFloat(cat.revenue || 0)
+          })),
         },
         
-        topSellers: data.topSellers || [],
-        
-        cashDrawer: {
-          openingBalance: 200.00,
-          cashSales: parseFloat(data.transactions?.cash?.amount || 0),
-          expectedCash: 200.00 + parseFloat(data.transactions?.cash?.amount || 0),
-          actualCash: 200.00 + parseFloat(data.transactions?.cash?.amount || 0), // TODO: Allow manual entry
-          difference: 0.00,
-        },
+        topSellers: (data.topSellers || []).map(item => ({
+          name: item.name,
+          quantity: parseInt(item.quantity || 0),
+          revenue: parseFloat(item.revenue || 0)
+        })),
       });
     } catch (err) {
       setError(err.message);
@@ -69,19 +83,39 @@ export default function ZReport() {
     }
   };
 
-  const finalizeReport = () => {
+  const finalizeReport = async () => {
     if (window.confirm(
-      'WARNING: Finalizing the Z-Report will permanently close the day and reset the system. ' +
+      'WARNING: Finalizing the Z-Report will permanently close the day and save totals to daily_totals table. ' +
       'This action should only be performed once at the end of the business day. ' +
       'Are you sure you want to continue?'
     )) {
       setLoading(true);
-      // TODO: Implement API call to finalize Z-Report
-      setTimeout(() => {
+      setError(null);
+      
+      try {
+        const response = await fetch(API_ENDPOINTS.manager.reports.finalizeZReport, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ date: reportDate }),
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to finalize Z-Report');
+        }
+        
+        const data = await response.json();
         setIsFinalized(true);
+        alert(`Z-Report finalized successfully!\n\nReport Date: ${data.data.reportDate}\nTotal Sales: $${data.data.totalSales.toFixed(2)}\nTotal Orders: ${data.data.totalOrders}\n\nDay has been closed and saved to daily_totals table.`);
+      } catch (err) {
+        setError(err.message);
+        console.error('Error finalizing Z-Report:', err);
+        alert(`Failed to finalize Z-Report: ${err.message}`);
+      } finally {
         setLoading(false);
-        alert('Z-Report finalized successfully! Day has been closed.');
-      }, 1500);
+      }
     }
   };
 
@@ -262,38 +296,13 @@ export default function ZReport() {
             </table>
           </div>
 
-          {/* Cash Drawer Reconciliation */}
-          <div className="bg-white p-6 rounded-lg shadow-md print:shadow-none">
-            <h4 className="text-lg font-bold text-gray-800 mb-3">Cash Drawer Reconciliation</h4>
-            <div className="space-y-2">
-              <div className="flex justify-between py-2">
-                <span className="text-gray-700">Opening Balance:</span>
-                <span className="font-semibold">${reportPreview.cashDrawer.openingBalance.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between py-2">
-                <span className="text-gray-700">Cash Sales:</span>
-                <span className="font-semibold">${reportPreview.cashDrawer.cashSales.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between py-2 border-t border-gray-200">
-                <span className="text-gray-700">Expected Cash:</span>
-                <span className="font-semibold">${reportPreview.cashDrawer.expectedCash.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between py-2">
-                <span className="text-gray-700">Actual Cash:</span>
-                <span className="font-semibold">${reportPreview.cashDrawer.actualCash.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between py-2 border-t-2 border-gray-300">
-                <span className="font-bold">Difference:</span>
-                <span className={`font-bold ${reportPreview.cashDrawer.difference === 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  ${Math.abs(reportPreview.cashDrawer.difference).toFixed(2)}
-                  {reportPreview.cashDrawer.difference !== 0 && (reportPreview.cashDrawer.difference > 0 ? ' (Over)' : ' (Short)')}
-                </span>
-              </div>
-            </div>
-          </div>
-
           {/* Action Buttons */}
           <div className="bg-white p-6 rounded-lg shadow-md print:hidden">
+            {isFinalized && (
+              <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="text-yellow-800 font-semibold">⚠️ This report has already been finalized in the daily_totals table.</p>
+              </div>
+            )}
             <div className="flex gap-4">
               <button
                 onClick={printReport}
@@ -306,12 +315,12 @@ export default function ZReport() {
                 disabled={isFinalized || loading}
                 className="flex-1 px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 font-semibold disabled:bg-gray-400"
               >
-                {isFinalized ? '✓ Report Finalized' : '🔒 Finalize and Close Day'}
+                {isFinalized ? '✓ Already Finalized' : '🔒 Finalize and Close Day'}
               </button>
             </div>
             {isFinalized && (
               <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-                <p className="text-green-800 font-semibold">✓ Z-Report has been finalized and saved permanently.</p>
+                <p className="text-green-800 font-semibold">✓ Z-Report has been finalized and saved permanently to daily_totals table (matches Java Project 2).</p>
               </div>
             )}
           </div>

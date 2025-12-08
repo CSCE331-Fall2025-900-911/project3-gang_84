@@ -46,10 +46,12 @@ export const API_ENDPOINTS = {
       categories: `${API_BASE_URL}/api/manager/reports/categories`,
       popularItems: `${API_BASE_URL}/api/manager/reports/popular-items`,
       product: `${API_BASE_URL}/api/manager/reports/product`,
+      productUsage: `${API_BASE_URL}/api/manager/reports/product-usage`,
       employee: `${API_BASE_URL}/api/manager/reports/employee`,
       inventory: `${API_BASE_URL}/api/manager/reports/inventory`,
       xreport: `${API_BASE_URL}/api/manager/reports/xreport`,
       zreport: `${API_BASE_URL}/api/manager/reports/zreport`,
+      finalizeZReport: `${API_BASE_URL}/api/manager/reports/zreport/finalize`,
     }
   }
 };
