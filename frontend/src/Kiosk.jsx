@@ -241,7 +241,7 @@ function DrinkCard({ drink, onDrinkClick, getTranslatedText, highContrast }) {
 }
 
 // The sidebar showing the cart
-function Cart({ cartItems, total, highContrast, getTranslatedText, onPay, largeClickTargets }) {
+function Cart({ cartItems, total, highContrast, getTranslatedText, onPay, largeClickTargets, onRemoveItem }) {
   const getButtonSizeClass = () => {
     return largeClickTargets
       ? 'min-h-[80px] px-8 py-6 text-xl'
@@ -287,11 +287,24 @@ function Cart({ cartItems, total, highContrast, getTranslatedText, onPay, largeC
                   {item.quantity} x ${parseFloat(item.price).toFixed(2)}
                 </span>
               </div>
-              <span className={`font-bold ml-2 text-lg ${
-                highContrast ? 'text-white' : 'text-gray-800'
-              }`}>
-                ${(item.quantity * parseFloat(item.price)).toFixed(2)}
-              </span>
+              <div className="flex flex-col items-end ml-2">
+                <span className={`font-bold text-lg mb-2 ${
+                  highContrast ? 'text-white' : 'text-gray-800'
+                }`}>
+                  ${(item.quantity * parseFloat(item.price)).toFixed(2)}
+                </span>
+                <button
+                  onClick={() => onRemoveItem(index)}
+                  className={`min-h-[44px] min-w-[44px] px-3 py-2 rounded-lg font-semibold transition-colors ${
+                    highContrast
+                      ? 'bg-red-700 text-white border-2 border-yellow-400 hover:bg-red-600'
+                      : 'bg-red-500 text-white hover:bg-red-600'
+                  }`}
+                  aria-label={`Remove ${item.name} from cart`}
+                >
+                  ✕
+                </button>
+              </div>
             </div>
           ))
         )}
@@ -882,6 +895,11 @@ export default function Kiosk({ role = 'customer' }) {
         return [...prevCart, { ...customizedDrink, quantity: 1 }];
       }
     });
+  };
+
+  // Remove an item from the cart by index
+  const handleRemoveItem = (index) => {
+    setCart((prevCart) => prevCart.filter((_, i) => i !== index));
   };
 
   // Handle Pay button click - navigate to cart view
@@ -1545,6 +1563,7 @@ export default function Kiosk({ role = 'customer' }) {
           getTranslatedText={getTranslatedText} 
           onPay={handlePayClick} 
           largeClickTargets={largeClickTargets}
+          onRemoveItem={handleRemoveItem}
         />
       </div>
 
