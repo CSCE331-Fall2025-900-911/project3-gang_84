@@ -67,6 +67,27 @@ export default function Cashier() {
     setCart(prev => prev.filter((_, i) => i !== index));
   };
 
+  // Increase quantity of an item in the cart
+  const handleIncreaseQuantity = (index) => {
+    setCart(prev => prev.map((item, i) => 
+      i === index ? { ...item, quantity: item.quantity + 1 } : item
+    ));
+  };
+
+  // Decrease quantity of an item in the cart (remove if quantity becomes 0)
+  const handleDecreaseQuantity = (index) => {
+    setCart(prev => {
+      const item = prev[index];
+      if (item.quantity === 1) {
+        // Remove item if quantity is 1
+        return prev.filter((_, i) => i !== index);
+      }
+      return prev.map((item, i) => 
+        i === index ? { ...item, quantity: item.quantity - 1 } : item
+      );
+    });
+  };
+
   // Clear cart
   const handleClearCart = () => {
     if (window.confirm('Clear all items from cart?')) {
@@ -473,6 +494,8 @@ export default function Cashier() {
         getTranslatedText={getTranslatedText}
         onAddToCart={handleAddToCart}
         onRemoveFromCart={handleRemoveFromCart}
+        onIncreaseQuantity={handleIncreaseQuantity}
+        onDecreaseQuantity={handleDecreaseQuantity}
         cart={cart}
         onCheckout={handleCheckout}
         onClearCart={handleClearCart}

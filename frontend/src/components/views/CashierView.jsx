@@ -14,6 +14,8 @@ export default function CashierView({
   getTranslatedText,
   onAddToCart,
   onRemoveFromCart,
+  onIncreaseQuantity,
+  onDecreaseQuantity,
   cart,
   onCheckout,
   onClearCart,
@@ -338,51 +340,83 @@ export default function CashierView({
               {cart.map((item, index) => (
                 <div
                   key={`${item.menuitemid}-${index}`}
-                  className={`p-3 rounded-lg relative ${
+                  className={`p-3 rounded-lg flex justify-between ${
                     highContrast
                       ? 'bg-gray-800 border border-yellow-400'
                       : 'bg-gray-50 border border-gray-200'
                   }`}
                 >
-                  {/* Remove button */}
-                  <button
-                    onClick={() => onRemoveFromCart(index)}
-                    className={`absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
-                      highContrast
-                        ? 'bg-red-900 hover:bg-red-700 text-yellow-400'
-                        : 'bg-red-100 hover:bg-red-200 text-red-600'
-                    }`}
-                    title={getTranslatedText('Remove item')}
-                  >
-                    ×
-                  </button>
-                  <div className="flex justify-between items-start mb-1 pr-8">
-                    <span className={`font-semibold ${
-                      highContrast ? 'text-yellow-400' : 'text-gray-800'
-                    }`}>
-                      {getTranslatedText(item.name)}
-                    </span>
-                    <span className={`font-bold ${
+                  <div className="flex-1 pr-2">
+                    <div className="flex justify-between items-start mb-1">
+                      <span className={`font-semibold ${
+                        highContrast ? 'text-yellow-400' : 'text-gray-800'
+                      }`}>
+                        {getTranslatedText(item.name)}
+                      </span>
+                    </div>
+                    {item.customizations && (
+                      <div className={`text-xs mt-1 ${
+                        highContrast ? 'text-gray-500' : 'text-gray-500'
+                      }`}>
+                        {getTranslatedText(item.customizations.sweetness)} • {getTranslatedText(item.customizations.ice)}
+                        {item.customizations.toppings.length > 0 && (
+                          <span> • +{item.customizations.toppings.length} {getTranslatedText('toppings')}</span>
+                        )}
+                      </div>
+                    )}
+                    <div className="flex items-center gap-0.5 mt-1">
+                      <button
+                        onClick={() => onDecreaseQuantity(index)}
+                        className={`h-4 w-4 rounded text-xs font-bold leading-none transition-colors ${
+                          highContrast
+                            ? 'bg-gray-700 text-yellow-400 border border-yellow-400 hover:bg-gray-600'
+                            : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                        }`}
+                        aria-label="Decrease quantity"
+                      >
+                        −
+                      </button>
+                      <span className={`text-xs min-w-[20px] text-center ${
+                        highContrast ? 'text-white' : 'text-gray-800'
+                      }`}>
+                        {item.quantity}
+                      </span>
+                      <button
+                        onClick={() => onIncreaseQuantity(index)}
+                        className={`h-4 w-4 rounded text-xs font-bold leading-none transition-colors ${
+                          highContrast
+                            ? 'bg-gray-700 text-yellow-400 border border-yellow-400 hover:bg-gray-600'
+                            : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                        }`}
+                        aria-label="Increase quantity"
+                      >
+                        +
+                      </button>
+                      <span className={`text-xs ${
+                        highContrast ? 'text-gray-400' : 'text-gray-600'
+                      }`}>
+                        × ${parseFloat(item.price).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end ml-1">
+                    <span className={`font-bold text-sm mb-1 ${
                       highContrast ? 'text-white' : 'text-gray-800'
                     }`}>
                       ${(item.quantity * parseFloat(item.price)).toFixed(2)}
                     </span>
+                    <button
+                      onClick={() => onRemoveFromCart(index)}
+                      className={`h-6 w-6 rounded text-sm font-semibold leading-none transition-colors ${
+                        highContrast
+                          ? 'bg-red-700 text-white border border-yellow-400 hover:bg-red-600'
+                          : 'bg-red-500 text-white hover:bg-red-600'
+                      }`}
+                      aria-label={`${getTranslatedText('Remove')} ${item.name}`}
+                    >
+                      ✕
+                    </button>
                   </div>
-                  <div className={`text-xs ${
-                    highContrast ? 'text-gray-400' : 'text-gray-600'
-                  }`}>
-                    {getTranslatedText('Qty')}: {item.quantity} × ${parseFloat(item.price).toFixed(2)}
-                  </div>
-                  {item.customizations && (
-                    <div className={`text-xs mt-1 ${
-                      highContrast ? 'text-gray-500' : 'text-gray-500'
-                    }`}>
-                      {getTranslatedText(item.customizations.sweetness)} • {getTranslatedText(item.customizations.ice)}
-                      {item.customizations.toppings.length > 0 && (
-                        <span> • +{item.customizations.toppings.length} {getTranslatedText('toppings')}</span>
-                      )}
-                    </div>
-                  )}
                 </div>
               ))}
             </div>

@@ -214,7 +214,7 @@ function DrinkCard({ drink, onDrinkClick, getTranslatedText, highContrast }) {
 }
 
 // The sidebar showing the cart
-function Cart({ cartItems, total, highContrast, getTranslatedText, onPay, largeClickTargets, onRemoveItem }) {
+function Cart({ cartItems, total, highContrast, getTranslatedText, onPay, largeClickTargets, onRemoveItem, onIncreaseQuantity, onDecreaseQuantity }) {
   const getButtonSizeClass = () => {
     return largeClickTargets
       ? 'min-h-[80px] px-8 py-6 text-xl'
@@ -254,23 +254,52 @@ function Cart({ cartItems, total, highContrast, getTranslatedText, onPay, largeC
                     )}
                   </div>
                 )}
-                <span className={`text-sm block mt-1 ${
-                  highContrast ? 'text-gray-300' : 'text-gray-500'
-                }`}>
-                  {item.quantity} x ${parseFloat(item.price).toFixed(2)}
-                </span>
+                <div className="flex items-center gap-0.5 mt-1">
+                  <button
+                    onClick={() => onDecreaseQuantity(index)}
+                    className={`h-5 w-5 rounded text-xs font-bold leading-none transition-colors ${
+                      highContrast
+                        ? 'bg-gray-700 text-yellow-400 border border-yellow-400 hover:bg-gray-600'
+                        : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                    }`}
+                    aria-label="Decrease quantity"
+                  >
+                    −
+                  </button>
+                  <span className={`text-xs min-w-[25px] text-center ${
+                    highContrast ? 'text-white' : 'text-gray-800'
+                  }`}>
+                    {item.quantity}
+                  </span>
+                  <button
+                    onClick={() => onIncreaseQuantity(index)}
+                    className={`h-5 w-5 rounded text-xs font-bold leading-none transition-colors ${
+                      highContrast
+                        ? 'bg-gray-700 text-yellow-400 border border-yellow-400 hover:bg-gray-600'
+                        : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                    }`}
+                    aria-label="Increase quantity"
+                  >
+                    +
+                  </button>
+                  <span className={`text-xs ml-1 ${
+                    highContrast ? 'text-gray-300' : 'text-gray-500'
+                  }`}>
+                    × ${parseFloat(item.price).toFixed(2)}
+                  </span>
+                </div>
               </div>
-              <div className="flex flex-col items-end ml-2">
-                <span className={`font-bold text-lg mb-2 ${
+              <div className="flex flex-col items-end ml-1">
+                <span className={`font-bold text-sm mb-1 ${
                   highContrast ? 'text-white' : 'text-gray-800'
                 }`}>
                   ${(item.quantity * parseFloat(item.price)).toFixed(2)}
                 </span>
                 <button
                   onClick={() => onRemoveItem(index)}
-                  className={`min-h-[44px] min-w-[44px] px-3 py-2 rounded-lg font-semibold transition-colors ${
+                  className={`h-7 w-7 rounded text-sm font-semibold leading-none transition-colors ${
                     highContrast
-                      ? 'bg-red-700 text-white border-2 border-yellow-400 hover:bg-red-600'
+                      ? 'bg-red-700 text-white border border-yellow-400 hover:bg-red-600'
                       : 'bg-red-500 text-white hover:bg-red-600'
                   }`}
                   aria-label={`Remove ${item.name} from cart`}
@@ -871,6 +900,27 @@ export default function Kiosk({ role = 'customer' }) {
   // Remove an item from the cart by index
   const handleRemoveItem = (index) => {
     setCart((prevCart) => prevCart.filter((_, i) => i !== index));
+  };
+
+  // Increase quantity of an item in the cart
+  const handleIncreaseQuantity = (index) => {
+    setCart((prevCart) => prevCart.map((item, i) => 
+      i === index ? { ...item, quantity: item.quantity + 1 } : item
+    ));
+  };
+
+  // Decrease quantity of an item in the cart (remove if quantity becomes 0)
+  const handleDecreaseQuantity = (index) => {
+    setCart((prevCart) => {
+      const item = prevCart[index];
+      if (item.quantity === 1) {
+        // Remove item if quantity is 1
+        return prevCart.filter((_, i) => i !== index);
+      }
+      return prevCart.map((item, i) => 
+        i === index ? { ...item, quantity: item.quantity - 1 } : item
+      );
+    });
   };
 
   // Handle Pay button click - navigate to cart view
@@ -1534,6 +1584,8 @@ export default function Kiosk({ role = 'customer' }) {
           onPay={handlePayClick} 
           largeClickTargets={largeClickTargets}
           onRemoveItem={handleRemoveItem}
+          onIncreaseQuantity={handleIncreaseQuantity}
+          onDecreaseQuantity={handleDecreaseQuantity}
         />
       </div>
 
