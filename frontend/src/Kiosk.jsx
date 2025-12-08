@@ -1297,29 +1297,16 @@ export default function Kiosk({ role = 'customer' }) {
 
   // Default: Menu View
   return (
-    <div className={getContainerClass()}>
+    <div className={`customer-view ${getContainerClass()}`}>
       
       {/* Top Navigation Tabs */}
       <header className={`shadow-md ${highContrast ? 'bg-gray-900 border-b-4 border-yellow-400' : 'bg-white'}`}>
         <div className="flex items-center justify-between px-8 py-4">
-          {/* Left: Back Button + Kiosk Title + Role Badge + User Info */}
+          {/* Left: Kiosk Title */}
           <div className="flex items-center gap-8">
-            {/* Back to Role Selection Button */}
-            <button
-              onClick={() => navigate('/')}
-              className={`px-4 py-2 rounded-lg font-semibold transition-colors flex items-center gap-2 ${getButtonSizeClass()} ${
-                highContrast
-                  ? 'bg-gray-800 text-yellow-400 border-2 border-yellow-400 hover:bg-gray-700'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
-              title="Back to Role Selection"
-            >
-              ← {getTranslatedText('Back')}
-            </button>
-
-            <h1 className={`text-3xl font-bold ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>{getTranslatedText('ShareTea')}</h1>
+            <h1 className={`text-3xl font-bold ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>{getTranslatedText('ShareTea Kiosk')}</h1>
             
-            {/* Role Badge (for staff) */}
+            {/* Role Badge (for staff) - should not appear for customers */}
             {role !== 'customer' && (
               <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
                 role === 'manager' 

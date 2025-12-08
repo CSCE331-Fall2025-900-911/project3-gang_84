@@ -278,7 +278,7 @@ export default function Manager() {
   ];
 
   return (
-    <div className={getContainerClass()}>
+    <div className={`manager-view ${getContainerClass()}`}>
       {/* Header */}
       <header className={`shadow-lg ${
         highContrast ? 'bg-gray-900 border-b-4 border-yellow-400' : 'bg-gradient-to-r from-purple-600 to-purple-800'
@@ -286,20 +286,6 @@ export default function Manager() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              {/* Back Button */}
-              <button
-                onClick={() => navigate('/')}
-                className={`px-6 py-4 rounded-lg font-semibold transition-colors flex items-center gap-2 text-lg ${
-                  highContrast
-                    ? 'bg-gray-800 text-yellow-400 border-2 border-yellow-400 hover:bg-gray-700'
-                    : 'bg-purple-700 text-white hover:bg-purple-900 border-2 border-purple-500'
-                }`}
-                style={{ minHeight: '60px' }}
-                title={getTranslatedText('Back to Role Selection')}
-              >
-                ← {getTranslatedText('Back')}
-              </button>
-              
               <div>
                 <h1 className={`text-3xl font-bold ${
                   highContrast ? 'text-yellow-400' : 'text-white'

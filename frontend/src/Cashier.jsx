@@ -389,32 +389,18 @@ export default function Cashier() {
   }
 
   return (
-    <div className={getContainerClass()}>
+    <div className={`cashier-view ${getContainerClass()}`}>
       {/* Header */}
       <header className={`sticky top-0 z-40 shadow-md ${
         highContrast ? 'bg-gray-900 border-b-4 border-yellow-400' : 'bg-gradient-to-r from-green-700 to-green-800'
       }`}>
         <div className="flex items-center justify-between px-6 py-3">
-          {/* Left: Back Button + Title */}
+          {/* Left: Title */}
           <div className="flex items-center gap-8">
-            {/* Back Button */}
-            <button
-              onClick={() => navigate('/')}
-              className={`px-6 py-4 rounded-lg font-semibold transition-colors flex items-center gap-2 text-lg ${
-                highContrast
-                  ? 'bg-gray-800 text-yellow-400 border-2 border-yellow-400 hover:bg-gray-700'
-                  : 'bg-white text-gray-900 hover:bg-gray-100 border-2 border-gray-300'
-              }`}
-              style={{ minHeight: '60px' }}
-              title={getTranslatedText('Back to Role Selection')}
-            >
-              ← {getTranslatedText('Back')}
-            </button>
-
             <h1 className={`text-3xl font-bold ${
               highContrast ? 'text-yellow-400' : 'text-white'
             }`}>
-              {getTranslatedText('ShareTea')}
+              {getTranslatedText('ShareTea')} - {getTranslatedText('Cashier')}
             </h1>
           </div>
           
