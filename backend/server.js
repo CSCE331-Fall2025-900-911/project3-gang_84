@@ -1196,10 +1196,10 @@ app.get('/api/manager/reports/categories', async (req, res) => {
     const result = await pool.query(`
       SELECT 
         m.category,
-        COUNT(oi.orderitemid) as orders,
-        SUM(m.price) as revenue
+        COUNT(oi.itemid) as orders,
+        SUM(oi.price) as revenue
       FROM order_items oi
-      JOIN menu_items m ON oi.menuitemid = m.menuitemid
+      JOIN menu_items m ON oi.drink = m.name
       JOIN orders o ON oi.orderid = o.orderid
       WHERE o.date >= $1 AND o.date <= $2
       GROUP BY m.category
