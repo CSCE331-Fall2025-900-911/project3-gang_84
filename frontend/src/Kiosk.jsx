@@ -1304,7 +1304,7 @@ export default function Kiosk({ role = 'customer' }) {
         <div className="flex items-center justify-between px-8 py-4">
           {/* Left: Kiosk Title */}
           <div className="flex items-center gap-8">
-            <h1 className={`text-3xl font-bold ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>{getTranslatedText('ShareTea Kiosk')}</h1>
+            <h1 className={`text-3xl font-bold ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>{getTranslatedText('ShareNook Kiosk')}</h1>
             
             {/* Role Badge (for staff) - should not appear for customers */}
             {role !== 'customer' && (

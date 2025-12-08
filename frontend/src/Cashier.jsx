@@ -400,7 +400,7 @@ export default function Cashier() {
             <h1 className={`text-3xl font-bold ${
               highContrast ? 'text-yellow-400' : 'text-white'
             }`}>
-              {getTranslatedText('ShareTea')} - {getTranslatedText('Cashier')}
+              {getTranslatedText('ShareNook')} - {getTranslatedText('Cashier')}
             </h1>
           </div>
           

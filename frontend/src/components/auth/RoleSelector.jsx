@@ -12,7 +12,7 @@ export default function RoleSelector() {
       <div className="max-w-6xl w-full">
         <div className="text-center mb-12">
           <h1 className="text-5xl font-bold text-gray-800 mb-4">
-            Welcome to ShareTea
+            Welcome to ShareNook
           </h1>
           <p className="text-xl text-gray-600">
             Select your access level to continue

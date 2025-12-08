@@ -69,7 +69,7 @@ export default function Manager() {
     // Pre-translate common UI elements
     const textsToTranslate = [
       'Manager Dashboard',
-      'Kung Fu Tea - Management System',
+      'ShareNook - Management System',
       'Manager',
       'Back',
       'Back to Role Selection',
@@ -295,7 +295,7 @@ export default function Manager() {
                 <p className={`mt-1 ${
                   highContrast ? 'text-gray-300' : 'text-purple-100'
                 }`}>
-                  {getTranslatedText('Kung Fu Tea - Management System')}
+                  {getTranslatedText('ShareNook - Management System')}
                 </p>
               </div>
             </div>
