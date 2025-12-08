@@ -58,17 +58,16 @@ export default function WeatherWidget({ highContrast, onWeatherUpdate }) {
   const forecast = weatherData.forecast?.forecastday || [];
 
   return (
-    <div 
-      className="relative"
-      onMouseEnter={() => setShowForecast(true)}
-      onMouseLeave={() => setShowForecast(false)}
-    >
-      {/* Current Weather Display */}
-      <div className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors cursor-pointer ${
-        highContrast 
-          ? 'text-yellow-400 hover:bg-gray-800' 
-          : 'text-gray-700 hover:bg-gray-100'
-      }`}>
+    <div className="relative">
+      {/* Current Weather Display - Click to toggle forecast */}
+      <div 
+        onClick={() => setShowForecast(!showForecast)}
+        className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors cursor-pointer ${
+          highContrast 
+            ? 'text-yellow-400 hover:bg-gray-800' 
+            : 'text-gray-700 hover:bg-gray-100'
+        }`}
+      >
         <span className="text-2xl">{getWeatherIcon(current.condition.text)}</span>
         <div className="text-left">
           <div className={`text-lg font-bold ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
@@ -78,9 +77,11 @@ export default function WeatherWidget({ highContrast, onWeatherUpdate }) {
             {weatherData.location.name}
           </div>
         </div>
+        {/* Indicator for touchscreen users */}
+        <span className="text-xs opacity-50">{showForecast ? '▲' : '▼'}</span>
       </div>
 
-      {/* 3-Day Forecast Popup (on hover) */}
+      {/* 3-Day Forecast Popup (on click/tap) */}
       {showForecast && forecast.length > 0 && (
         <div 
           className={`absolute top-full right-0 mt-2 rounded-xl shadow-2xl p-4 min-w-[300px] z-50 ${
@@ -89,9 +90,22 @@ export default function WeatherWidget({ highContrast, onWeatherUpdate }) {
               : 'bg-white border border-gray-200'
           }`}
         >
-          <h3 className={`text-lg font-bold mb-3 ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
-            3-Day Forecast
-          </h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className={`text-lg font-bold ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
+              3-Day Forecast
+            </h3>
+            <button
+              onClick={() => setShowForecast(false)}
+              className={`text-xl p-1 rounded ${
+                highContrast 
+                  ? 'text-yellow-400 hover:bg-gray-800' 
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+              aria-label="Close forecast"
+            >
+              ✕
+            </button>
+          </div>
           <div className="space-y-2">
             {forecast.slice(0, 3).map((day, index) => {
               const date = new Date(day.date);

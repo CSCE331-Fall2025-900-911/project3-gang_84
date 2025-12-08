@@ -190,7 +190,7 @@ export default function Weather() {
           </div>
           <button
             onClick={fetchWeather}
-            className="text-blue-600 hover:text-blue-800 transition-colors"
+            className="text-blue-600 transition-colors"
             title="Refresh weather"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -269,7 +269,7 @@ export default function Weather() {
               return (
                 <div
                   key={day.date}
-                  className="bg-blue-50 rounded-xl p-4 text-center hover:bg-blue-100 transition-colors"
+                  className="bg-blue-50 rounded-xl p-4 text-center transition-colors"
                 >
                   <div className="font-semibold text-gray-800 mb-2">{dayName}</div>
                   <div className="text-xs text-gray-500 mb-2">
