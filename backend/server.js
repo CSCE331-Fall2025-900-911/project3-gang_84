@@ -229,13 +229,22 @@ app.get('/api/menu', async (req, res) => {
       ORDER BY menuitemid
     `);
 
+    // 6. Get size options (type = 'Modification' and category = 'size')
+    const sizePromise = pool.query(`
+      SELECT menuitemid, name, price 
+      FROM menu_items 
+      WHERE type = 'Modification' AND category = 'size'
+      ORDER BY menuitemid
+    `);
+
     // Wait for all queries to finish
-    const [menuItemsResult, categoriesResult, toppingsResult, sweetnessResult, iceResult] = await Promise.all([
+    const [menuItemsResult, categoriesResult, toppingsResult, sweetnessResult, iceResult, sizeResult] = await Promise.all([
       menuItemsPromise,
       categoriesPromise,
       toppingsPromise,
       sweetnessPromise,
       icePromise,
+      sizePromise,
     ]);
     
     // Send the structured data
@@ -245,6 +254,7 @@ app.get('/api/menu', async (req, res) => {
       toppings: toppingsResult.rows,
       sweetness_options: sweetnessResult.rows,
       ice_options: iceResult.rows,
+      size_options: sizeResult.rows,
     });
     
   } catch (err) {

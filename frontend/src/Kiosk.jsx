@@ -10,10 +10,11 @@ import ThankYouScreen from './components/views/ThankYouScreen';
 import { API_ENDPOINTS } from './config/api';
 
 // Customization Modal
-function CustomizationModal({ drink, onClose, onAddToCart, sweetnessOptions, iceOptions, toppingOptions, getTranslatedText, highContrast }) {
+function CustomizationModal({ drink, onClose, onAddToCart, sweetnessOptions, iceOptions, sizeOptions, toppingOptions, getTranslatedText, highContrast }) {
   // Set default to first option from each category
   const [sweetness, setSweetness] = useState(sweetnessOptions[0]);
   const [ice, setIce] = useState(iceOptions[0]);
+  const [size, setSize] = useState(sizeOptions[0] || { name: 'Small', price: 0 });
   const [toppings, setToppings] = useState([]);
 
   const toggleTopping = (topping) => {
@@ -32,13 +33,15 @@ function CustomizationModal({ drink, onClose, onAddToCart, sweetnessOptions, ice
     const toppingsPrice = toppings.reduce((sum, t) => sum + parseFloat(t.price), 0);
     const sweetnessPrice = sweetness ? parseFloat(sweetness.price) : 0;
     const icePrice = ice ? parseFloat(ice.price) : 0;
-    return basePrice + toppingsPrice + sweetnessPrice + icePrice;
+    const sizePrice = size ? parseFloat(size.price) : 0;
+    return basePrice + toppingsPrice + sweetnessPrice + icePrice + sizePrice;
   };
 
   const handleAddToCart = () => {
     const customizedDrink = {
       ...drink,
       customizations: {
+        size: size.name,
         sweetness: sweetness.name,
         ice: ice.name,
         toppings: toppings.map(t => t.name),
@@ -74,6 +77,30 @@ function CustomizationModal({ drink, onClose, onAddToCart, sweetnessOptions, ice
           >
             ✕
           </button>
+        </div>
+
+        {/* Size Selection */}
+        <div className="mb-6">
+          <h3 className={`text-xl font-semibold mb-3 ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
+            {getTranslatedText('Size')}
+          </h3>
+          <div className="flex gap-2 flex-wrap">
+            {sizeOptions.map((option) => (
+              <button
+                key={option.menuitemid}
+                onClick={() => setSize(option)}
+                className={`px-4 py-3 rounded-lg font-semibold transition-colors ${
+                  size?.menuitemid === option.menuitemid
+                    ? highContrast ? 'bg-yellow-400 text-black border-2 border-yellow-400' : 'bg-orange-600 text-white'
+                    : highContrast ? 'bg-gray-800 text-yellow-400 border-2 border-yellow-400' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+                style={{ minHeight: '44px' }}
+              >
+                {getTranslatedText(option.name)}
+                {parseFloat(option.price) > 0 && ` (+$${parseFloat(option.price).toFixed(2)})`}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Sweetness Level */}
@@ -311,6 +338,7 @@ export default function Kiosk({ role = 'customer' }) {
   const [toppings, setToppings] = useState([]);
   const [sweetnessOptions, setSweetnessOptions] = useState([]);
   const [iceOptions, setIceOptions] = useState([]);
+  const [sizeOptions, setSizeOptions] = useState([]);
   const [selectedLanguage, setSelectedLanguage] = useState('en');
   const [translatedData, setTranslatedData] = useState({});
   const [isTranslating, setIsTranslating] = useState(false);
@@ -595,6 +623,7 @@ export default function Kiosk({ role = 'customer' }) {
         setToppings(data.toppings || []);
         setSweetnessOptions(data.sweetness_options || []);
         setIceOptions(data.ice_options || []);
+        setSizeOptions(data.size_options || []);
         
         // Set the default selected category to "All Drinks"
         if (allCategories.length > 0) {
@@ -1244,6 +1273,7 @@ export default function Kiosk({ role = 'customer' }) {
             onAddToCart={handleAddToCart}
             sweetnessOptions={sweetnessOptions}
             iceOptions={iceOptions}
+            sizeOptions={sizeOptions}
             toppingOptions={toppings}
             getTranslatedText={getTranslatedText}
             highContrast={highContrast}
@@ -1526,6 +1556,7 @@ export default function Kiosk({ role = 'customer' }) {
           onAddToCart={handleAddToCart}
           sweetnessOptions={sweetnessOptions}
           iceOptions={iceOptions}
+          sizeOptions={sizeOptions}
           toppingOptions={toppings}
           getTranslatedText={getTranslatedText}
           highContrast={highContrast}
