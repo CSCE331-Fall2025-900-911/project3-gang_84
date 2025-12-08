@@ -16,9 +16,10 @@ export default function OperationalReports() {
   const reportTypes = [
     { value: 'sales', label: 'Sales Summary Report', description: 'Total sales, orders, and revenue breakdown' },
     { value: 'product', label: 'Product Performance Report', description: 'Best and worst selling items' },
+    { value: 'productUsage', label: 'Product Usage Report (Ingredient Consumption)', description: 'Ingredient usage over date range - matches Java Project 2' },
     { value: 'hourly', label: 'Hourly Performance Report', description: 'Sales patterns by hour of day' },
     { value: 'employee', label: 'Employee Performance Report', description: 'Orders processed by each employee' },
-    { value: 'inventory', label: 'Inventory Usage Report', description: 'Ingredient consumption and waste' },
+    { value: 'inventory', label: 'Inventory Status Report', description: 'Current stock levels and reorder status' },
     { value: 'xreport', label: 'X Report (Current Session)', description: 'Sales during current shift' },
   ];
 
@@ -40,6 +41,9 @@ export default function OperationalReports() {
           break;
         case 'product':
           endpoint = `${API_ENDPOINTS.manager.reports.product}?${params}`;
+          break;
+        case 'productUsage':
+          endpoint = `${API_ENDPOINTS.manager.reports.productUsage}?${params}`;
           break;
         case 'hourly':
           endpoint = `${API_ENDPOINTS.manager.reports.hourly}?${params}`;
@@ -115,6 +119,12 @@ export default function OperationalReports() {
         return data.data || [];
       case 'product':
         return data.items || [];
+      case 'productUsage':
+        return (data.data || []).map(item => ({
+          ingredientName: item.ingredientname,
+          totalUsed: parseFloat(item.total_used || 0).toFixed(2),
+          unit: item.unit
+        }));
       case 'hourly':
         return data.data || [];
       case 'employee':
@@ -127,8 +137,8 @@ export default function OperationalReports() {
           reorderLevel: item.reorder_level
         }));
       case 'xreport':
-        // Transform X-Report data to table format
-        return data.products?.categories || [];
+        // Transform X-Report data to show individual drinks
+        return data.products?.drinks || [];
       default:
         return [];
     }

@@ -1189,6 +1189,30 @@ app.get('/api/manager/reports/hourly', async (req, res) => {
   }
 });
 
+// GET /api/manager/reports/product-usage - Get ingredient consumption report (Product Usage Report from Java Project 2)
+app.get('/api/manager/reports/product-usage', async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    const result = await pool.query(`
+      SELECT 
+        i.ingredientname,
+        SUM(r.quantity) AS total_used,
+        i.unit
+      FROM orders o
+      JOIN order_items oi ON o.orderid = oi.orderid
+      JOIN recipes r ON oi.drink = r.menuitemname
+      JOIN ingredients i ON r.ingredientid = i.ingredientid
+      WHERE o.date BETWEEN $1 AND $2
+      GROUP BY i.ingredientname, i.unit
+      ORDER BY i.ingredientname
+    `, [startDate, endDate]);
+    res.json({ data: result.rows });
+  } catch (err) {
+    console.error('Error fetching product usage report:', err);
+    res.status(500).json({ error: 'Failed to fetch product usage report' });
+  }
+});
+
 // GET /api/manager/reports/categories - Get sales by category
 app.get('/api/manager/reports/categories', async (req, res) => {
   try {
@@ -1196,10 +1220,10 @@ app.get('/api/manager/reports/categories', async (req, res) => {
     const result = await pool.query(`
       SELECT 
         m.category,
-        COUNT(oi.orderitemid) as orders,
-        SUM(m.price) as revenue
+        COUNT(oi.itemid) as orders,
+        SUM(oi.price) as revenue
       FROM order_items oi
-      JOIN menu_items m ON oi.menuitemid = m.menuitemid
+      JOIN menu_items m ON oi.drink = m.name
       JOIN orders o ON oi.orderid = o.orderid
       WHERE o.date >= $1 AND o.date <= $2
       GROUP BY m.category
@@ -1245,14 +1269,14 @@ app.get('/api/manager/reports/product', async (req, res) => {
       SELECT 
         m.name,
         m.category,
-        COUNT(oi.orderitemid) as orders,
-        SUM(m.price) as revenue,
-        AVG(m.price) as avg_price
+        COUNT(oi.itemid) as orders,
+        SUM(oi.price) as revenue,
+        AVG(oi.price) as avg_price
       FROM order_items oi
-      JOIN menu_items m ON oi.menuitemid = m.menuitemid
+      JOIN menu_items m ON oi.drink = m.name
       JOIN orders o ON oi.orderid = o.orderid
       WHERE o.date >= $1 AND o.date <= $2
-      GROUP BY m.menuitemid, m.name, m.category
+      GROUP BY m.name, m.category
       ORDER BY revenue DESC
     `, [startDate, endDate]);
     res.json({ items: result.rows });
@@ -1310,21 +1334,31 @@ app.get('/api/manager/reports/inventory', async (req, res) => {
   }
 });
 
-// GET /api/manager/reports/xreport - Get X-Report (current day summary without closing)
+// GET /api/manager/reports/xreport - Get X-Report (hourly sales summary matching Java Project 2)
 app.get('/api/manager/reports/xreport', async (req, res) => {
   try {
     const { date } = req.query;
     const reportDate = date || new Date().toISOString().split('T')[0];
     
-    // Get sales summary
+    // Get hourly sales data (matching Java implementation)
+    const hourlySalesResult = await pool.query(`
+      SELECT 
+        EXTRACT(HOUR FROM o.time) AS sale_hour,
+        SUM(oi.price) AS hourly_total
+      FROM orders o
+      JOIN order_items oi ON o.orderid = oi.orderid
+      WHERE o.date = $1
+      GROUP BY sale_hour
+      ORDER BY sale_hour
+    `, [reportDate]);
+    
+    // Get overall sales summary
     const salesResult = await pool.query(`
       SELECT 
         COUNT(DISTINCT o.orderid) as total_transactions,
-        COALESCE(SUM(p.amount), 0) as gross_sales,
-        COALESCE(AVG(p.amount), 0) as avg_order_value,
-        COUNT(DISTINCT oi.orderitemid) as total_items_sold
+        COALESCE(SUM(oi.price), 0) as gross_sales,
+        COUNT(DISTINCT oi.itemid) as total_items_sold
       FROM orders o
-      LEFT JOIN payments p ON o.orderid = p.order_id
       LEFT JOIN order_items oi ON o.orderid = oi.orderid
       WHERE o.date = $1
     `, [reportDate]);
@@ -1345,17 +1379,33 @@ app.get('/api/manager/reports/xreport', async (req, res) => {
     const categoriesResult = await pool.query(`
       SELECT 
         m.category as name,
-        COUNT(oi.orderitemid) as items,
-        SUM(m.price) as revenue
+        COUNT(oi.itemid) as items,
+        SUM(oi.price) as revenue
       FROM order_items oi
-      JOIN menu_items m ON oi.menuitemid = m.menuitemid
+      JOIN menu_items m ON oi.drink = m.name
       JOIN orders o ON oi.orderid = o.orderid
       WHERE o.date = $1
       GROUP BY m.category
     `, [reportDate]);
     
+    // Get individual drinks breakdown
+    const drinksResult = await pool.query(`
+      SELECT 
+        oi.drink as name,
+        m.category,
+        COUNT(oi.itemid) as items,
+        SUM(oi.price) as revenue
+      FROM order_items oi
+      JOIN menu_items m ON oi.drink = m.name
+      JOIN orders o ON oi.orderid = o.orderid
+      WHERE o.date = $1
+      GROUP BY oi.drink, m.category
+      ORDER BY revenue DESC
+    `, [reportDate]);
+    
     res.json({
       date: reportDate,
+      hourlySales: hourlySalesResult.rows,
       sales: salesResult.rows[0],
       transactions: {
         totalTransactions: parseInt(salesResult.rows[0].total_transactions),
@@ -1365,7 +1415,8 @@ app.get('/api/manager/reports/xreport', async (req, res) => {
       },
       products: {
         totalItemsSold: parseInt(salesResult.rows[0].total_items_sold),
-        categories: categoriesResult.rows
+        categories: categoriesResult.rows,
+        drinks: drinksResult.rows
       }
     });
   } catch (err) {
@@ -1374,23 +1425,38 @@ app.get('/api/manager/reports/xreport', async (req, res) => {
   }
 });
 
-// GET /api/manager/reports/zreport - Get Z-Report (end of day report)
+// GET /api/manager/reports/zreport - Get Z-Report (end of day report matching Java Project 2)
 app.get('/api/manager/reports/zreport', async (req, res) => {
   try {
     const { date } = req.query;
     const reportDate = date || new Date().toISOString().split('T')[0];
     
-    // Get comprehensive end-of-day data
+    // Check if day is already finalized
+    const finalizedCheck = await pool.query(`
+      SELECT COUNT(*) FROM daily_totals WHERE reportdate = $1
+    `, [reportDate]);
+    
+    const isFinalized = parseInt(finalizedCheck.rows[0].count) > 0;
+    
+    // Get comprehensive end-of-day data using order_items prices (matching Java)
     const salesResult = await pool.query(`
       SELECT 
-        COUNT(DISTINCT o.orderid) as total_transactions,
-        COALESCE(SUM(p.amount), 0) as gross_sales,
-        0 as total_discounts,
-        COALESCE(SUM(p.amount * 0.0825), 0) as total_taxes,
-        COALESCE(SUM(p.amount), 0) as net_sales,
-        COUNT(DISTINCT oi.orderitemid) as total_items_sold
+        COALESCE(SUM(o.totalcost), 0) as total_sales,
+        COUNT(o.orderid) as num_orders
       FROM orders o
-      LEFT JOIN payments p ON o.orderid = p.order_id
+      WHERE o.date = $1
+    `, [reportDate]);
+    
+    // Get detailed transaction data
+    const detailedSalesResult = await pool.query(`
+      SELECT 
+        COUNT(DISTINCT o.orderid) as total_transactions,
+        COALESCE(SUM(oi.price), 0) as gross_sales,
+        0 as total_discounts,
+        COALESCE(SUM(oi.price * 0.0825), 0) as total_taxes,
+        COALESCE(SUM(oi.price), 0) as net_sales,
+        COUNT(DISTINCT oi.itemid) as total_items_sold
+      FROM orders o
       LEFT JOIN order_items oi ON o.orderid = oi.orderid
       WHERE o.date = $1
     `, [reportDate]);
@@ -1411,10 +1477,10 @@ app.get('/api/manager/reports/zreport', async (req, res) => {
     const categoriesResult = await pool.query(`
       SELECT 
         m.category as name,
-        COUNT(oi.orderitemid) as items,
-        SUM(m.price) as revenue
+        COUNT(oi.itemid) as items,
+        SUM(oi.price) as revenue
       FROM order_items oi
-      JOIN menu_items m ON oi.menuitemid = m.menuitemid
+      JOIN menu_items m ON oi.drink = m.name
       JOIN orders o ON oi.orderid = o.orderid
       WHERE o.date = $1
       GROUP BY m.category
@@ -1425,28 +1491,33 @@ app.get('/api/manager/reports/zreport', async (req, res) => {
     const topSellersResult = await pool.query(`
       SELECT 
         m.name,
-        COUNT(oi.orderitemid) as quantity,
-        SUM(m.price) as revenue
+        COUNT(oi.itemid) as quantity,
+        SUM(oi.price) as revenue
       FROM order_items oi
-      JOIN menu_items m ON oi.menuitemid = m.menuitemid
+      JOIN menu_items m ON oi.drink = m.name
       JOIN orders o ON oi.orderid = o.orderid
       WHERE o.date = $1
-      GROUP BY m.menuitemid, m.name
+      GROUP BY m.name
       ORDER BY quantity DESC
       LIMIT 3
     `, [reportDate]);
     
     res.json({
       date: reportDate,
-      sales: salesResult.rows[0],
+      isFinalized: isFinalized,
+      sales: detailedSalesResult.rows[0],
+      totals: {
+        totalSales: parseFloat(salesResult.rows[0].total_sales),
+        totalOrders: parseInt(salesResult.rows[0].num_orders)
+      },
       transactions: {
-        totalTransactions: parseInt(salesResult.rows[0].total_transactions),
+        totalTransactions: parseInt(detailedSalesResult.rows[0].total_transactions),
         cash: paymentsResult.rows.find(p => p.payment_type === 'cash') || { count: 0, amount: 0 },
         credit: paymentsResult.rows.find(p => p.payment_type === 'credit') || { count: 0, amount: 0 },
         debit: paymentsResult.rows.find(p => p.payment_type === 'debit') || { count: 0, amount: 0 }
       },
       products: {
-        totalItemsSold: parseInt(salesResult.rows[0].total_items_sold),
+        totalItemsSold: parseInt(detailedSalesResult.rows[0].total_items_sold),
         categories: categoriesResult.rows
       },
       topSellers: topSellersResult.rows
@@ -1454,6 +1525,55 @@ app.get('/api/manager/reports/zreport', async (req, res) => {
   } catch (err) {
     console.error('Error fetching Z-Report:', err);
     res.status(500).json({ error: 'Failed to fetch Z-Report' });
+  }
+});
+
+// POST /api/manager/reports/zreport/finalize - Finalize Z-Report (matching Java Project 2)
+app.post('/api/manager/reports/zreport/finalize', async (req, res) => {
+  try {
+    const { date } = req.body;
+    const reportDate = date || new Date().toISOString().split('T')[0];
+    
+    // Check if already finalized
+    const checkResult = await pool.query(`
+      SELECT COUNT(*) FROM daily_totals WHERE reportdate = $1
+    `, [reportDate]);
+    
+    if (parseInt(checkResult.rows[0].count) > 0) {
+      return res.status(400).json({ error: 'This day has already been finalized' });
+    }
+    
+    // Calculate final totals (matching Java SQL)
+    const salesResult = await pool.query(`
+      SELECT 
+        COALESCE(SUM(totalcost), 0) as total_sales,
+        COUNT(orderid) as num_orders
+      FROM orders
+      WHERE date = $1
+    `, [reportDate]);
+    
+    const totalSales = parseFloat(salesResult.rows[0].total_sales);
+    const totalOrders = parseInt(salesResult.rows[0].num_orders);
+    
+    // Insert into daily_totals table (matching Java implementation)
+    await pool.query(`
+      INSERT INTO daily_totals (reportdate, totalsales, totalorders, finalizedtimestamp)
+      VALUES ($1, $2, $3, $4)
+    `, [reportDate, totalSales, totalOrders, new Date()]);
+    
+    res.json({
+      success: true,
+      message: 'Z-Report finalized successfully',
+      data: {
+        reportDate,
+        totalSales,
+        totalOrders,
+        finalizedAt: new Date().toISOString()
+      }
+    });
+  } catch (err) {
+    console.error('Error finalizing Z-Report:', err);
+    res.status(500).json({ error: 'Failed to finalize Z-Report' });
   }
 });
 
