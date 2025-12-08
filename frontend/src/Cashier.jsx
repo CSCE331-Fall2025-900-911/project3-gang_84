@@ -413,7 +413,7 @@ export default function Cashier() {
                 }`}>
                   {user.firstName || user.username}
                 </span>
-                <UserButton afterSignOutUrl="/" />
+                <UserButton afterSignOutUrl={import.meta.env.BASE_URL} />
               </div>
             )}
 

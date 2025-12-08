@@ -351,7 +351,7 @@ export default function Manager() {
                   {getTranslatedText('Manager')}
                 </span>
               </div>
-              <UserButton afterSignOutUrl="/" />
+              <UserButton afterSignOutUrl={import.meta.env.BASE_URL} />
             </div>
           </div>
         </div>
