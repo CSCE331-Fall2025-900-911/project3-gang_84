@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import { API_ENDPOINTS } from '../../config/api';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
 /**
  * Operational Reports Component
@@ -135,8 +138,311 @@ export default function OperationalReports() {
   };
 
   const exportReport = (format) => {
-    console.log(`Exporting report as ${format}`);
-    alert(`Report exported as ${format.toUpperCase()}`);
+    if (!reportData) {
+      alert('No report data to export');
+      return;
+    }
+
+    try {
+      if (format === 'pdf') {
+        exportToPDF();
+      } else if (format === 'excel') {
+        exportToExcel();
+      }
+    } catch (error) {
+      console.error(`Error exporting as ${format}:`, error);
+      alert(`Failed to export report as ${format.toUpperCase()}. Error: ${error.message}`);
+    }
+  };
+
+  const exportToPDF = () => {
+    try {
+      const doc = new jsPDF();
+      let currentY = 20;
+      
+      // Add title
+      doc.setFontSize(18);
+      doc.setFont(undefined, 'bold');
+      doc.text(reportTypes.find(t => t.value === reportData.type)?.label || 'Operational Report', 14, currentY);
+      currentY += 8;
+      
+      // Add metadata
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'normal');
+      doc.text(`Generated: ${reportData.generatedAt}`, 14, currentY);
+      currentY += 6;
+      doc.text(`Period: ${reportData.dateRange.start} to ${reportData.dateRange.end}`, 14, currentY);
+      currentY += 10;
+      
+      // Add summary section
+      doc.setFontSize(12);
+      doc.setFont(undefined, 'bold');
+      doc.text('Summary Statistics', 14, currentY);
+      currentY += 8;
+      
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'normal');
+      
+      // Summary table
+      const summaryData = [
+        ['Total Revenue', `$${reportData.summary.totalRevenue.toFixed(2)}`],
+        ['Total Orders', reportData.summary.totalOrders.toString()],
+        ['Average Order Value', `$${reportData.summary.avgOrderValue.toFixed(2)}`],
+        ['Total Customers', reportData.summary.totalCustomers.toString()]
+      ];
+      
+      autoTable(doc, {
+        body: summaryData,
+        startY: currentY,
+        theme: 'plain',
+        styles: { fontSize: 10, cellPadding: 3 },
+        columnStyles: {
+          0: { fontStyle: 'bold', cellWidth: 60 },
+          1: { halign: 'right', cellWidth: 60 }
+        }
+      });
+      
+      currentY = doc.lastAutoTable.finalY + 15;
+      
+      // Add detailed data table
+      if (reportData.details && reportData.details.length > 0) {
+        doc.setFontSize(12);
+        doc.setFont(undefined, 'bold');
+        doc.text('Detailed Breakdown', 14, currentY);
+        currentY += 8;
+        
+        // Calculate additional statistics
+        const totalItems = reportData.details.length;
+        const itemsWithRevenue = reportData.details.filter(item => 
+          (item.revenue || item.total_revenue || item.sales || 0) > 0
+        );
+        
+        if (itemsWithRevenue.length > 0) {
+          doc.setFontSize(9);
+          doc.setFont(undefined, 'italic');
+          doc.text(`Total Items: ${totalItems}`, 14, currentY);
+          currentY += 5;
+        }
+        
+        // Get column headers from first row keys
+        const headers = Object.keys(reportData.details[0]).map(key => 
+          key.replace(/_/g, ' ').toUpperCase()
+        );
+        
+        // Get table data with better formatting
+        const tableData = reportData.details.map(row => 
+          Object.entries(row).map(([key, value]) => {
+            // Format currency columns
+            if ((key.includes('revenue') || key.includes('price') || key.includes('total') || key.includes('sales')) 
+                && typeof value === 'number') {
+              return `$${value.toFixed(2)}`;
+            }
+            // Format percentage columns
+            if (key.includes('percent') && typeof value === 'number') {
+              return `${value.toFixed(1)}%`;
+            }
+            // Format regular numbers
+            if (typeof value === 'number') {
+              return value.toLocaleString();
+            }
+          return value || '-';
+        })
+      );
+      
+      autoTable(doc, {
+        head: [headers],
+        body: tableData,
+        startY: currentY,
+        theme: 'grid',
+        styles: { 
+          fontSize: 8, 
+          cellPadding: 2,
+          overflow: 'linebreak',
+          cellWidth: 'wrap'
+        },
+        headStyles: { 
+          fillColor: [147, 51, 234], 
+          textColor: 255, 
+          fontStyle: 'bold',
+          halign: 'center'
+        },
+        alternateRowStyles: { fillColor: [245, 243, 255] },
+        margin: { left: 14, right: 14 },
+        didDrawPage: (data) => {
+          // Add page numbers
+          const pageCount = doc.internal.getNumberOfPages();
+          doc.setFontSize(8);
+          doc.setFont(undefined, 'normal');
+          for (let i = 1; i <= pageCount; i++) {
+            doc.setPage(i);
+            doc.text(`Page ${i} of ${pageCount}`, doc.internal.pageSize.width - 30, doc.internal.pageSize.height - 10);
+          }
+        }
+      });        // Add statistics summary at the end if there's data with revenue
+        if (itemsWithRevenue.length > 0) {
+          currentY = doc.lastAutoTable.finalY + 10;
+          
+          // Calculate percentages and top performers
+          const revenueKey = Object.keys(reportData.details[0]).find(key => 
+            key.includes('revenue') || key.includes('sales') || key.includes('total')
+          );
+          
+          if (revenueKey) {
+            const sortedByRevenue = [...reportData.details].sort((a, b) => 
+              (b[revenueKey] || 0) - (a[revenueKey] || 0)
+            );
+            
+            const topItem = sortedByRevenue[0];
+            const topItemName = topItem.name || topItem.item || topItem.category || 'Unknown';
+            const topItemRevenue = parseFloat(topItem[revenueKey]) || 0;
+            const revenuePercentage = ((topItemRevenue / reportData.summary.totalRevenue) * 100).toFixed(1);
+            
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'bold');
+            doc.text('Key Insights:', 14, currentY);
+            currentY += 6;
+            
+            doc.setFontSize(9);
+            doc.setFont(undefined, 'normal');
+            doc.text(`• Top performer: ${topItemName} ($${topItemRevenue.toFixed(2)} - ${revenuePercentage}% of total)`, 14, currentY);
+            currentY += 5;
+            doc.text(`• Average revenue per item: $${(reportData.summary.totalRevenue / totalItems).toFixed(2)}`, 14, currentY);
+          }
+        }
+      }
+      
+      // Generate filename and save
+      const filename = `operational-report-${reportData.type}-${reportData.dateRange.start}-to-${reportData.dateRange.end}.pdf`;
+      doc.save(filename);
+      alert('Report exported as PDF successfully!');
+      
+    } catch (error) {
+      console.error('PDF Export Error:', error);
+      throw error;
+    }
+  };  const exportToExcel = () => {
+    // Create a new workbook
+    const wb = XLSX.utils.book_new();
+    
+    // Summary sheet data with enhanced statistics
+    const summaryData = [
+      ['ShareTea Operational Report'],
+      [''],
+      ['Report Type:', reportTypes.find(t => t.value === reportData.type)?.label || 'Unknown'],
+      ['Generated:', reportData.generatedAt],
+      ['Period:', `${reportData.dateRange.start} to ${reportData.dateRange.end}`],
+      [''],
+      ['SUMMARY STATISTICS'],
+      ['Metric', 'Value'],
+      ['Total Revenue', reportData.summary.totalRevenue],
+      ['Total Orders', reportData.summary.totalOrders],
+      ['Average Order Value', reportData.summary.avgOrderValue],
+      ['Total Customers', reportData.summary.totalCustomers],
+    ];
+    
+    // Add additional insights if we have detail data
+    if (reportData.details && reportData.details.length > 0) {
+      summaryData.push(['']);
+      summaryData.push(['ADDITIONAL INSIGHTS']);
+      summaryData.push(['Total Items in Report', reportData.details.length]);
+      
+      // Calculate revenue-based insights
+      const revenueKey = Object.keys(reportData.details[0]).find(key => 
+        key.includes('revenue') || key.includes('sales') || key.includes('total')
+      );
+      
+      if (revenueKey) {
+        const sortedByRevenue = [...reportData.details].sort((a, b) => 
+          (b[revenueKey] || 0) - (a[revenueKey] || 0)
+        );
+        
+        const topItem = sortedByRevenue[0];
+        const bottomItem = sortedByRevenue[sortedByRevenue.length - 1];
+        const topItemName = topItem.name || topItem.item || topItem.category || 'Unknown';
+        const bottomItemName = bottomItem.name || bottomItem.item || bottomItem.category || 'Unknown';
+        
+        summaryData.push(['Top Performer', `${topItemName} ($${(topItem[revenueKey] || 0).toFixed(2)})`]);
+        summaryData.push(['Top Performer Revenue %', `${((topItem[revenueKey] || 0) / reportData.summary.totalRevenue * 100).toFixed(1)}%`]);
+        summaryData.push(['Lowest Performer', `${bottomItemName} ($${(bottomItem[revenueKey] || 0).toFixed(2)})`]);
+        summaryData.push(['Average Revenue per Item', reportData.summary.totalRevenue / reportData.details.length]);
+      }
+    }
+    
+    const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
+    
+    // Set column widths for summary sheet
+    summarySheet['!cols'] = [{ wch: 30 }, { wch: 40 }];
+    
+    // Style the summary sheet headers
+    if (summarySheet['A1']) summarySheet['A1'].s = { font: { bold: true, sz: 16 } };
+    if (summarySheet['A7']) summarySheet['A7'].s = { font: { bold: true } };
+    
+    XLSX.utils.book_append_sheet(wb, summarySheet, 'Summary');
+    
+    // Details sheet with enhanced data
+    if (reportData.details && reportData.details.length > 0) {
+      // Add calculated percentages if revenue data exists
+      const enhancedDetails = reportData.details.map(item => {
+        const enhanced = { ...item };
+        
+        // Find revenue column
+        const revenueKey = Object.keys(item).find(key => 
+          key.includes('revenue') || key.includes('sales') || key.includes('total')
+        );
+        
+        if (revenueKey && reportData.summary.totalRevenue > 0) {
+          enhanced[`${revenueKey}_percentage`] = 
+            ((item[revenueKey] || 0) / reportData.summary.totalRevenue * 100).toFixed(2) + '%';
+        }
+        
+        return enhanced;
+      });
+      
+      const detailsSheet = XLSX.utils.json_to_sheet(enhancedDetails);
+      
+      // Auto-size columns
+      const detailsCols = Object.keys(reportData.details[0]).map(() => ({ wch: 15 }));
+      detailsSheet['!cols'] = detailsCols;
+      
+      XLSX.utils.book_append_sheet(wb, detailsSheet, 'Details');
+      
+      // Add a Top Performers sheet
+      const revenueKey = Object.keys(reportData.details[0]).find(key => 
+        key.includes('revenue') || key.includes('sales') || key.includes('total')
+      );
+      
+      if (revenueKey) {
+        const sortedByRevenue = [...reportData.details]
+          .sort((a, b) => (b[revenueKey] || 0) - (a[revenueKey] || 0))
+          .slice(0, 10); // Top 10
+        
+        const topPerformersData = sortedByRevenue.map((item, index) => ({
+          Rank: index + 1,
+          Name: item.name || item.item || item.category || 'Unknown',
+          Revenue: item[revenueKey],
+          'Percentage of Total': `${((item[revenueKey] || 0) / reportData.summary.totalRevenue * 100).toFixed(2)}%`,
+          Orders: item.orders || item.count || '-'
+        }));
+        
+        const topPerformersSheet = XLSX.utils.json_to_sheet(topPerformersData);
+        topPerformersSheet['!cols'] = [
+          { wch: 8 }, 
+          { wch: 30 }, 
+          { wch: 15 }, 
+          { wch: 20 }, 
+          { wch: 12 }
+        ];
+        
+        XLSX.utils.book_append_sheet(wb, topPerformersSheet, 'Top Performers');
+      }
+    }
+    
+    // Generate filename
+    const filename = `operational-report-${reportData.type}-${reportData.dateRange.start}-to-${reportData.dateRange.end}.xlsx`;
+    
+    // Save the Excel file
+    XLSX.writeFile(wb, filename);
+    alert('Report exported as Excel successfully!');
   };
 
   return (
