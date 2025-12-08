@@ -118,12 +118,15 @@ export default function CashierView({
       
       const data = await response.json();
       
-      // Extract unique categories from drinks
+      // Extract unique categories from drinks and miscellaneous items
       const drinkItems = data.menu_items.filter(item => item.type === 'Drink');
-      const uniqueCategories = [...new Set(drinkItems.map(item => item.category))];
+      const miscItems = data.menu_items.filter(item => item.category === 'Miscellaneous');
+      const allOrderableItems = [...drinkItems, ...miscItems];
+      
+      const uniqueCategories = [...new Set(allOrderableItems.map(item => item.category))];
       
       setCategories(['All', ...uniqueCategories]);
-      setDrinks(drinkItems);
+      setDrinks(allOrderableItems);
       
       // Set customization options from database
       setToppings(data.toppings || []);
