@@ -873,14 +873,28 @@ app.put('/api/manager/inventory/:id', async (req, res) => {
 app.delete('/api/manager/inventory/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const result = await pool.query(
-      'DELETE FROM ingredients WHERE ingredientid = $1 RETURNING ingredientid',
+    
+    // First, delete any recipes that reference this ingredient
+    await pool.query(
+      'DELETE FROM recipes WHERE ingredientid = $1',
       [id]
     );
+    
+    // Then delete the ingredient itself
+    const result = await pool.query(
+      'DELETE FROM ingredients WHERE ingredientid = $1 RETURNING ingredientid, ingredientname',
+      [id]
+    );
+    
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Inventory item not found' });
     }
-    res.json({ success: true, message: 'Inventory item deleted' });
+    
+    res.json({ 
+      success: true, 
+      message: 'Inventory item and associated recipes deleted',
+      deletedItem: result.rows[0]
+    });
   } catch (err) {
     console.error('Error deleting inventory item:', err);
     res.status(500).json({ error: 'Failed to delete inventory item' });
