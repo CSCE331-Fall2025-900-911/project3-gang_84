@@ -704,6 +704,11 @@ export default function Kiosk({ role = 'customer' }) {
       filteredDrinks = drinks.filter((d) => 
         d.type === 'Drink' && d.category !== 'Miscellaneous'
       );
+    } else if (selectedCategory === 'Miscellaneous') {
+      // Show Miscellaneous items regardless of type
+      filteredDrinks = drinks.filter((d) => 
+        d.category === 'Miscellaneous'
+      );
     } else {
       // Filter by selected category and ensure it's a Drink type
       filteredDrinks = drinks.filter((d) => 
