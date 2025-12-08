@@ -7,7 +7,7 @@ import { API_ENDPOINTS } from '../../config/api';
  */
 export default function OperationalReports() {
   const [startDate, setStartDate] = useState('2025-11-01');
-  const [endDate, setEndDate] = useState('2025-11-24');
+  const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
   const [reportType, setReportType] = useState('sales');
   const [reportData, setReportData] = useState(null);
   const [loading, setLoading] = useState(false);

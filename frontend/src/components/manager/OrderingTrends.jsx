@@ -8,7 +8,7 @@ import { API_ENDPOINTS } from '../../config/api';
  */
 export default function OrderingTrends() {
   const [startDate, setStartDate] = useState('2025-11-01');
-  const [endDate, setEndDate] = useState('2025-11-24');
+  const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
   const [viewType, setViewType] = useState('daily');
   const [salesData, setSalesData] = useState([]);
   const [popularItems, setPopularItems] = useState([]);
@@ -156,23 +156,43 @@ export default function OrderingTrends() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-white p-6 rounded-lg shadow-md">
           <div className="text-sm text-gray-600 mb-1">Total Revenue</div>
-          <div className="text-3xl font-bold text-green-600">$10,850</div>
-          <div className="text-sm text-green-600 mt-1">↑ 12.5% from last week</div>
+          <div className="text-3xl font-bold text-green-600">
+            ${salesData.reduce((sum, day) => sum + day.sales, 0).toFixed(2)}
+          </div>
+          <div className="text-sm text-gray-500 mt-1">
+            {salesData.length} days
+          </div>
         </div>
         <div className="bg-white p-6 rounded-lg shadow-md">
           <div className="text-sm text-gray-600 mb-1">Total Orders</div>
-          <div className="text-3xl font-bold text-blue-600">367</div>
-          <div className="text-sm text-blue-600 mt-1">↑ 8.3% from last week</div>
+          <div className="text-3xl font-bold text-blue-600">
+            {salesData.reduce((sum, day) => sum + day.orders, 0)}
+          </div>
+          <div className="text-sm text-gray-500 mt-1">
+            {salesData.length > 0 ? (salesData.reduce((sum, day) => sum + day.orders, 0) / salesData.length).toFixed(1) : 0} avg/day
+          </div>
         </div>
         <div className="bg-white p-6 rounded-lg shadow-md">
           <div className="text-sm text-gray-600 mb-1">Avg Order Value</div>
-          <div className="text-3xl font-bold text-purple-600">$29.56</div>
-          <div className="text-sm text-purple-600 mt-1">↑ 3.7% from last week</div>
+          <div className="text-3xl font-bold text-purple-600">
+            ${salesData.length > 0 && salesData.reduce((sum, day) => sum + day.orders, 0) > 0 
+              ? (salesData.reduce((sum, day) => sum + day.sales, 0) / salesData.reduce((sum, day) => sum + day.orders, 0)).toFixed(2)
+              : '0.00'}
+          </div>
+          <div className="text-sm text-gray-500 mt-1">per transaction</div>
         </div>
         <div className="bg-white p-6 rounded-lg shadow-md">
           <div className="text-sm text-gray-600 mb-1">Peak Hour</div>
-          <div className="text-3xl font-bold text-orange-600">12 PM</div>
-          <div className="text-sm text-gray-600 mt-1">35 orders average</div>
+          <div className="text-3xl font-bold text-orange-600">
+            {hourlyData.length > 0 
+              ? hourlyData.reduce((max, hour) => hour.orders > max.orders ? hour : max, hourlyData[0]).hour
+              : 'N/A'}
+          </div>
+          <div className="text-sm text-gray-500 mt-1">
+            {hourlyData.length > 0 
+              ? `${hourlyData.reduce((max, hour) => hour.orders > max.orders ? hour : max, hourlyData[0]).orders} orders`
+              : 'No data'}
+          </div>
         </div>
       </div>
 

@@ -1250,7 +1250,7 @@ app.get('/api/manager/reports/popular-items', async (req, res) => {
       JOIN menu_items m ON oi.drink = m.name
       JOIN orders o ON oi.orderid = o.orderid
       WHERE o.date >= $1 AND o.date <= $2
-      GROUP BY m.menuitemid, m.name, m.category
+      GROUP BY m.name, m.category
       ORDER BY orders DESC
       LIMIT 10
     `, [startDate, endDate]);
