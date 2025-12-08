@@ -249,12 +249,13 @@ export default function Cashier() {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center mb-6">
-          <h2 className={`text-3xl font-bold ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
+          <h2 className={`text-3xl font-bold ${highContrast ? 'text-yellow-400' : 'text-gray-900'}`}>
             ♿ {getTranslatedText('Accessibility')}
           </h2>
           <button
             onClick={() => setShowAccessibilityMenu(false)}
-            className={`text-2xl ${highContrast ? 'text-yellow-400 hover:text-yellow-300' : 'text-gray-500 hover:text-gray-700'}`}
+            aria-label="Close accessibility menu"
+            className={`text-2xl ${highContrast ? 'text-yellow-400 hover:text-yellow-300' : 'text-gray-700 hover:text-gray-900'}`}
             style={{ minWidth: '44px', minHeight: '44px' }}
           >
             ✕
@@ -263,7 +264,7 @@ export default function Cashier() {
 
         {/* Font Size Controls */}
         <div className="mb-6">
-          <h3 className={`text-xl font-semibold mb-3 ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
+          <h3 className={`text-xl font-semibold mb-3 ${highContrast ? 'text-yellow-400' : 'text-gray-900'}`}>
             📝 {getTranslatedText('Text Size')}
           </h3>
           <div className="flex gap-3">
@@ -271,8 +272,8 @@ export default function Cashier() {
               onClick={() => setFontSize('normal')}
               className={`flex-1 px-6 py-6 rounded-lg font-bold transition-colors ${
                 fontSize === 'normal'
-                  ? highContrast ? 'bg-yellow-400 text-black border-4 border-yellow-400' : 'bg-green-600 text-white'
-                  : highContrast ? 'bg-gray-800 text-yellow-400 border-4 border-yellow-400' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  ? highContrast ? 'bg-yellow-400 text-black border-4 border-yellow-400' : 'bg-green-700 text-white'
+                  : highContrast ? 'bg-gray-800 text-yellow-400 border-4 border-yellow-400' : 'bg-gray-100 text-gray-900 hover:bg-gray-200 border-2 border-gray-300'
               }`}
               style={{ minHeight: '80px' }}
             >
@@ -283,8 +284,8 @@ export default function Cashier() {
               onClick={() => setFontSize('large')}
               className={`flex-1 px-6 py-6 rounded-lg font-bold transition-colors ${
                 fontSize === 'large'
-                  ? highContrast ? 'bg-yellow-400 text-black border-4 border-yellow-400' : 'bg-green-600 text-white'
-                  : highContrast ? 'bg-gray-800 text-yellow-400 border-4 border-yellow-400' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  ? highContrast ? 'bg-yellow-400 text-black border-4 border-yellow-400' : 'bg-green-700 text-white'
+                  : highContrast ? 'bg-gray-800 text-yellow-400 border-4 border-yellow-400' : 'bg-gray-100 text-gray-900 hover:bg-gray-200 border-2 border-gray-300'
               }`}
               style={{ minHeight: '80px' }}
             >
@@ -295,8 +296,8 @@ export default function Cashier() {
               onClick={() => setFontSize('extra-large')}
               className={`flex-1 px-6 py-6 rounded-lg font-bold transition-colors ${
                 fontSize === 'extra-large'
-                  ? highContrast ? 'bg-yellow-400 text-black border-4 border-yellow-400' : 'bg-green-600 text-white'
-                  : highContrast ? 'bg-gray-800 text-yellow-400 border-4 border-yellow-400' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  ? highContrast ? 'bg-yellow-400 text-black border-4 border-yellow-400' : 'bg-green-700 text-white'
+                  : highContrast ? 'bg-gray-800 text-yellow-400 border-4 border-yellow-400' : 'bg-gray-100 text-gray-900 hover:bg-gray-200 border-2 border-gray-300'
               }`}
               style={{ minHeight: '80px' }}
             >
@@ -308,7 +309,7 @@ export default function Cashier() {
 
         {/* High Contrast Toggle */}
         <div className="mb-6">
-          <h3 className={`text-xl font-semibold mb-3 ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
+          <h3 className={`text-xl font-semibold mb-3 ${highContrast ? 'text-yellow-400' : 'text-gray-900'}`}>
             🎨 {getTranslatedText('Display Mode')}
           </h3>
           <button
@@ -326,15 +327,15 @@ export default function Cashier() {
 
         {/* Large Click Targets */}
         <div className="mb-6">
-          <h3 className={`text-xl font-semibold mb-3 ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
+          <h3 className={`text-xl font-semibold mb-3 ${highContrast ? 'text-yellow-400' : 'text-gray-900'}`}>
             👆 {getTranslatedText('Button Size')}
           </h3>
           <button
             onClick={() => setLargeClickTargets(!largeClickTargets)}
             className={`w-full py-6 rounded-lg font-bold transition-colors text-xl ${
               largeClickTargets
-                ? highContrast ? 'bg-yellow-400 text-black border-4 border-yellow-400' : 'bg-green-600 text-white'
-                : highContrast ? 'bg-gray-800 text-yellow-400 border-4 border-yellow-400' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                ? highContrast ? 'bg-yellow-400 text-black border-4 border-yellow-400' : 'bg-green-700 text-white'
+                : highContrast ? 'bg-gray-800 text-yellow-400 border-4 border-yellow-400' : 'bg-gray-100 text-gray-900 hover:bg-gray-200 border-2 border-gray-300'
             }`}
             style={{ minHeight: '80px' }}
           >
@@ -344,15 +345,15 @@ export default function Cashier() {
 
         {/* Reduce Motion */}
         <div className="mb-6">
-          <h3 className={`text-xl font-semibold mb-3 ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
+          <h3 className={`text-xl font-semibold mb-3 ${highContrast ? 'text-yellow-400' : 'text-gray-900'}`}>
             🎬 {getTranslatedText('Animation')}
           </h3>
           <button
             onClick={() => setReduceMotion(!reduceMotion)}
             className={`w-full py-6 rounded-lg font-bold transition-colors text-xl ${
               reduceMotion
-                ? highContrast ? 'bg-yellow-400 text-black border-4 border-yellow-400' : 'bg-green-600 text-white'
-                : highContrast ? 'bg-gray-800 text-yellow-400 border-4 border-yellow-400' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                ? highContrast ? 'bg-yellow-400 text-black border-4 border-yellow-400' : 'bg-green-700 text-white'
+                : highContrast ? 'bg-gray-800 text-yellow-400 border-4 border-yellow-400' : 'bg-gray-100 text-gray-900 hover:bg-gray-200 border-2 border-gray-300'
             }`}
             style={{ minHeight: '80px' }}
           >
@@ -366,7 +367,7 @@ export default function Cashier() {
           className={`w-full mt-4 py-4 rounded-lg font-semibold transition-colors ${
             highContrast
               ? 'bg-gray-800 text-yellow-400 border-2 border-yellow-400 hover:bg-gray-700'
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              : 'bg-gray-800 text-white hover:bg-gray-900'
           }`}
           style={{ minHeight: '60px' }}
         >
@@ -391,7 +392,7 @@ export default function Cashier() {
     <div className={getContainerClass()}>
       {/* Header */}
       <header className={`sticky top-0 z-40 shadow-md ${
-        highContrast ? 'bg-gray-900 border-b-4 border-yellow-400' : 'bg-gradient-to-r from-green-600 to-green-700'
+        highContrast ? 'bg-gray-900 border-b-4 border-yellow-400' : 'bg-gradient-to-r from-green-700 to-green-800'
       }`}>
         <div className="flex items-center justify-between px-6 py-3">
           {/* Left: Back Button + Title */}
@@ -402,7 +403,7 @@ export default function Cashier() {
               className={`px-6 py-4 rounded-lg font-semibold transition-colors flex items-center gap-2 text-lg ${
                 highContrast
                   ? 'bg-gray-800 text-yellow-400 border-2 border-yellow-400 hover:bg-gray-700'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  : 'bg-white text-gray-900 hover:bg-gray-100 border-2 border-gray-300'
               }`}
               style={{ minHeight: '60px' }}
               title={getTranslatedText('Back to Role Selection')}
@@ -439,7 +440,7 @@ export default function Cashier() {
                 className={`px-4 py-2 rounded-lg border-2 font-medium focus:outline-none focus:ring-4 ${
                   highContrast
                     ? 'bg-black text-yellow-400 border-yellow-400 focus:ring-yellow-400'
-                    : 'bg-white text-gray-800 border-gray-300 focus:ring-green-500'
+                    : 'bg-white text-gray-900 border-gray-300 focus:ring-green-500'
                 }`}
                 style={{ minHeight: '44px' }}
                 disabled={isTranslating}
