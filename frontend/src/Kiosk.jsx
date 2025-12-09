@@ -252,9 +252,9 @@ function Cart({ cartItems, total, highContrast, getTranslatedText, onPay, largeC
     <div className={`w-1/4 p-6 shadow-lg rounded-lg ${
       highContrast ? 'bg-gray-900 border-4 border-yellow-400' : 'bg-white'
     }`}>
-      <h2 className={`text-2xl font-bold mb-6 text-center ${
+      <h2 className={`font-bold mb-6 text-center ${
         highContrast ? 'text-yellow-400' : 'text-gray-800'
-      }`}>{getTranslatedText('View Cart')}</h2>
+      }`} style={{fontSize: '1.5rem'}}>{getTranslatedText('View Cart')}</h2>
       <div className="flex-grow overflow-y-auto mb-4" style={{maxHeight: '60vh'}}>
         {cartItems.length === 0 ? (
           <p className={`text-center ${highContrast ? 'text-white' : 'text-gray-500'}`}>{getTranslatedText('Your cart is empty.')}</p>
@@ -267,13 +267,13 @@ function Cart({ cartItems, total, highContrast, getTranslatedText, onPay, largeC
               }`}
             >
               <div className="flex-1">
-                <span className={`font-semibold block text-lg ${
+                <span className={`font-semibold block ${
                   highContrast ? 'text-yellow-400' : 'text-gray-800'
-                }`}>{getTranslatedText(item.name)}</span>
+                }`} style={{fontSize: '1.125rem'}}>{getTranslatedText(item.name)}</span>
                 {item.customizations && (
-                  <div className={`text-sm mt-1 ${
+                  <div className={`mt-1 ${
                     highContrast ? 'text-white' : 'text-gray-500'
-                  }`}>
+                  }`} style={{fontSize: '0.875rem'}}>
                     <div>{getTranslatedText('Sweetness:')} {getTranslatedText(item.customizations.sweetness)}</div>
                     <div>{getTranslatedText('Ice:')} {getTranslatedText(item.customizations.ice)}</div>
                     {item.customizations.toppings.length > 0 && (
@@ -293,9 +293,9 @@ function Cart({ cartItems, total, highContrast, getTranslatedText, onPay, largeC
                   >
                     −
                   </button>
-                  <span className={`text-xs min-w-[25px] text-center ${
+                  <span className={`min-w-[25px] text-center ${
                     highContrast ? 'text-white' : 'text-gray-800'
-                  }`}>
+                  }`} style={{fontSize: '0.75rem'}}>
                     {item.quantity}
                   </span>
                   <button
@@ -309,17 +309,17 @@ function Cart({ cartItems, total, highContrast, getTranslatedText, onPay, largeC
                   >
                     +
                   </button>
-                  <span className={`text-xs ml-1 ${
+                  <span className={`ml-1 ${
                     highContrast ? 'text-gray-300' : 'text-gray-500'
-                  }`}>
+                  }`} style={{fontSize: '0.75rem'}}>
                     × ${parseFloat(item.price).toFixed(2)}
                   </span>
                 </div>
               </div>
               <div className="flex flex-col items-end ml-1">
-                <span className={`font-bold text-sm mb-1 ${
+                <span className={`font-bold mb-1 ${
                   highContrast ? 'text-white' : 'text-gray-800'
-                }`}>
+                }`} style={{fontSize: '0.875rem'}}>
                   ${(item.quantity * parseFloat(item.price)).toFixed(2)}
                 </span>
                 <button
@@ -342,9 +342,9 @@ function Cart({ cartItems, total, highContrast, getTranslatedText, onPay, largeC
       <div className={`pt-6 ${
         highContrast ? 'border-t-4 border-yellow-400' : 'border-t border-gray-200'
       }`}>
-        <div className={`flex justify-between items-center text-2xl font-bold mb-6 ${
+        <div className={`flex justify-between items-center font-bold mb-6 ${
           highContrast ? 'text-yellow-400' : 'text-gray-800'
-        }`}>
+        }`} style={{fontSize: '1.5rem'}}>
           <span>{getTranslatedText('Total')}</span>
           <span>${total.toFixed(2)}</span>
         </div>
@@ -630,9 +630,9 @@ export default function Kiosk({ role = 'customer' }) {
     }
   };
 
-  // Get button size class (for Carol's tremor)
+  // Get button size class (for Carol's tremor) - without text size so parent scaling works
   const getButtonSizeClass = () => {
-    return largeClickTargets ? 'min-h-[80px] px-8 py-6 text-xl' : 'min-h-[60px] px-6 py-4 text-lg';
+    return largeClickTargets ? 'min-h-[80px] px-8 py-6' : 'min-h-[60px] px-6 py-4';
   };
 
   // Get container class with accessibility settings
