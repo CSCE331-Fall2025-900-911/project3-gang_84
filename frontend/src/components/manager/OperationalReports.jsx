@@ -330,7 +330,9 @@ export default function OperationalReports() {
       console.error('PDF Export Error:', error);
       throw error;
     }
-  };  const exportToExcel = () => {
+  };
+  
+  const exportToExcel = () => {
     // Create a new workbook
     const wb = XLSX.utils.book_new();
     
