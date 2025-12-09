@@ -85,7 +85,6 @@ app.get('/api/weather', async (req, res) => {
     const API_KEY = process.env.WEATHERAPI_KEY || 'YOUR_API_KEY_HERE';
     
     if (API_KEY === 'YOUR_API_KEY_HERE') {
-      // Return mock weather data when API key is not configured
       console.warn('⚠️ WEATHERAPI_KEY not configured. Using mock weather data.');
       console.warn('Get your free API key from https://www.weatherapi.com/signup.aspx');
       
