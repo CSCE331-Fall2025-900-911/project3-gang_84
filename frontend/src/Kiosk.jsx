@@ -621,12 +621,12 @@ export default function Kiosk({ role = 'customer' }) {
 
   const weatherRecommendation = useMemo(() => getWeatherRecommendation(), [currentWeather, drinks]);
 
-  // Get font size classes (improved for Carol's macular degeneration)
-  const getFontSizeClass = () => {
+  // Get font size scale (improved for Carol's macular degeneration)
+  const getFontSizeScale = () => {
     switch(fontSize) {
-      case 'large': return 'text-xl';
-      case 'extra-large': return 'text-2xl';
-      default: return 'text-lg'; // Default slightly larger for readability
+      case 'large': return 1.25; // 125%
+      case 'extra-large': return 1.5; // 150%
+      default: return 1; // 100%
     }
   };
 
@@ -640,7 +640,13 @@ export default function Kiosk({ role = 'customer' }) {
     const baseClass = 'flex flex-col w-full min-h-screen font-sans';
     const bgClass = highContrast ? 'bg-black' : 'bg-lime-50';
     const motionClass = reduceMotion ? '' : 'transition-all duration-200';
-    return `${baseClass} ${bgClass} ${getFontSizeClass()} ${motionClass}`;
+    return `${baseClass} ${bgClass} ${motionClass}`;
+  };
+
+  // Get inline style for font scaling
+  const getFontStyle = () => {
+    const scale = getFontSizeScale();
+    return scale !== 1 ? { fontSize: `${scale * 100}%` } : {};
   };
 
   // --- Data Fetching ---
@@ -1400,7 +1406,7 @@ export default function Kiosk({ role = 'customer' }) {
 
   // Default: Menu View
   return (
-    <div className={`customer-view ${getContainerClass()}`}>
+    <div className={getContainerClass()} style={getFontStyle()}>
       
       {/* Top Navigation Tabs */}
       <header className={`shadow-md ${highContrast ? 'bg-gray-900 border-b-4 border-yellow-400' : 'bg-white'}`}>
