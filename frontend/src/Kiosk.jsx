@@ -7,7 +7,8 @@ import CartView from './components/views/CartView';
 import AddMoreItemsModal from './components/modals/AddMoreItemsModal';
 import PaymentModal from './components/modals/PaymentModal';
 import ThankYouScreen from './components/views/ThankYouScreen';
-import { API_ENDPOINTS } from './config/api';
+import { API_ENDPOINTS, API_BASE_URL } from './config/api';
+import { translateText, translateBatch } from './utils/translation';
 
 // Customization Modal
 function CustomizationModal({ drink, onClose, onAddToCart, sweetnessOptions, iceOptions, sizeOptions, toppingOptions, getTranslatedText, highContrast }) {
@@ -274,6 +275,7 @@ function Cart({ cartItems, total, highContrast, getTranslatedText, onPay, largeC
                   <div className={`text-sm mt-1 ${
                     highContrast ? 'text-white' : 'text-gray-500'
                   }`}>
+                    <div>{getTranslatedText('Size:')} {getTranslatedText(item.customizations.size)}</div>
                     <div>{getTranslatedText('Sweetness:')} {getTranslatedText(item.customizations.sweetness)}</div>
                     <div>{getTranslatedText('Ice:')} {getTranslatedText(item.customizations.ice)}</div>
                     {item.customizations.toppings.length > 0 && (
@@ -384,6 +386,7 @@ export default function Kiosk({ role = 'customer' }) {
   const [selectedLanguage, setSelectedLanguage] = useState('en');
   const [translatedData, setTranslatedData] = useState({});
   const [isTranslating, setIsTranslating] = useState(false);
+  const [forceRender, setForceRender] = useState(0); // Force re-render counter
   
   // Accessibility states for Carol (vision impairment, tremor)
   const [fontSize, setFontSize] = useState('normal');
@@ -443,7 +446,7 @@ export default function Kiosk({ role = 'customer' }) {
         const randomDrink = hotDrinks[Math.floor(Math.random() * hotDrinks.length)];
         return {
           icon: '🔥',
-          message: `It's chilly at ${Math.round(temp)}°F - warm up with a`,
+          messageParts: ["It's chilly at", `${Math.round(temp)}°F`, "-", "warm up with a"],
           drink: randomDrink
         };
       }
@@ -461,7 +464,7 @@ export default function Kiosk({ role = 'customer' }) {
         const randomDrink = mildDrinks[Math.floor(Math.random() * mildDrinks.length)];
         return {
           icon: '☕',
-          message: `Perfect weather at ${Math.round(temp)}°F for a`,
+          messageParts: ["Perfect weather at", `${Math.round(temp)}°F`, "for a"],
           drink: randomDrink
         };
       }
@@ -479,7 +482,7 @@ export default function Kiosk({ role = 'customer' }) {
         const randomDrink = coldDrinks[Math.floor(Math.random() * coldDrinks.length)];
         return {
           icon: '🧊',
-          message: `Beat the heat at ${Math.round(temp)}°F with a refreshing`,
+          messageParts: ["Beat the heat at", `${Math.round(temp)}°F`, "with a refreshing"],
           drink: randomDrink
         };
       }
@@ -497,7 +500,7 @@ export default function Kiosk({ role = 'customer' }) {
         const randomDrink = comfortDrinks[Math.floor(Math.random() * comfortDrinks.length)];
         return {
           icon: '☔',
-          message: `Perfect rainy day for a cozy`,
+          messageParts: ["Perfect rainy day for a cozy"],
           drink: randomDrink
         };
       }
@@ -515,7 +518,7 @@ export default function Kiosk({ role = 'customer' }) {
         const randomDrink = comfortDrinks[Math.floor(Math.random() * comfortDrinks.length)];
         return {
           icon: '🌫️',
-          message: `Cozy up on this ${condition} day with a`,
+          messageParts: ["Cozy up on this", condition, "day with a"],
           drink: randomDrink
         };
       }
@@ -532,7 +535,7 @@ export default function Kiosk({ role = 'customer' }) {
         const randomDrink = hotDrinks[Math.floor(Math.random() * hotDrinks.length)];
         return {
           icon: '❄️',
-          message: `Stay warm in this ${condition} with a hot`,
+          messageParts: ["Stay warm in this", condition, "with a hot"],
           drink: randomDrink
         };
       }
@@ -550,7 +553,7 @@ export default function Kiosk({ role = 'customer' }) {
         const randomDrink = refreshingDrinks[Math.floor(Math.random() * refreshingDrinks.length)];
         return {
           icon: '☀️',
-          message: `Sunny and ${Math.round(temp)}°F - try a refreshing`,
+          messageParts: ["Sunny and", `${Math.round(temp)}°F`, "-", "try a refreshing"],
           drink: randomDrink
         };
       }
@@ -567,7 +570,7 @@ export default function Kiosk({ role = 'customer' }) {
         const randomDrink = popularDrinks[Math.floor(Math.random() * popularDrinks.length)];
         return {
           icon: '⛅',
-          message: `Perfect day for our popular`,
+          messageParts: ["Nice day at", `${Math.round(temp)}°F`, "for a"],
           drink: randomDrink
         };
       }
@@ -585,7 +588,7 @@ export default function Kiosk({ role = 'customer' }) {
         const randomDrink = coldDrinks[Math.floor(Math.random() * coldDrinks.length)];
         return {
           icon: '🍹',
-          message: `At ${Math.round(temp)}°F, try a cool`,
+          messageParts: ["Perfect weather at", `${Math.round(temp)}°F`, "for a"],
           drink: randomDrink
         };
       }
@@ -600,7 +603,7 @@ export default function Kiosk({ role = 'customer' }) {
         const randomDrink = popularDrinks[Math.floor(Math.random() * popularDrinks.length)];
         return {
           icon: '🥤',
-          message: `Enjoy our signature`,
+          messageParts: ["Nice day at", `${Math.round(temp)}°F`, "for a"],
           drink: randomDrink
         };
       }
@@ -611,7 +614,7 @@ export default function Kiosk({ role = 'customer' }) {
       const randomDrink = drinks[Math.floor(Math.random() * drinks.length)];
       return {
         icon: '✨',
-        message: `Try our delicious`,
+        messageParts: ["try a refreshing"],
         drink: randomDrink
       };
     }
@@ -766,152 +769,183 @@ export default function Kiosk({ role = 'customer' }) {
     setSelectedDrink(drink);
   };
 
-  // Translation function
-  const translateText = async (text, targetLang) => {
-    if (targetLang === 'en' || !text) return text;
-    
-    // Check cache first
-    const cacheKey = `${text}_${targetLang}`;
-    if (translatedData[cacheKey]) {
-      return translatedData[cacheKey];
-    }
-
-    try {
-      const response = await fetch(API_ENDPOINTS.translate, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, targetLang })
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        const translated = data.translatedText;
-        setTranslatedData(prev => ({ ...prev, [cacheKey]: translated }));
-        return translated;
-      }
-    } catch (err) {
-      console.error('Translation error:', err);
-    }
-    return text;
-  };
-
-  // Handle language change
+  // Handle language change with batch translation
   const handleLanguageChange = async (lang) => {
-    setSelectedLanguage(lang);
+    console.log('🌍 Language change requested:', lang);
+    
     if (lang === 'en') {
+      setSelectedLanguage('en');
       setTranslatedData({});
       return;
     }
 
     setIsTranslating(true);
-    
-    // Translate all menu items, categories, and options
-    const translationPromises = [];
-    const newTranslations = {};
 
-    // Static labels to translate
-    const staticLabels = [
-      'Sweetness Level', 'Ice Level', 'Toppings', 'Total', 'Add to Cart',
-      'View Cart', 'Your cart is empty.', 'Sweetness:', 'Ice:', 'Toppings:', 
-      'Pay', 'Menu', 'Kiosk System', 'Accessibility:', 'Text Size:', 
-      'Normal', 'Large', 'Extra Large', 'High Contrast', 'Language:'
-    ];
-
-    for (const label of staticLabels) {
-      const key = `${label}_${lang}`;
-      if (!translatedData[key]) {
-        translationPromises.push(
-          translateText(label, lang).then(result => {
-            newTranslations[key] = result;
-          })
-        );
+    try {
+      // First, try to fetch from database (fast!)
+      const dbUrl = `${API_BASE_URL}/api/translations/${lang}`;
+      console.log('📡 Fetching translations from:', dbUrl);
+      
+      const dbResponse = await fetch(dbUrl);
+      
+      if (!dbResponse.ok) {
+        throw new Error(`Database fetch failed: ${dbResponse.status} ${dbResponse.statusText}`);
       }
-    }
-
-    // Translate categories
-    for (const category of categories) {
-      const key = `${category}_${lang}`;
-      if (!translatedData[key]) {
-        translationPromises.push(
-          translateText(category, lang).then(result => {
-            newTranslations[key] = result;
-          })
-        );
+      
+      const dbData = await dbResponse.json();
+      const { translations, count } = dbData;
+      
+      if (count > 0) {
+        console.log(`✅ Loaded ${count} translations from database`);
+        setTranslatedData(translations);
+        setSelectedLanguage(lang);
+        setForceRender(prev => prev + 1);
+        setIsTranslating(false);
+        return;
       }
-    }
 
-    // Translate drink names
-    for (const drink of drinks) {
-      const key = `${drink.name}_${lang}`;
-      if (!translatedData[key]) {
-        translationPromises.push(
-          translateText(drink.name, lang).then(result => {
-            newTranslations[key] = result;
-          })
-        );
+      // If no translations in DB, populate them (first-time setup)
+      console.log(`📝 No translations found, populating database for ${lang}...`);
+      
+      const staticLabels = [
+        // Original labels
+        'Sweetness Level', 'Ice Level', 'Size', 'Toppings', 'Total', 'Add to Cart',
+        'View Cart', 'Your cart is empty.', 'Sweetness:', 'Ice:', 'Size:', 'Toppings:', 
+        'Pay', 'Menu', 'Kiosk System', 'Accessibility:', 'Text Size:', 
+        'Normal', 'Large', 'Extra Large', 'High Contrast', 'Language:',
+        
+        // Sweetness/Ice/Size options (modification values)
+        'Regular', 'Less', 'No Ice', 'Small', 'Medium', 'Extra Large',
+        'Normal (100%)', 'Less (75%)', 'Half (50%)', 'Light (25%)', 'No Sugar (0%)', 'Extra Sugar (125%)',
+        
+        // Cart View labels
+        'Back to Menu', 'Your Cart', 'Your cart is empty', 'Add some drinks to get started!',
+        'Browse Menu', 'Quantity', 'each', 'Rewards', 'points', 'Redeem your points for rewards!',
+        'Free Drink', 'Get any drink for free', 'Free Topping', 'Add a free topping to any drink',
+        '20% Off', '20% off your entire order', 'Buy One Get One', 'Get the cheapest drink free',
+        'Not enough points', 'Subtotal', 'Rewards Savings', 'Proceed to Checkout',
+        
+        // Customer Auth Modal labels
+        'Log In', 'Sign Up', 'Skip', 'Continue as Guest', 'Earn Rewards!',
+        'Sign up or log in to earn points with every purchase',
+        'Phone Number', 'Enter your phone number', 'PIN', 'Enter PIN',
+        'Full Name', 'Enter your name', 'Create 4-Digit PIN', 'Confirm PIN',
+        'Create Account', 'Join our rewards program!',
+        'Back', '4-Digit PIN', 'Phone', 'Checking...', 'Continue',
+        "Don't have an account?", 'Already have an account?',
+        'Logging In...', 'Creating Account...', 'Setting PIN...', 'Set PIN & Continue',
+        'Switch Account', 'Currently logged in as:', 
+        'Log In to Different Account', 'Create New Account', 'Log Out (Continue as Guest)',
+        'Logging out will remove your rewards tracking for this session',
+        'Log In to Account', 'You can always sign up later to start earning rewards!',
+        'Set Up Your PIN', 'Your account was created by a cashier. Please set up a 4-digit PIN to secure your account.',
+        
+        // Error messages
+        'Please enter a valid 10-digit phone number',
+        'Phone number not found. Please sign up or try a different number.',
+        'Unable to connect to server. Please try again.',
+        'PIN must be 4 digits', 'Incorrect PIN. Please try again.',
+        'PIN must be exactly 4 digits', 'PINs do not match',
+        'Failed to set PIN. Please try again.',
+        'Please enter your name', 'Signup failed. Please try again.',
+        
+        // Payment Modal labels
+        'Select Payment Method', 'Cash', 'Credit Card', 'Debit Card', 'Cancel',
+        'Customer', 'Points Remaining', 'Available Rewards', 'Applied', 'Total Discount',
+        'New Total', 'Card', 'Credit or Debit', 'Pay at counter',
+        
+        // Add More Items Modal labels
+        'Want to add more?', 'Add to Order', 'Add More Items?', 'Check out these popular drinks!',
+        'Continue to Checkout',
+        
+        // Thank You Screen labels
+        'Thank You', 'Your order has been placed successfully!', 'Order Number',
+        'Please wait for your order to be prepared', 'Place New Order',
+        
+        // Weather recommendation templates (will be dynamically formatted)
+        "It's chilly at", "warm up with a", "Perfect weather at", "for a",
+        "Beat the heat at", "with a refreshing", "Perfect rainy day for a cozy",
+        "Cozy up on this", "day with a", "Stay warm in this", "with a hot",
+        "Sunny and", "try a refreshing", "Nice day at",
+        
+        // Weather conditions (for dynamic translation)
+        'rainy', 'foggy', 'cloudy', 'overcast', 'sunny', 'clear', 'partly cloudy',
+        
+        // Temperature units
+        '°F',
+        
+        // Search and Navigation
+        'Search drinks...', 'Clear search', 'ShareNook Kiosk'
+      ];
+
+      const allTexts = [
+        ...staticLabels,
+        ...categories,
+        ...drinks.map(d => d.name),
+        ...toppings.map(t => t.name),
+        ...sweetnessOptions.map(o => o.name),
+        ...iceOptions.map(o => o.name),
+        ...sizeOptions.map(o => o.name)
+      ];
+
+      // Populate database (this uses MyMemory API)
+      const populateUrl = `${API_BASE_URL}/api/translations/populate`;
+      console.log('📡 Populating translations at:', populateUrl);
+      
+      const populateResponse = await fetch(populateUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ texts: allTexts, targetLang: lang })
+      });
+
+      if (!populateResponse.ok) {
+        throw new Error(`Populate failed: ${populateResponse.status} ${populateResponse.statusText}`);
       }
-    }
 
-    // Translate topping names
-    for (const topping of toppings) {
-      const key = `${topping.name}_${lang}`;
-      if (!translatedData[key]) {
-        translationPromises.push(
-          translateText(topping.name, lang).then(result => {
-            newTranslations[key] = result;
-          })
-        );
-      }
+      const result = await populateResponse.json();
+      console.log(`✅ Populated ${result.newTranslations} new translations`);
+      
+      // Now fetch from database
+      const fetchResponse = await fetch(dbUrl);
+      const fetchData = await fetchResponse.json();
+      
+      setTranslatedData(fetchData.translations);
+      setSelectedLanguage(lang);
+      setForceRender(prev => prev + 1);
+    } catch (err) {
+      console.error('❌ Translation error:', err);
+      alert(`Translation error: ${err.message}\n\nMake sure the backend server is running!`);
+      setSelectedLanguage('en'); // Reset to English on error
+    } finally {
+      setIsTranslating(false);
     }
-
-    // Translate sweetness options
-    for (const option of sweetnessOptions) {
-      const key = `${option.name}_${lang}`;
-      if (!translatedData[key]) {
-        translationPromises.push(
-          translateText(option.name, lang).then(result => {
-            newTranslations[key] = result;
-          })
-        );
-      }
-    }
-
-    // Translate ice options
-    for (const option of iceOptions) {
-      const key = `${option.name}_${lang}`;
-      if (!translatedData[key]) {
-        translationPromises.push(
-          translateText(option.name, lang).then(result => {
-            newTranslations[key] = result;
-          })
-        );
-      }
-    }
-
-    await Promise.all(translationPromises);
-    setTranslatedData(prev => ({ ...prev, ...newTranslations }));
-    setIsTranslating(false);
   };
 
-  // Get translated text helper
-  const getTranslatedText = (text) => {
-    if (selectedLanguage === 'en' || !text) return text;
-    const key = `${text}_${selectedLanguage}`;
-    return translatedData[key] || text;
-  };
+  // Get translated text helper - memoized to ensure it updates when dependencies change
+  const getTranslatedText = useMemo(() => {
+    return (text) => {
+      if (!text) return text;
+      if (selectedLanguage === 'en') return text;
+      
+      // Database stores translations directly by text key
+      const translation = translatedData[text];
+      
+      return translation || text;
+    };
+  }, [selectedLanguage, translatedData, forceRender]); // Include forceRender to ensure updates
 
   // Add a customized drink to the cart
   const handleAddToCart = (customizedDrink) => {
     setCart((prevCart) => {
-      // Create a unique key based on drink and customizations
+      // Create a unique key based on drink and customizations (including size)
       const customizationKey = customizedDrink.customizations
-        ? `${customizedDrink.menuitemid}-${customizedDrink.customizations.sweetness}-${customizedDrink.customizations.ice}-${customizedDrink.customizations.toppings.join(',')}`
+        ? `${customizedDrink.menuitemid}-${customizedDrink.customizations.size}-${customizedDrink.customizations.sweetness}-${customizedDrink.customizations.ice}-${customizedDrink.customizations.toppings.join(',')}`
         : customizedDrink.menuitemid;
       
       // Check if exact same item with same customizations exists
       const existingItem = prevCart.find((item) => {
         const itemKey = item.customizations
-          ? `${item.menuitemid}-${item.customizations.sweetness}-${item.customizations.ice}-${item.customizations.toppings.join(',')}`
+          ? `${item.menuitemid}-${item.customizations.size}-${item.customizations.sweetness}-${item.customizations.ice}-${item.customizations.toppings.join(',')}`
           : item.menuitemid;
         return itemKey === customizationKey;
       });
@@ -919,7 +953,7 @@ export default function Kiosk({ role = 'customer' }) {
       if (existingItem) {
         return prevCart.map((item) => {
           const itemKey = item.customizations
-            ? `${item.menuitemid}-${item.customizations.sweetness}-${item.customizations.ice}-${item.customizations.toppings.join(',')}`
+            ? `${item.menuitemid}-${item.customizations.size}-${item.customizations.sweetness}-${item.customizations.ice}-${item.customizations.toppings.join(',')}`
             : item.menuitemid;
           return itemKey === customizationKey
             ? { ...item, quantity: item.quantity + 1 }
@@ -1135,6 +1169,7 @@ export default function Kiosk({ role = 'customer' }) {
   // Accessibility Menu Component (reusable across all views)
   const AccessibilityMenu = () => (
     <div 
+      key={`accessibility-${selectedLanguage}`}
       className="fixed inset-0 flex items-center justify-center z-50" 
       style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
       onClick={() => setShowAccessibilityMenu(false)}
@@ -1400,7 +1435,10 @@ export default function Kiosk({ role = 'customer' }) {
 
   // Default: Menu View
   return (
-    <div className={`customer-view ${getContainerClass()}`}>
+    <div 
+      key={`kiosk-${selectedLanguage}-${forceRender}`} 
+      className={`customer-view ${getContainerClass()}`}
+    >
       
       {/* Top Navigation Tabs */}
       <header className={`shadow-md ${highContrast ? 'bg-gray-900 border-b-4 border-yellow-400' : 'bg-white'}`}>
@@ -1456,7 +1494,7 @@ export default function Kiosk({ role = 'customer' }) {
                         : 'bg-green-600 text-white hover:bg-green-700'
                     }`}
                   >
-                    🎁 Log In
+                    🎁 {getTranslatedText('Log In')}
                   </button>
                 )}
               </div>
@@ -1534,21 +1572,29 @@ export default function Kiosk({ role = 'customer' }) {
           >
             <span className="text-2xl">{weatherRecommendation.icon}</span>
             <div>
-              <span className="font-semibold">{weatherRecommendation.message}</span>{' '}
-              <span className="underline font-bold">{weatherRecommendation.drink.name}</span>
+              <span className="font-semibold">
+                {weatherRecommendation.messageParts.map((part, idx) => {
+                  // Don't translate numbers with °F or standalone punctuation
+                  if (part.includes('°F') || part === '-') {
+                    return <span key={idx}>{part} </span>;
+                  }
+                  return <span key={idx}>{getTranslatedText(part)} </span>;
+                })}
+              </span>
+              <span className="underline font-bold">{getTranslatedText(weatherRecommendation.drink.name)}</span>
             </div>
           </div>
         )}
 
         {/* Left-hand Category Navigation */}
         <nav className="w-1/5 pr-6">
-          <h2 className={`text-2xl font-bold mb-6 ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>Menu</h2>
+          <h2 className={`text-2xl font-bold mb-6 ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>{getTranslatedText('Menu')}</h2>
           
           {/* Search Bar */}
           <div className="mb-6">
             <input
               type="text"
-              placeholder="Search drinks..."
+              placeholder={getTranslatedText('Search drinks...')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className={`w-full px-4 py-3 rounded-lg border-2 font-medium focus:outline-none focus:ring-4 ${
@@ -1565,7 +1611,7 @@ export default function Kiosk({ role = 'customer' }) {
                   highContrast ? 'text-yellow-400' : 'text-gray-600 hover:text-gray-800'
                 }`}
               >
-                Clear search
+                {getTranslatedText('Clear search')}
               </button>
             )}
           </div>
@@ -1646,6 +1692,7 @@ export default function Kiosk({ role = 'customer' }) {
           onAuthenticated={handleAuthenticated}
           onGuest={handleGuest}
           currentCustomer={customer}
+          getTranslatedText={getTranslatedText}
         />
       )}
 

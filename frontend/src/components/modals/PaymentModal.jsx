@@ -125,37 +125,46 @@ export default function PaymentModal({
 
   return (
     <div 
-      className="fixed inset-0 flex items-center justify-center z-50"
+      className="fixed inset-0 flex items-center justify-center z-50 p-4"
       style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
       onClick={onCancel}
     >
       <div 
-        className={`rounded-2xl shadow-2xl max-w-2xl w-full mx-4 p-8 ${
+        className={`rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto ${
           highContrast ? 'bg-gray-900 border-4 border-yellow-400' : 'bg-white'
         }`}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Customer Info Banner (if customer is logged in) */}
-        {customer && (
-          <>
-            <div className={`mb-4 p-4 rounded-lg ${
+        <div className="p-6">
+          {/* Header */}
+          <div className="text-center mb-4">
+            <h2 className={`text-2xl font-bold mb-1 ${
+              highContrast ? 'text-yellow-400' : 'text-gray-800'
+            }`}>
+              💳 {getTranslatedText('Select Payment Method')}
+            </h2>
+          </div>
+
+          {/* Customer Info Banner (if customer is logged in) */}
+          {customer && (
+            <div className={`mb-4 p-3 rounded-lg ${
               highContrast ? 'bg-gray-800 border-2 border-yellow-400' : 'bg-blue-50 border-2 border-blue-200'
             }`}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className={`text-sm ${
+                  <p className={`text-xs ${
                     highContrast ? 'text-yellow-400' : 'text-gray-600'
                   }`}>
                     {getTranslatedText('Customer')}
                   </p>
-                  <p className={`text-xl font-bold ${
+                  <p className={`text-lg font-bold ${
                     highContrast ? 'text-white' : 'text-gray-800'
                   }`}>
                     {customer.name || customer.phonenumber}
                   </p>
                 </div>
                 <div className="text-center">
-                  <div className={`text-3xl font-bold ${
+                  <div className={`text-2xl font-bold ${
                     highContrast ? 'text-white' : 'text-blue-600'
                   }`}>
                     {customer.loyaltypoints - pointsUsed}
@@ -168,17 +177,19 @@ export default function PaymentModal({
                 </div>
               </div>
             </div>
+          )}
 
-            {/* Rewards Selection */}
-            <div className={`mb-6 p-4 rounded-lg ${
+          {/* Rewards Selection */}
+          {customer && (
+            <div className={`mb-4 p-3 rounded-lg ${
               highContrast ? 'bg-gray-800 border-2 border-yellow-400' : 'bg-purple-50 border-2 border-purple-200'
             }`}>
-              <h3 className={`text-lg font-bold mb-3 ${
+              <h3 className={`text-sm font-bold mb-2 ${
                 highContrast ? 'text-yellow-400' : 'text-gray-800'
               }`}>
                 🎁 {getTranslatedText('Available Rewards')}
               </h3>
-              <div className="grid grid-cols-1 gap-2" style={{ display: 'flex', flexWrap: 'wrap', }}>
+              <div className="grid grid-cols-2 gap-2">
                 {rewards.map(reward => {
                   const isSelected = selectedRewards.includes(reward.id);
                   const canAfford = (pointsUsed + reward.pointsCost) <= customer.loyaltypoints;
@@ -189,7 +200,7 @@ export default function PaymentModal({
                       key={reward.id}
                       onClick={() => toggleReward(reward.id)}
                       disabled={isDisabled}
-                      className={`p-3 rounded-lg text-left transition-all ${
+                      className={`p-2 rounded-lg text-left transition-all ${
                         isSelected
                           ? highContrast 
                             ? 'bg-yellow-400 text-black border-2 border-yellow-300'
@@ -203,12 +214,12 @@ export default function PaymentModal({
                               : 'bg-white text-gray-800 border-2 border-purple-300 hover:border-purple-400'
                       }`}
                     >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-2xl">{reward.icon}</span>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-start gap-1">
+                          <span className="text-lg">{reward.icon}</span>
                           <div>
-                            <div className="font-semibold">{getTranslatedText(reward.name)}</div>
-                            <div className={`text-xs ${
+                            <div className="font-semibold text-xs">{getTranslatedText(reward.name)}</div>
+                            <div className={`text-[10px] ${
                               isSelected 
                                 ? 'text-white' 
                                 : isDisabled 
@@ -219,20 +230,18 @@ export default function PaymentModal({
                             </div>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <div className={`font-bold ${
+                        <div className="text-right flex-shrink-0">
+                          <div className={`font-bold text-xs ${
                             isSelected 
                               ? 'text-white' 
                               : isDisabled 
                                 ? 'text-gray-400' 
                                 : highContrast ? 'text-yellow-400' : 'text-purple-600'
                           }`}>
-                            {reward.pointsCost} pts
+                            {reward.pointsCost}
                           </div>
                           {isSelected && (
-                            <div className="text-xs font-semibold">
-                              ✓ {getTranslatedText('Applied')}
-                            </div>
+                            <div className="text-[10px] font-semibold">✓</div>
                           )}
                         </div>
                       </div>
@@ -241,110 +250,102 @@ export default function PaymentModal({
                 })}
               </div>
               {selectedRewards.length > 0 && (
-                <div className={`mt-3 p-2 rounded text-center text-sm font-semibold ${
+                <div className={`mt-2 p-2 rounded text-center text-xs font-semibold ${
                   highContrast ? 'bg-yellow-400 text-black' : 'bg-green-100 text-green-700'
                 }`}>
                   💰 {getTranslatedText('Total Discount')}: ${rewardDiscount.toFixed(2)}
                 </div>
               )}
             </div>
-          </>
-        )}
+          )}
 
-        {/* Header */}
-        <div className="text-center mb-6">
-          <h2 className={`text-3xl font-bold mb-2 ${
-            highContrast ? 'text-yellow-400' : 'text-gray-800'
-          }`}>
-            💳 {getTranslatedText('Select Payment Method')}
-          </h2>
-          {customer && selectedRewards.length > 0 ? (
-            <>
-              <p className={`text-xl line-through ${
-                highContrast ? 'text-gray-500' : 'text-gray-400'
-              }`}>
-                ${total.toFixed(2)}
-              </p>
-              <p className={`text-3xl font-bold ${
+          {/* Total Display */}
+          <div className="text-center mb-4">
+            {customer && selectedRewards.length > 0 ? (
+              <>
+                <p className={`text-lg line-through ${
+                  highContrast ? 'text-gray-500' : 'text-gray-400'
+                }`}>
+                  ${total.toFixed(2)}
+                </p>
+                <p className={`text-2xl font-bold ${
+                  highContrast ? 'text-white' : 'text-green-600'
+                }`}>
+                  {getTranslatedText('New Total')}: ${finalTotal.toFixed(2)}
+                </p>
+              </>
+            ) : (
+              <p className={`text-2xl font-bold ${
                 highContrast ? 'text-white' : 'text-green-600'
               }`}>
-                {getTranslatedText('New Total')}: ${finalTotal.toFixed(2)}
+                {getTranslatedText('Total')}: ${total.toFixed(2)}
               </p>
-            </>
-          ) : (
-            <p className={`text-3xl font-bold ${
-              highContrast ? 'text-white' : 'text-green-600'
-            }`}>
-              {getTranslatedText('Total')}: ${total.toFixed(2)}
-            </p>
-          )}
-        </div>
+            )}
+          </div>
 
-        {/* Payment Options */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          {/* Card Payment */}
+          {/* Payment Options */}
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            {/* Card Payment */}
+            <button
+              onClick={() => handlePayment('Card')}
+              className={`p-6 rounded-xl shadow-lg transition-all transform hover:scale-105 ${
+                highContrast
+                  ? 'bg-gray-800 border-4 border-yellow-400 hover:bg-gray-700'
+                  : 'bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 border-2 border-blue-300'
+              }`}
+            >
+              <div className="flex flex-col items-center">
+                <div className="text-5xl mb-2">💳</div>
+                <h3 className={`text-xl font-bold mb-1 ${
+                  highContrast ? 'text-yellow-400' : 'text-gray-800'
+                }`}>
+                  {getTranslatedText('Card')}
+                </h3>
+                <p className={`text-xs ${
+                  highContrast ? 'text-white' : 'text-gray-600'
+                }`}>
+                  {getTranslatedText('Credit or Debit')}
+                </p>
+              </div>
+            </button>
+
+            {/* Cash Payment */}
+            <button
+              onClick={() => handlePayment('Cash')}
+              className={`p-6 rounded-xl shadow-lg transition-all transform hover:scale-105 ${
+                highContrast
+                  ? 'bg-gray-800 border-4 border-yellow-400 hover:bg-gray-700'
+                  : 'bg-gradient-to-br from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 border-2 border-green-300'
+              }`}
+            >
+              <div className="flex flex-col items-center">
+                <div className="text-5xl mb-2">💵</div>
+                <h3 className={`text-xl font-bold mb-1 ${
+                  highContrast ? 'text-yellow-400' : 'text-gray-800'
+                }`}>
+                  {getTranslatedText('Cash')}
+                </h3>
+                <p className={`text-xs ${
+                  highContrast ? 'text-white' : 'text-gray-600'
+                }`}>
+                  {getTranslatedText('Pay at counter')}
+                </p>
+              </div>
+            </button>
+          </div>
+
+          {/* Cancel Button */}
           <button
-            onClick={() => handlePayment('Card')}
-            className={`p-8 rounded-xl shadow-lg transition-all transform hover:scale-105 ${
+            onClick={onCancel}
+            className={`w-full py-3 rounded-lg font-semibold transition-colors ${
               highContrast
-                ? 'bg-gray-800 border-4 border-yellow-400 hover:bg-gray-700'
-                : 'bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 border-2 border-blue-300'
+                ? 'bg-gray-800 text-yellow-400 border-2 border-yellow-400 hover:bg-gray-700'
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
             }`}
-            style={{ minHeight: '200px' }}
           >
-            <div className="flex flex-col items-center">
-              <div className="text-7xl mb-4">💳</div>
-              <h3 className={`text-2xl font-bold mb-2 ${
-                highContrast ? 'text-yellow-400' : 'text-gray-800'
-              }`}>
-                {getTranslatedText('Card')}
-              </h3>
-              <p className={`text-sm ${
-                highContrast ? 'text-white' : 'text-gray-600'
-              }`}>
-                {getTranslatedText('Credit or Debit')}
-              </p>
-            </div>
-          </button>
-
-          {/* Cash Payment */}
-          <button
-            onClick={() => handlePayment('Cash')}
-            className={`p-8 rounded-xl shadow-lg transition-all transform hover:scale-105 ${
-              highContrast
-                ? 'bg-gray-800 border-4 border-yellow-400 hover:bg-gray-700'
-                : 'bg-gradient-to-br from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 border-2 border-green-300'
-            }`}
-            style={{ minHeight: '200px' }}
-          >
-            <div className="flex flex-col items-center">
-              <div className="text-7xl mb-4">💵</div>
-              <h3 className={`text-2xl font-bold mb-2 ${
-                highContrast ? 'text-yellow-400' : 'text-gray-800'
-              }`}>
-                {getTranslatedText('Cash')}
-              </h3>
-              <p className={`text-sm ${
-                highContrast ? 'text-white' : 'text-gray-600'
-              }`}>
-                {getTranslatedText('Pay at counter')}
-              </p>
-            </div>
+            {getTranslatedText('Cancel')}
           </button>
         </div>
-
-        {/* Cancel Button */}
-        <button
-          onClick={onCancel}
-          className={`w-full py-4 rounded-lg font-semibold transition-colors ${
-            highContrast
-              ? 'bg-gray-800 text-yellow-400 border-2 border-yellow-400 hover:bg-gray-700'
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-          }`}
-          style={{ minHeight: '60px' }}
-        >
-          {getTranslatedText('Cancel')}
-        </button>
       </div>
     </div>
   );

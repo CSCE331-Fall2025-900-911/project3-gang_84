@@ -13,11 +13,16 @@
 }
 
 .cashier-view button {
-  min-height: 60px;
-  min-width: 60px;
+  min-height: 40px;
+  min-width: 40px;
   -webkit-tap-highlight-color: transparent;
 }
 
+.cashier-view .menuButton {
+  min-height: 40px;
+  min-width: fit-content;
+  -webkit-tap-highlight-color: transparent;
+}
 /* CUSTOMER VIEW - Touchscreen Optimized (Casual Users) */
 .customer-view {
   user-select: none;
@@ -27,8 +32,9 @@
 }
 
 .customer-view button {
-  min-height: 70px;
-  min-width: 70px;
+  min-height: 40px;
+  min-width: 40px;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* MANAGER VIEW - Keyboard/Mouse Optimized (Familiar End Users) */

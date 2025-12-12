@@ -5,7 +5,7 @@ import { API_ENDPOINTS } from '../../config/api';
  * Customer Authentication Modal
  * Handles login, signup, and guest continuation for customer rewards
  */
-export default function CustomerAuthModal({ onClose, onAuthenticated, onGuest, currentCustomer }) {
+export default function CustomerAuthModal({ onClose, onAuthenticated, onGuest, currentCustomer, getTranslatedText }) {
   const [view, setView] = useState('initial'); // 'initial', 'login', 'login-pin', 'signup', 'setpin'
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -44,7 +44,7 @@ export default function CustomerAuthModal({ onClose, onAuthenticated, onGuest, c
       const cleanPhone = loginPhone.replace(/\D/g, '');
       
       if (cleanPhone.length !== 10) {
-        setError('Please enter a valid 10-digit phone number');
+        setError(getTranslatedText('Please enter a valid 10-digit phone number'));
         setLoading(false);
         return;
       }
@@ -58,9 +58,9 @@ export default function CustomerAuthModal({ onClose, onAuthenticated, onGuest, c
       // Check if response is OK before parsing JSON
       if (!response.ok) {
         if (response.status === 404) {
-          setError('Phone number not found. Please sign up or try a different number.');
+          setError(getTranslatedText('Phone number not found. Please sign up or try a different number.'));
         } else {
-          setError('Unable to connect to server. Please try again.');
+          setError(getTranslatedText('Unable to connect to server. Please try again.'));
         }
         setLoading(false);
         return;
@@ -70,7 +70,7 @@ export default function CustomerAuthModal({ onClose, onAuthenticated, onGuest, c
 
       if (!data.exists) {
         // Account doesn't exist
-        setError('Phone number not found. Please sign up or try a different number.');
+        setError(getTranslatedText('Phone number not found. Please sign up or try a different number.'));
       } else if (!data.hasPin) {
         // Account exists but needs PIN setup
         setSetPinPhone(cleanPhone);
@@ -83,7 +83,7 @@ export default function CustomerAuthModal({ onClose, onAuthenticated, onGuest, c
         setError('');
       }
     } catch (err) {
-      setError('Unable to connect to server. Please try again.');
+      setError(getTranslatedText('Unable to connect to server. Please try again.'));
       console.error('Phone check error:', err);
     } finally {
       setLoading(false);
@@ -105,7 +105,7 @@ export default function CustomerAuthModal({ onClose, onAuthenticated, onGuest, c
       console.log('  Clean phone:', cleanPhone);
 
       if (loginPin.length !== 4) {
-        setError('PIN must be 4 digits');
+        setError(getTranslatedText('PIN must be 4 digits'));
         setLoading(false);
         return;
       }
@@ -131,11 +131,11 @@ export default function CustomerAuthModal({ onClose, onAuthenticated, onGuest, c
         onAuthenticated(data.customer);
       } else {
         console.log('  ❌ Login failed:', data.error);
-        setError(data.error || 'Incorrect PIN. Please try again.');
+        setError(data.error || getTranslatedText('Incorrect PIN. Please try again.'));
       }
     } catch (err) {
       console.log('  ❌ Exception:', err);
-      setError('Unable to connect to server. Please try again.');
+      setError(getTranslatedText('Unable to connect to server. Please try again.'));
       console.error('Login error:', err);
     } finally {
       setLoading(false);
@@ -150,13 +150,13 @@ export default function CustomerAuthModal({ onClose, onAuthenticated, onGuest, c
 
     try {
       if (setPinNew.length !== 4 || !/^\d{4}$/.test(setPinNew)) {
-        setError('PIN must be exactly 4 digits');
+        setError(getTranslatedText('PIN must be exactly 4 digits'));
         setLoading(false);
         return;
       }
 
       if (setPinNew !== setPinConfirm) {
-        setError('PINs do not match');
+        setError(getTranslatedText('PINs do not match'));
         setLoading(false);
         return;
       }
@@ -176,10 +176,10 @@ export default function CustomerAuthModal({ onClose, onAuthenticated, onGuest, c
         // PIN set successfully, log them in
         onAuthenticated(data.customer);
       } else {
-        setError(data.error || 'Failed to set PIN. Please try again.');
+        setError(data.error || getTranslatedText('Failed to set PIN. Please try again.'));
       }
     } catch (err) {
-      setError('Unable to connect to server. Please try again.');
+      setError(getTranslatedText('Unable to connect to server. Please try again.'));
       console.error('Set PIN error:', err);
     } finally {
       setLoading(false);
@@ -195,26 +195,26 @@ export default function CustomerAuthModal({ onClose, onAuthenticated, onGuest, c
     try {
       // Validation
       if (!signupName.trim()) {
-        setError('Please enter your name');
+        setError(getTranslatedText('Please enter your name'));
         setLoading(false);
         return;
       }
 
       const cleanPhone = signupPhone.replace(/\D/g, '');
       if (cleanPhone.length !== 10) {
-        setError('Please enter a valid 10-digit phone number');
+        setError(getTranslatedText('Please enter a valid 10-digit phone number'));
         setLoading(false);
         return;
       }
 
       if (signupPin.length !== 4 || !/^\d{4}$/.test(signupPin)) {
-        setError('PIN must be exactly 4 digits');
+        setError(getTranslatedText('PIN must be exactly 4 digits'));
         setLoading(false);
         return;
       }
 
       if (signupPin !== signupPinConfirm) {
-        setError('PINs do not match');
+        setError(getTranslatedText('PINs do not match'));
         setLoading(false);
         return;
       }
@@ -234,10 +234,10 @@ export default function CustomerAuthModal({ onClose, onAuthenticated, onGuest, c
       if (response.ok) {
         onAuthenticated(data.customer);
       } else {
-        setError(data.error || 'Signup failed. Please try again.');
+        setError(data.error || getTranslatedText('Signup failed. Please try again.'));
       }
     } catch (err) {
-      setError('Unable to connect to server. Please try again.');
+      setError(getTranslatedText('Unable to connect to server. Please try again.'));
       console.error('Signup error:', err);
     } finally {
       setLoading(false);
@@ -254,15 +254,15 @@ export default function CustomerAuthModal({ onClose, onAuthenticated, onGuest, c
             <div className="w-20 h-20 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
               <span className="text-4xl">👤</span>
             </div>
-            <h2 className="text-3xl font-bold text-gray-800 mb-3">Switch Account</h2>
+            <h2 className="text-3xl font-bold text-gray-800 mb-3">{getTranslatedText('Switch Account')}</h2>
             <p className="text-gray-600 text-lg mb-2">
-              Currently logged in as:
+              {getTranslatedText('Currently logged in as:')}
             </p>
             <p className="text-xl font-semibold text-green-600">
               {currentCustomer.name}
             </p>
             <p className="text-sm text-gray-500">
-              🎁 {currentCustomer.loyaltyPoints} points
+              🎁 {currentCustomer.loyaltyPoints} {getTranslatedText('points')}
             </p>
           </div>
 
@@ -272,7 +272,7 @@ export default function CustomerAuthModal({ onClose, onAuthenticated, onGuest, c
               className="w-full bg-green-600 text-white font-semibold py-4 px-6 rounded-lg hover:bg-green-700 transition-colors shadow-md text-lg"
               style={{ minHeight: '60px' }}
             >
-              Log In to Different Account
+              {getTranslatedText('Log In to Different Account')}
             </button>
             
             <button
@@ -280,7 +280,7 @@ export default function CustomerAuthModal({ onClose, onAuthenticated, onGuest, c
               className="w-full bg-white text-green-600 border-2 border-green-600 font-semibold py-4 px-6 rounded-lg hover:bg-green-50 transition-colors shadow-md text-lg"
               style={{ minHeight: '60px' }}
             >
-              Create New Account
+              {getTranslatedText('Create New Account')}
             </button>
             
             <button
@@ -288,12 +288,12 @@ export default function CustomerAuthModal({ onClose, onAuthenticated, onGuest, c
               className="w-full bg-red-600 text-white font-semibold py-4 px-6 rounded-lg hover:bg-red-700 transition-colors shadow-md text-lg"
               style={{ minHeight: '60px' }}
             >
-              Log Out (Continue as Guest)
+              {getTranslatedText('Log Out (Continue as Guest)')}
             </button>
           </div>
 
           <p className="text-sm text-gray-500">
-            Logging out will remove your rewards tracking for this session
+            {getTranslatedText('Logging out will remove your rewards tracking for this session')}
           </p>
         </div>
       );
@@ -306,9 +306,9 @@ export default function CustomerAuthModal({ onClose, onAuthenticated, onGuest, c
           <div className="w-20 h-20 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
             <span className="text-4xl">🎁</span>
           </div>
-          <h2 className="text-3xl font-bold text-gray-800 mb-3">Earn Rewards!</h2>
+          <h2 className="text-3xl font-bold text-gray-800 mb-3">{getTranslatedText('Earn Rewards!')}</h2>
           <p className="text-gray-600 text-lg">
-            Sign up or log in to earn points with every purchase
+            {getTranslatedText('Sign up or log in to earn points with every purchase')}
           </p>
         </div>
 
@@ -318,7 +318,7 @@ export default function CustomerAuthModal({ onClose, onAuthenticated, onGuest, c
             className="w-full bg-green-600 text-white font-semibold py-4 px-6 rounded-lg hover:bg-green-700 transition-colors shadow-md text-lg"
             style={{ minHeight: '60px' }}
           >
-            Log In to Account
+            {getTranslatedText('Log In to Account')}
           </button>
           
           <button
@@ -326,7 +326,7 @@ export default function CustomerAuthModal({ onClose, onAuthenticated, onGuest, c
             className="w-full bg-white text-green-600 border-2 border-green-600 font-semibold py-4 px-6 rounded-lg hover:bg-green-50 transition-colors shadow-md text-lg"
             style={{ minHeight: '60px' }}
           >
-            Create New Account
+            {getTranslatedText('Create New Account')}
           </button>
           
           <button
@@ -334,12 +334,12 @@ export default function CustomerAuthModal({ onClose, onAuthenticated, onGuest, c
             className="w-full bg-gray-200 text-gray-700 font-semibold py-4 px-6 rounded-lg hover:bg-gray-300 transition-colors shadow-md text-lg"
             style={{ minHeight: '60px' }}
           >
-            Continue as Guest
+            {getTranslatedText('Continue as Guest')}
           </button>
         </div>
 
         <p className="text-sm text-gray-500">
-          You can always sign up later to start earning rewards!
+          {getTranslatedText('You can always sign up later to start earning rewards!')}
         </p>
       </div>
     );
@@ -357,12 +357,12 @@ export default function CustomerAuthModal({ onClose, onAuthenticated, onGuest, c
         }}
         className="mb-4 text-green-600 hover:text-green-700 font-semibold flex items-center"
       >
-        ← Back
+        ← {getTranslatedText('Back')}
       </button>
 
       <div className="text-center mb-6">
-        <h2 className="text-3xl font-bold text-gray-800 mb-2">Log In</h2>
-        <p className="text-gray-600">Enter your phone number</p>
+        <h2 className="text-3xl font-bold text-gray-800 mb-2">{getTranslatedText('Log In')}</h2>
+        <p className="text-gray-600">{getTranslatedText('Enter your phone number')}</p>
       </div>
 
       <form onSubmit={handlePhoneSubmit} className="space-y-4">
@@ -374,7 +374,7 @@ export default function CustomerAuthModal({ onClose, onAuthenticated, onGuest, c
 
         <div>
           <label className="block text-gray-700 font-semibold mb-2 text-lg">
-            Phone Number
+            {getTranslatedText('Phone Number')}
           </label>
           <input
             type="tel"
@@ -395,11 +395,11 @@ export default function CustomerAuthModal({ onClose, onAuthenticated, onGuest, c
           className="w-full bg-green-600 text-white font-bold py-4 px-6 rounded-lg hover:bg-green-700 transition-colors shadow-lg disabled:bg-gray-400 disabled:cursor-not-allowed text-lg"
           style={{ minHeight: '60px' }}
         >
-          {loading ? 'Checking...' : 'Continue'}
+          {loading ? getTranslatedText('Checking...') : getTranslatedText('Continue')}
         </button>
 
         <p className="text-center text-gray-600">
-          Don't have an account?{' '}
+          {getTranslatedText("Don't have an account?")}{' '}
           <button
             type="button"
             onClick={() => {
@@ -408,7 +408,7 @@ export default function CustomerAuthModal({ onClose, onAuthenticated, onGuest, c
             }}
             className="text-green-600 hover:text-green-700 font-semibold"
           >
-            Sign Up
+            {getTranslatedText('Sign Up')}
           </button>
         </p>
       </form>
@@ -426,13 +426,13 @@ export default function CustomerAuthModal({ onClose, onAuthenticated, onGuest, c
         }}
         className="mb-4 text-green-600 hover:text-green-700 font-semibold flex items-center"
       >
-        ← Back
+        ← {getTranslatedText('Back')}
       </button>
 
       <div className="text-center mb-6">
-        <h2 className="text-3xl font-bold text-gray-800 mb-2">Enter PIN</h2>
+        <h2 className="text-3xl font-bold text-gray-800 mb-2">{getTranslatedText('Enter PIN')}</h2>
         <p className="text-gray-600">
-          Phone: <span className="font-semibold">{loginPhone}</span>
+          {getTranslatedText('Phone')}: <span className="font-semibold">{loginPhone}</span>
         </p>
       </div>
 
@@ -445,7 +445,7 @@ export default function CustomerAuthModal({ onClose, onAuthenticated, onGuest, c
 
         <div>
           <label className="block text-gray-700 font-semibold mb-2 text-lg">
-            4-Digit PIN
+            {getTranslatedText('4-Digit PIN')}
           </label>
           <input
             type="password"
@@ -467,7 +467,7 @@ export default function CustomerAuthModal({ onClose, onAuthenticated, onGuest, c
           className="w-full bg-green-600 text-white font-bold py-4 px-6 rounded-lg hover:bg-green-700 transition-colors shadow-lg disabled:bg-gray-400 disabled:cursor-not-allowed text-lg"
           style={{ minHeight: '60px' }}
         >
-          {loading ? 'Logging In...' : 'Log In'}
+          {loading ? getTranslatedText('Logging In...') : getTranslatedText('Log In')}
         </button>
       </form>
     </div>
@@ -483,12 +483,12 @@ export default function CustomerAuthModal({ onClose, onAuthenticated, onGuest, c
         }}
         className="mb-4 text-green-600 hover:text-green-700 font-semibold flex items-center"
       >
-        ← Back
+        ← {getTranslatedText('Back')}
       </button>
 
       <div className="text-center mb-6">
-        <h2 className="text-3xl font-bold text-gray-800 mb-2">Create Account</h2>
-        <p className="text-gray-600">Join our rewards program!</p>
+        <h2 className="text-3xl font-bold text-gray-800 mb-2">{getTranslatedText('Create Account')}</h2>
+        <p className="text-gray-600">{getTranslatedText('Join our rewards program!')}</p>
       </div>
 
       <form onSubmit={handleSignup} className="space-y-4">
@@ -500,13 +500,13 @@ export default function CustomerAuthModal({ onClose, onAuthenticated, onGuest, c
 
         <div>
           <label className="block text-gray-700 font-semibold mb-2 text-lg">
-            Full Name
+            {getTranslatedText('Full Name')}
           </label>
           <input
             type="text"
             value={signupName}
             onChange={(e) => setSignupName(e.target.value)}
-            placeholder="Enter your name"
+            placeholder={getTranslatedText('Enter your name')}
             className="w-full px-4 py-4 border-2 border-gray-300 rounded-lg focus:border-green-600 focus:outline-none text-lg"
             style={{ minHeight: '60px' }}
             required
@@ -515,7 +515,7 @@ export default function CustomerAuthModal({ onClose, onAuthenticated, onGuest, c
 
         <div>
           <label className="block text-gray-700 font-semibold mb-2 text-lg">
-            Phone Number
+            {getTranslatedText('Phone Number')}
           </label>
           <input
             type="tel"
@@ -531,7 +531,7 @@ export default function CustomerAuthModal({ onClose, onAuthenticated, onGuest, c
 
         <div>
           <label className="block text-gray-700 font-semibold mb-2 text-lg">
-            Create 4-Digit PIN
+            {getTranslatedText('Create 4-Digit PIN')}
           </label>
           <input
             type="password"
@@ -548,7 +548,7 @@ export default function CustomerAuthModal({ onClose, onAuthenticated, onGuest, c
 
         <div>
           <label className="block text-gray-700 font-semibold mb-2 text-lg">
-            Confirm PIN
+            {getTranslatedText('Confirm PIN')}
           </label>
           <input
             type="password"
@@ -569,11 +569,11 @@ export default function CustomerAuthModal({ onClose, onAuthenticated, onGuest, c
           className="w-full bg-green-600 text-white font-bold py-4 px-6 rounded-lg hover:bg-green-700 transition-colors shadow-lg disabled:bg-gray-400 disabled:cursor-not-allowed text-lg"
           style={{ minHeight: '60px' }}
         >
-          {loading ? 'Creating Account...' : 'Create Account'}
+          {loading ? getTranslatedText('Creating Account...') : getTranslatedText('Create Account')}
         </button>
 
         <p className="text-center text-gray-600">
-          Already have an account?{' '}
+          {getTranslatedText('Already have an account?')}{' '}
           <button
             type="button"
             onClick={() => {
@@ -582,7 +582,7 @@ export default function CustomerAuthModal({ onClose, onAuthenticated, onGuest, c
             }}
             className="text-green-600 hover:text-green-700 font-semibold"
           >
-            Log In
+            {getTranslatedText('Log In')}
           </button>
         </p>
       </form>
@@ -596,9 +596,9 @@ export default function CustomerAuthModal({ onClose, onAuthenticated, onGuest, c
         <div className="w-20 h-20 bg-yellow-500 rounded-full flex items-center justify-center mx-auto mb-4">
           <span className="text-4xl">🔐</span>
         </div>
-        <h2 className="text-3xl font-bold text-gray-800 mb-2">Set Up Your PIN</h2>
+        <h2 className="text-3xl font-bold text-gray-800 mb-2">{getTranslatedText('Set Up Your PIN')}</h2>
         <p className="text-gray-600">
-          Your account was created by a cashier. Please set up a 4-digit PIN to secure your account.
+          {getTranslatedText('Your account was created by a cashier. Please set up a 4-digit PIN to secure your account.')}
         </p>
       </div>
 
@@ -611,7 +611,7 @@ export default function CustomerAuthModal({ onClose, onAuthenticated, onGuest, c
 
         <div>
           <label className="block text-gray-700 font-semibold mb-2 text-lg">
-            Create 4-Digit PIN
+            {getTranslatedText('Create 4-Digit PIN')}
           </label>
           <input
             type="password"
@@ -629,7 +629,7 @@ export default function CustomerAuthModal({ onClose, onAuthenticated, onGuest, c
 
         <div>
           <label className="block text-gray-700 font-semibold mb-2 text-lg">
-            Confirm PIN
+            {getTranslatedText('Confirm PIN')}
           </label>
           <input
             type="password"
@@ -654,7 +654,7 @@ export default function CustomerAuthModal({ onClose, onAuthenticated, onGuest, c
           }`}
           style={{ minHeight: '60px' }}
         >
-          {loading ? 'Setting PIN...' : 'Set PIN & Continue'}
+          {loading ? getTranslatedText('Setting PIN...') : getTranslatedText('Set PIN & Continue')}
         </button>
       </form>
     </div>

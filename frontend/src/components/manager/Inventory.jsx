@@ -8,6 +8,8 @@ import { API_ENDPOINTS } from '../../config/api';
 export default function Inventory() {
   const [inventory, setInventory] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [editItem, setEditItem] = useState(null);
@@ -19,6 +21,14 @@ export default function Inventory() {
 
   useEffect(() => {
     fetchInventory();
+    
+    // Auto-refresh inventory every 30 seconds to reflect order deductions
+    const intervalId = setInterval(() => {
+      fetchInventory();
+    }, 30000); // 30 seconds
+    
+    // Cleanup interval on component unmount
+    return () => clearInterval(intervalId);
   }, []);
 
   const fetchInventory = async () => {
@@ -27,12 +37,19 @@ export default function Inventory() {
       if (!response.ok) throw new Error('Failed to fetch inventory');
       const data = await response.json();
       setInventory(data);
+      setLastUpdated(new Date());
     } catch (error) {
       console.error('Failed to fetch inventory:', error);
       alert('Failed to load inventory data');
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  };
+
+  const handleManualRefresh = async () => {
+    setRefreshing(true);
+    await fetchInventory();
   };
 
   const handleAdd = () => {
@@ -114,15 +131,35 @@ export default function Inventory() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-800">Inventory Management</h2>
-          <p className="text-gray-600 mt-1">Manage stock levels and reorder items</p>
+          <p className="text-gray-600 mt-1">
+            Manage stock levels and reorder items
+            {lastUpdated && (
+              <span className="text-sm ml-2">
+                • Last updated: {lastUpdated.toLocaleTimeString()}
+              </span>
+            )}
+          </p>
         </div>
-        <button
-          onClick={handleAdd}
-          className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-semibold shadow-md flex items-center gap-2"
-        >
-          <span>➕</span>
-          Add Item
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={handleManualRefresh}
+            disabled={refreshing}
+            className={`px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-semibold shadow-md flex items-center gap-2 ${
+              refreshing ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
+            title="Refresh inventory data"
+          >
+            <span className={refreshing ? 'animate-spin' : ''}>🔄</span>
+            {refreshing ? 'Refreshing...' : 'Refresh'}
+          </button>
+          <button
+            onClick={handleAdd}
+            className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-semibold shadow-md flex items-center gap-2"
+          >
+            <span>➕</span>
+            Add Item
+          </button>
+        </div>
       </div>
 
       {/* Low Stock Alert */}

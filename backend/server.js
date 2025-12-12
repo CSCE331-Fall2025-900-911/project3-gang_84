@@ -270,19 +270,187 @@ app.get('/api/menu', async (req, res) => {
 });
 
 /**
+ * GET /api/translations/:lang
+ * Fetch all cached translations for a language from database
+ * Returns instantly for fast language switching
+ */
+app.get('/api/translations/:lang', async (req, res) => {
+  try {
+    const { lang } = req.params;
+    
+    const result = await pool.query(
+      'SELECT text_key, translated_text FROM translations WHERE language_code = $1',
+      [lang]
+    );
+    
+    // Convert to key-value object for easy lookup
+    const translations = {};
+    result.rows.forEach(row => {
+      translations[row.text_key] = row.translated_text;
+    });
+    
+    res.json({ translations, count: result.rows.length });
+  } catch (err) {
+    console.error('Error fetching translations:', err);
+    res.status(500).json({ error: 'Failed to fetch translations' });
+  }
+});
+
+/**
+ * POST /api/translations/populate
+ * One-time population of translations using MyMemory API
+ * Call this to translate and cache all menu items and UI labels
+ */
+app.post('/api/translations/populate', async (req, res) => {
+  try {
+    const { texts, targetLang } = req.body;
+    
+    if (!texts || !Array.isArray(texts) || !targetLang) {
+      return res.status(400).json({ error: 'texts array and targetLang required' });
+    }
+
+    console.log(`🔄 Populating ${texts.length} translations for ${targetLang}...`);
+    
+    const https = require('https');
+    const translatedCount = { new: 0, existing: 0 };
+
+    for (const text of texts) {
+      try {
+        // Check if translation already exists
+        const existing = await pool.query(
+          'SELECT translated_text, manual_override FROM translations WHERE text_key = $1 AND language_code = $2',
+          [text, targetLang]
+        );
+
+        if (existing.rows.length > 0) {
+          // Skip if it's a manual override - never re-translate these
+          if (existing.rows[0].manual_override) {
+            console.log(`⏭️  Skipped (manual override): "${text}"`);
+            translatedCount.existing++;
+            continue;
+          }
+          // Skip if translation already exists (but allow re-translation if needed in future)
+          translatedCount.existing++;
+          continue;
+        }
+
+        // Translate using MyMemory API
+        const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${targetLang}`;
+        
+        const translation = await new Promise((resolve, reject) => {
+          https.get(url, (apiRes) => {
+            let data = '';
+            apiRes.on('data', (chunk) => { data += chunk; });
+            apiRes.on('end', () => {
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.responseData && parsed.responseData.translatedText) {
+                  resolve(parsed.responseData.translatedText);
+                } else {
+                  resolve(text); // Fallback to original
+                }
+              } catch (e) {
+                resolve(text);
+              }
+            });
+          }).on('error', () => resolve(text));
+        });
+
+        // Store in database with manual_override = FALSE (auto-translated)
+        await pool.query(
+          'INSERT INTO translations (text_key, language_code, translated_text, manual_override) VALUES ($1, $2, $3, FALSE) ON CONFLICT (text_key, language_code) DO NOTHING',
+          [text, targetLang, translation]
+        );
+
+        translatedCount.new++;
+        console.log(`✓ Stored: "${text}" → "${translation}"`);
+
+        // Rate limiting delay
+        await new Promise(resolve => setTimeout(resolve, 100));
+      } catch (err) {
+        console.error(`Error translating "${text}":`, err);
+      }
+    }
+
+    console.log(`✅ Population complete: ${translatedCount.new} new, ${translatedCount.existing} existing`);
+    res.json({ 
+      success: true, 
+      newTranslations: translatedCount.new,
+      existingTranslations: translatedCount.existing 
+    });
+  } catch (err) {
+    console.error('Translation population error:', err);
+    res.status(500).json({ error: 'Failed to populate translations' });
+  }
+});
+
+/**
  * POST /api/translate
  * Translates text to the target language using MyMemory Translation API
+ * Supports both single text and batch translation
+ * MyMemory has higher rate limits than LibreTranslate for free tier
  */
 app.post('/api/translate', async (req, res) => {
   try {
-    const { text, targetLang } = req.body;
+    const { text, texts, targetLang } = req.body;
     
-    if (!text || !targetLang) {
-      return res.status(400).json({ error: 'Text and target language are required' });
+    if ((!text && !texts) || !targetLang) {
+      return res.status(400).json({ error: 'Text/texts and target language are required' });
     }
 
-    // Use MyMemory Translation API (free, no API key required)
     const https = require('https');
+    
+    // Batch translation support - translate one at a time with MyMemory
+    if (texts && Array.isArray(texts)) {
+      const translatedTexts = [];
+      
+      for (const item of texts) {
+        try {
+          const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(item)}&langpair=en|${targetLang}`;
+          
+          const result = await new Promise((resolve, reject) => {
+            https.get(url, (apiRes) => {
+              let data = '';
+              apiRes.on('data', (chunk) => { data += chunk; });
+              apiRes.on('end', () => {
+                try {
+                  const parsed = JSON.parse(data);
+                  console.log(`🔍 MyMemory API response for "${item}":`, JSON.stringify(parsed));
+                  if (parsed.responseData && parsed.responseData.translatedText) {
+                    const translated = parsed.responseData.translatedText;
+                    console.log(`✅ Translated: "${item}" → "${translated}"`);
+                    resolve(translated);
+                  } else {
+                    console.log(`❌ No translation found for "${item}", using original`);
+                    resolve(item); // Return original on error
+                  }
+                } catch (e) {
+                  console.error(`❌ Parse error for "${item}":`, e);
+                  resolve(item);
+                }
+              });
+            }).on('error', (err) => {
+              console.error(`❌ Network error for "${item}":`, err);
+              resolve(item);
+            });
+          });
+          
+          translatedTexts.push(result);
+          
+          // Small delay to avoid rate limiting (100ms between requests)
+          await new Promise(resolve => setTimeout(resolve, 100));
+        } catch (err) {
+          console.error(`❌ Exception translating "${item}":`, err);
+          translatedTexts.push(item); // Return original on error
+        }
+      }
+
+      console.log(`🎉 Batch translation complete! Sending ${translatedTexts.length} translations back to client`);
+      console.log(`📦 Sample results:`, translatedTexts.slice(0, 5));
+      return res.json({ translatedTexts });
+    }
+
+    // Single text translation using MyMemory
     const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${targetLang}`;
     
     https.get(url, (apiRes) => {
@@ -298,15 +466,17 @@ app.post('/api/translate', async (req, res) => {
           if (result.responseData && result.responseData.translatedText) {
             res.json({ translatedText: result.responseData.translatedText });
           } else {
-            res.status(500).json({ error: 'Translation failed' });
+            console.error('MyMemory error:', result);
+            res.json({ translatedText: text }); // Return original text on error
           }
         } catch (e) {
-          res.status(500).json({ error: 'Failed to parse translation response' });
+          console.error('Failed to parse translation response:', e);
+          res.json({ translatedText: text }); // Return original text on parse error
         }
       });
     }).on('error', (err) => {
       console.error('Translation API error:', err);
-      res.status(500).json({ error: 'Translation service unavailable' });
+      res.json({ translatedText: text }); // Return original text on network error
     });
     
   } catch (err) {
@@ -718,13 +888,27 @@ app.post('/api/orders', async (req, res) => {
 
         console.log(`  Found ${recipeResult.rows.length} recipe ingredients for ${itemName}`);
 
+        // Track low inventory items
+        const lowInventoryItems = [];
+
         for (const recipe of recipeResult.rows) {
-          await client.query(
+          const updateResult = await client.query(
             `UPDATE ingredients 
              SET stock = stock - $1 
-             WHERE ingredientid = $2`,
+             WHERE ingredientid = $2
+             RETURNING ingredientname, stock`,
             [recipe.quantity, recipe.ingredientid]
           );
+          
+          if (updateResult.rows.length > 0) {
+            const { ingredientname, stock } = updateResult.rows[0];
+            console.log(`  📦 Deducted ${recipe.quantity} ${ingredientname} (remaining: ${stock})`);
+            
+            // Check if inventory is low (below 20 units)
+            if (stock < 20) {
+              lowInventoryItems.push({ name: ingredientname, stock });
+            }
+          }
         }
 
         // Deduct ingredients for toppings
@@ -733,32 +917,71 @@ app.post('/api/orders', async (req, res) => {
             const ingredientName = toppingToIngredient[topping];
             if (ingredientName) {
               // Assume 1 unit per topping serving
-              await client.query(
+              const toppingResult = await client.query(
                 `UPDATE ingredients 
                  SET stock = stock - 1 
-                 WHERE ingredientname = $1`,
+                 WHERE ingredientname = $1
+                 RETURNING ingredientname, stock`,
                 [ingredientName]
               );
+              
+              if (toppingResult.rows.length > 0) {
+                const { ingredientname, stock } = toppingResult.rows[0];
+                console.log(`  🧋 Deducted 1 ${ingredientname} (remaining: ${stock})`);
+                
+                if (stock < 20) {
+                  lowInventoryItems.push({ name: ingredientname, stock });
+                }
+              }
             }
           }
         }
 
         // Deduct ice (standard amount per drink)
-        await client.query(
+        const iceResult = await client.query(
           `UPDATE ingredients 
            SET stock = stock - 1 
-           WHERE ingredientname = 'Ice'`
+           WHERE ingredientname = 'Ice'
+           RETURNING ingredientname, stock`
         );
+        
+        if (iceResult.rows.length > 0) {
+          const { ingredientname, stock } = iceResult.rows[0];
+          console.log(`  🧊 Deducted 1 ${ingredientname} (remaining: ${stock})`);
+          
+          if (stock < 20) {
+            lowInventoryItems.push({ name: ingredientname, stock });
+          }
+        }
 
-        // Deduct cups, lids, straws, napkins (1 of each per drink)
-        const supplies = ['Plastic cups (16oz)', 'Cup lids', 'Straws', 'Napkins'];
+        // Deduct cups, straws, napkins (1 of each per drink)
+        // Note: Using actual ingredient names from database
+        const supplies = ['Cups', 'Straws', 'Napkins'];
         for (const supply of supplies) {
-          await client.query(
+          const supplyResult = await client.query(
             `UPDATE ingredients 
              SET stock = stock - 1 
-             WHERE ingredientname = $1`,
+             WHERE ingredientname = $1
+             RETURNING ingredientname, stock`,
             [supply]
           );
+          
+          if (supplyResult.rows.length > 0) {
+            const { ingredientname, stock } = supplyResult.rows[0];
+            console.log(`  🥤 Deducted 1 ${ingredientname} (remaining: ${stock})`);
+            
+            if (stock < 20) {
+              lowInventoryItems.push({ name: ingredientname, stock });
+            }
+          }
+        }
+
+        // Log low inventory warnings
+        if (lowInventoryItems.length > 0) {
+          console.log('  ⚠️  LOW INVENTORY WARNING:');
+          lowInventoryItems.forEach(item => {
+            console.log(`     - ${item.name}: ${item.stock} units remaining`);
+          });
         }
       }
     }

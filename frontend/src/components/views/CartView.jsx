@@ -154,16 +154,20 @@ export default function CartView({
                           highContrast ? 'text-white' : 'text-gray-600'
                         }`}>
                           <div className="flex items-center gap-2">
-                            <span className="font-semibold">{getTranslatedText('Sweetness')}:</span>
+                            <span className="font-semibold">{getTranslatedText('Size')}:</span>
+                            <span>{getTranslatedText(item.customizations.size)}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold">{getTranslatedText('Sweetness:')}</span>
                             <span>{getTranslatedText(item.customizations.sweetness)}</span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className="font-semibold">{getTranslatedText('Ice')}:</span>
+                            <span className="font-semibold">{getTranslatedText('Ice:')}</span>
                             <span>{getTranslatedText(item.customizations.ice)}</span>
                           </div>
                           {item.customizations.toppings.length > 0 && (
                             <div className="flex items-center gap-2">
-                              <span className="font-semibold">{getTranslatedText('Toppings')}:</span>
+                              <span className="font-semibold">{getTranslatedText('Toppings:')}</span>
                               <span>{item.customizations.toppings.map(t => getTranslatedText(t)).join(', ')}</span>
                             </div>
                           )}

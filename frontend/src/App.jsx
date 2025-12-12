@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useUser, UserButton } from '@clerk/clerk-react';
 import Weather from './components/Weather';
 import { API_ENDPOINTS } from './config/api';
+import { translateBatch } from './utils/translation';
 
 // Customization Modal
 function CustomizationModal({ drink, onClose, onAddToCart, sweetnessOptions, iceOptions, toppingOptions, getTranslatedText, highContrast }) {
@@ -371,36 +372,7 @@ export default function App({ role = 'customer' }) {
     setSelectedDrink(drink);
   };
 
-  // Translation function
-  const translateText = async (text, targetLang) => {
-    if (targetLang === 'en' || !text) return text;
-    
-    // Check cache first
-    const cacheKey = `${text}_${targetLang}`;
-    if (translatedData[cacheKey]) {
-      return translatedData[cacheKey];
-    }
-
-    try {
-      const response = await fetch(API_ENDPOINTS.translate, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, targetLang })
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        const translated = data.translatedText;
-        setTranslatedData(prev => ({ ...prev, [cacheKey]: translated }));
-        return translated;
-      }
-    } catch (err) {
-      console.error('Translation error:', err);
-    }
-    return text;
-  };
-
-  // Handle language change
+  // Handle language change with batch translation
   const handleLanguageChange = async (lang) => {
     setSelectedLanguage(lang);
     if (lang === 'en') {
@@ -409,93 +381,40 @@ export default function App({ role = 'customer' }) {
     }
 
     setIsTranslating(true);
-    
-    // Translate all menu items, categories, and options
-    const translationPromises = [];
-    const newTranslations = {};
 
-    // Static labels to translate
-    const staticLabels = [
-      'Sweetness Level', 'Ice Level', 'Toppings', 'Total', 'Add to Cart',
-      'View Cart', 'Your cart is empty.', 'Sweetness:', 'Ice:', 'Toppings:', 
-      'Pay', 'Menu', 'Kiosk System', 'Accessibility:', 'Text Size:', 
-      'Normal', 'Large', 'Extra Large', 'High Contrast', 'Language:'
-    ];
+    try {
+      // Collect all texts to translate
+      const staticLabels = [
+        'Sweetness Level', 'Ice Level', 'Toppings', 'Total', 'Add to Cart',
+        'View Cart', 'Your cart is empty.', 'Sweetness:', 'Ice:', 'Toppings:', 
+        'Pay', 'Menu', 'Kiosk System', 'Accessibility:', 'Text Size:', 
+        'Normal', 'Large', 'Extra Large', 'High Contrast', 'Language:'
+      ];
 
-    for (const label of staticLabels) {
-      const key = `${label}_${lang}`;
-      if (!translatedData[key]) {
-        translationPromises.push(
-          translateText(label, lang).then(result => {
-            newTranslations[key] = result;
-          })
-        );
-      }
+      const allTexts = [
+        ...staticLabels,
+        ...categories,
+        ...drinks.map(d => d.name),
+        ...toppings.map(t => t.name),
+        ...sweetnessOptions.map(o => o.name),
+        ...iceOptions.map(o => o.name)
+      ];
+
+      // Use batch translation for efficiency
+      const translated = await translateBatch(allTexts, lang, API_ENDPOINTS.translate);
+
+      // Build translation cache
+      const newTranslations = {};
+      allTexts.forEach((text, index) => {
+        newTranslations[`${text}_${lang}`] = translated[index];
+      });
+
+      setTranslatedData(newTranslations);
+    } catch (err) {
+      console.error('Translation error:', err);
+    } finally {
+      setIsTranslating(false);
     }
-
-    // Translate categories
-    for (const category of categories) {
-      const key = `${category}_${lang}`;
-      if (!translatedData[key]) {
-        translationPromises.push(
-          translateText(category, lang).then(result => {
-            newTranslations[key] = result;
-          })
-        );
-      }
-    }
-
-    // Translate drink names
-    for (const drink of drinks) {
-      const key = `${drink.name}_${lang}`;
-      if (!translatedData[key]) {
-        translationPromises.push(
-          translateText(drink.name, lang).then(result => {
-            newTranslations[key] = result;
-          })
-        );
-      }
-    }
-
-    // Translate topping names
-    for (const topping of toppings) {
-      const key = `${topping.name}_${lang}`;
-      if (!translatedData[key]) {
-        translationPromises.push(
-          translateText(topping.name, lang).then(result => {
-            newTranslations[key] = result;
-          })
-        );
-      }
-    }
-
-    // Translate sweetness options
-    for (const option of sweetnessOptions) {
-      const key = `${option.name}_${lang}`;
-      if (!translatedData[key]) {
-        translationPromises.push(
-          translateText(option.name, lang).then(result => {
-            newTranslations[key] = result;
-          })
-        );
-      }
-    }
-
-    // Translate ice options
-    for (const option of iceOptions) {
-      const key = `${option.name}_${lang}`;
-      if (!translatedData[key]) {
-        translationPromises.push(
-          translateText(option.name, lang).then(result => {
-            newTranslations[key] = result;
-          })
-        );
-      }
-    }
-
-    await Promise.all(translationPromises);
-    setTranslatedData(prev => ({ ...prev, ...newTranslations }));
-    setIsTranslating(false);
   };
 
   // Get translated text helper

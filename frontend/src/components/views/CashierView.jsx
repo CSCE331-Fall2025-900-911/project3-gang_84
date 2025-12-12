@@ -20,8 +20,7 @@ export default function CashierView({
   onCheckout,
   onClearCart,
   cartTotal,
-  selectedLanguage,
-  translateText
+  selectedLanguage
 }) {
   const [categories, setCategories] = useState([]);
   const [drinks, setDrinks] = useState([]);
@@ -33,6 +32,7 @@ export default function CashierView({
   const [toppings, setToppings] = useState([]);
   const [sweetnessOptions, setSweetnessOptions] = useState([]);
   const [iceOptions, setIceOptions] = useState([]);
+  const [sizeOptions, setSizeOptions] = useState([]);
   
   // Customization modal
   const [selectedDrink, setSelectedDrink] = useState(null);
@@ -41,48 +41,6 @@ export default function CashierView({
   useEffect(() => {
     fetchMenu();
   }, []);
-
-  // Translate menu items when language changes
-  useEffect(() => {
-    if (selectedLanguage !== 'en' && drinks.length > 0) {
-      translateMenuItems();
-    }
-  }, [selectedLanguage]);
-
-  const translateMenuItems = async () => {
-    if (!translateText) return;
-    
-    // Translate drink names
-    for (const drink of drinks) {
-      if (drink.name) {
-        await translateText(drink.name, selectedLanguage);
-      }
-    }
-    
-    // Translate categories
-    for (const category of categories) {
-      if (category !== 'All') {
-        await translateText(category, selectedLanguage);
-      }
-    }
-    
-    // Translate customization options
-    for (const option of sweetnessOptions) {
-      if (option.name) {
-        await translateText(option.name, selectedLanguage);
-      }
-    }
-    for (const option of iceOptions) {
-      if (option.name) {
-        await translateText(option.name, selectedLanguage);
-      }
-    }
-    for (const topping of toppings) {
-      if (topping.name) {
-        await translateText(topping.name, selectedLanguage);
-      }
-    }
-  };
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -132,6 +90,7 @@ export default function CashierView({
       setToppings(data.toppings || []);
       setSweetnessOptions(data.sweetness_options || []);
       setIceOptions(data.ice_options || []);
+      setSizeOptions(data.size_options || []);
       
       setLoading(false);
     } catch (error) {
@@ -226,7 +185,7 @@ export default function CashierView({
               <button
                 key={category}
                 onClick={() => setSelectedCategory(category)}
-                className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition-colors ${getButtonSizeClass()} ${
+                className={`menuButton px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition-colors ${getButtonSizeClass()} ${
                   selectedCategory === category
                     ? highContrast
                       ? 'bg-yellow-400 text-black'
@@ -361,7 +320,7 @@ export default function CashierView({
                       <div className={`text-xs mt-1 ${
                         highContrast ? 'text-gray-500' : 'text-gray-500'
                       }`}>
-                        {getTranslatedText(item.customizations.sweetness)} • {getTranslatedText(item.customizations.ice)}
+                        {getTranslatedText(item.customizations.size)} • {getTranslatedText(item.customizations.sweetness)} • {getTranslatedText(item.customizations.ice)}
                         {item.customizations.toppings.length > 0 && (
                           <span> • +{item.customizations.toppings.length} {getTranslatedText('toppings')}</span>
                         )}
@@ -492,6 +451,7 @@ export default function CashierView({
           onAddToCart={handleAddCustomized}
           sweetnessOptions={sweetnessOptions}
           iceOptions={iceOptions}
+          sizeOptions={sizeOptions}
           toppingOptions={toppings}
           highContrast={highContrast}
           getTranslatedText={getTranslatedText}
@@ -502,9 +462,10 @@ export default function CashierView({
 }
 
 // Customization Modal Component
-function CustomizationModal({ drink, onClose, onAddToCart, sweetnessOptions, iceOptions, toppingOptions, getTranslatedText, highContrast }) {
+function CustomizationModal({ drink, onClose, onAddToCart, sweetnessOptions, iceOptions, sizeOptions, toppingOptions, getTranslatedText, highContrast }) {
   const [sweetness, setSweetness] = useState(sweetnessOptions[0]);
   const [ice, setIce] = useState(iceOptions[0]);
+  const [size, setSize] = useState(sizeOptions[0] || { name: 'Small', price: 0 });
   const [toppings, setToppings] = useState([]);
 
   const toggleTopping = (topping) => {
@@ -523,13 +484,15 @@ function CustomizationModal({ drink, onClose, onAddToCart, sweetnessOptions, ice
     const toppingsPrice = toppings.reduce((sum, t) => sum + parseFloat(t.price), 0);
     const sweetnessPrice = sweetness ? parseFloat(sweetness.price) : 0;
     const icePrice = ice ? parseFloat(ice.price) : 0;
-    return basePrice + toppingsPrice + sweetnessPrice + icePrice;
+    const sizePrice = size ? parseFloat(size.price) : 0;
+    return basePrice + toppingsPrice + sweetnessPrice + icePrice + sizePrice;
   };
 
   const handleAddToCart = () => {
     const customizedDrink = {
       ...drink,
       customizations: {
+        size: size.name,
         sweetness: sweetness.name,
         ice: ice.name,
         toppings: toppings.map(t => t.name),
@@ -565,6 +528,29 @@ function CustomizationModal({ drink, onClose, onAddToCart, sweetnessOptions, ice
           >
             ✕
           </button>
+        </div>
+
+        {/* Size Selection */}
+        <div className="mb-4">
+          <h3 className={`text-lg font-semibold mb-2 ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
+            {getTranslatedText('Size')}
+          </h3>
+          <div className="grid grid-cols-4 gap-2">
+            {sizeOptions.map((option) => (
+              <button
+                key={option.menuitemid}
+                onClick={() => setSize(option)}
+                className={`px-3 py-3 rounded-lg font-semibold text-sm transition-colors ${
+                  size?.menuitemid === option.menuitemid
+                    ? highContrast ? 'bg-yellow-400 text-black' : 'bg-green-600 text-white'
+                    : highContrast ? 'bg-gray-800 text-yellow-400 border-2 border-yellow-400' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                {getTranslatedText(option.name)}
+                {parseFloat(option.price) > 0 && <div className="text-xs">+${parseFloat(option.price).toFixed(2)}</div>}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Sweetness Level */}

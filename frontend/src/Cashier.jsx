@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser, UserButton } from '@clerk/clerk-react';
 import CashierView from './components/views/CashierView';
@@ -35,6 +35,36 @@ export default function Cashier() {
   const [selectedLanguage, setSelectedLanguage] = useState('en');
   const [translatedData, setTranslatedData] = useState({});
   const [isTranslating, setIsTranslating] = useState(false);
+  const [forceRender, setForceRender] = useState(0); // Force re-render on language change
+  
+  // Menu data state (needed for translation)
+  const [categories, setCategories] = useState([]);
+  const [drinks, setDrinks] = useState([]);
+  const [toppings, setToppings] = useState([]);
+  const [sweetnessOptions, setSweetnessOptions] = useState([]);
+  const [iceOptions, setIceOptions] = useState([]);
+  const [sizeOptions, setSizeOptions] = useState([]);
+  
+  // Fetch menu data on mount (needed for translations)
+  useEffect(() => {
+    const fetchMenu = async () => {
+      try {
+        const response = await fetch(API_ENDPOINTS.menu);
+        if (response.ok) {
+          const data = await response.json();
+          setCategories(data.categories.map(c => c.category));
+          setDrinks(data.menu_items.filter(item => item.type === 'Drink'));
+          setToppings(data.toppings);
+          setSweetnessOptions(data.sweetness_options);
+          setIceOptions(data.ice_options);
+          setSizeOptions(data.size_options);
+        }
+      } catch (error) {
+        console.error('Error fetching menu:', error);
+      }
+    };
+    fetchMenu();
+  }, []);
 
   // Cart total calculation
   const cartTotal = cart.reduce((sum, item) => {
@@ -193,52 +223,151 @@ export default function Cashier() {
     setOrderNumber(null);
   };
 
-  // Translation function
-  const translateText = async (text, targetLang) => {
-    if (targetLang === 'en' || !text) return text;
-    
-    const cacheKey = `${text}_${targetLang}`;
-    if (translatedData[cacheKey]) {
-      return translatedData[cacheKey];
-    }
-
-    try {
-      const response = await fetch(API_ENDPOINTS.translate, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, targetLang })
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        const translated = data.translatedText;
-        setTranslatedData(prev => ({ ...prev, [cacheKey]: translated }));
-        return translated;
-      }
-    } catch (err) {
-      console.error('Translation error:', err);
-    }
-    return text;
-  };
-
-  // Handle language change
+  // Handle language change (database-backed translation system)
   const handleLanguageChange = async (lang) => {
-    setSelectedLanguage(lang);
     if (lang === 'en') {
+      setSelectedLanguage('en');
       setTranslatedData({});
+      setForceRender(prev => prev + 1);
       return;
     }
+
     setIsTranslating(true);
-    // Translation will be handled by child components
-    setIsTranslating(false);
+
+    try {
+      // Get API base URL from environment or default to localhost
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      
+      // First, try to fetch from database (fast!)
+      const dbUrl = `${API_BASE_URL}/api/translations/${lang}`;
+      console.log('📡 Fetching translations from:', dbUrl);
+      
+      const dbResponse = await fetch(dbUrl);
+      
+      if (!dbResponse.ok) {
+        throw new Error(`Database fetch failed: ${dbResponse.status} ${dbResponse.statusText}`);
+      }
+      
+      const dbData = await dbResponse.json();
+      const { translations, count } = dbData;
+      
+      // Define all the text that needs translation
+      const staticLabels = [
+        // Original labels
+        'Sweetness Level', 'Ice Level', 'Size', 'Toppings', 'Total', 'Add to Cart',
+        'View Cart', 'Your cart is empty.', 'Sweetness:', 'Ice:', 'Size:', 'Toppings:', 
+        'Pay', 'Menu', 'Cashier System', 'Accessibility:', 'Text Size:', 
+        'Normal', 'Large', 'Extra Large', 'High Contrast', 'Language:',
+        
+        // Sweetness/Ice/Size options (modification values)
+        'Regular', 'Less', 'No Ice', 'Small', 'Medium',
+        'Normal (100%)', 'Less (75%)', 'Half (50%)', 'Light (25%)', 'No Sugar (0%)', 'Extra Sugar (125%)',
+        
+        // Cart View labels
+        'Back to Menu', 'Your Cart', 'Your cart is empty', 'Add some drinks to get started!',
+        'Browse Menu', 'Quantity', 'each', 'Rewards', 'points', 'Redeem your points for rewards!',
+        'Free Drink', 'Get any drink for free', 'Free Topping', 'Add a free topping to any drink',
+        '20% Off', '20% off your entire order', 'Buy One Get One', 'Get the cheapest drink free',
+        'Not enough points', 'Subtotal', 'Rewards Savings', 'Proceed to Checkout',
+        
+        // Customer Lookup Modal labels
+        'Customer Lookup', 'Lookup Customer', 'Looking up...', 'Skip', 'Continue Without Customer', 
+        'Enter Phone Number', 'Phone Number', 'Search', 'Customer Name', 'Loyalty Points', 'Points',
+        'Select Customer', 'No customer found', 'Customer has enough points for a reward!', 'Continue to Payment',
+        'Try Different Number', 'Enter phone number to apply rewards', 'Phone number must be 10 digits',
+        'Please enter a phone number', 'Customer not found.', 'Customer not found. Create a new account?',
+        'Creating...', 'Create Account', 'Back to Lookup', '100 points', 'Free drink',
+        
+        // Payment Modal labels
+        'Select Payment Method', 'Cash', 'Credit Card', 'Debit Card', 'Cancel',
+        'Customer', 'Points Remaining', 'Available Rewards', 'Applied', 'Total Discount',
+        'New Total', 'Card', 'Credit or Debit', 'Pay at counter',
+        
+        // Thank You Screen labels
+        'Thank You', 'Your order has been placed successfully!', 'Order Number',
+        'Please wait for your order to be prepared', 'Place New Order',
+        
+        // Cashier-specific labels
+        'Clear Cart', 'Checkout', 'Remove', 'Add Another', 'Current Order',
+        'Items in Cart', 'Accessibility Menu', 'Display Mode', 'Button Size',
+        'Reduce Motion', 'Large Click Targets', 'High Contrast ON', 'Normal Mode',
+        'ShareNook', 'Cashier', 'Accessibility Options', 'Close',
+        'Large Buttons', 'Standard Buttons', 'Animation', 'No Animation', 'Animation ON',
+        'No items yet', 'Click drinks to add', 'toppings', 'Customize',
+        'Shortcuts', 'Click: Quick add', 'Right-click: Customize', 'Clear',
+        
+        // CashierView customization modal labels
+        'Base', 'Select Multiple',
+        
+        // Error messages
+        'Please enter a valid 10-digit phone number',
+        'Phone number not found. Please sign up or try a different number.',
+        'Unable to connect to server. Please try again.',
+        'PIN must be 4 digits', 'Incorrect PIN. Please try again.',
+        'Cart is empty',
+        
+        // Search and Navigation
+        'Search drinks...', 'Search drinks... (Press / to focus)', 'Clear search', 'Cashier POS'
+      ];
+
+      const allTexts = [
+        ...staticLabels,
+        ...categories,
+        ...drinks.map(d => d.name),
+        ...toppings.map(t => t.name),
+        ...sweetnessOptions.map(o => o.name),
+        ...iceOptions.map(o => o.name),
+        ...sizeOptions.map(o => o.name)
+      ];
+
+      // Check which texts are missing from the database
+      const missingTexts = allTexts.filter(text => !translations.hasOwnProperty(text));
+      
+      if (missingTexts.length > 0) {
+        console.log(`📝 Found ${missingTexts.length} missing translations, populating...`);
+        
+        // Populate only the missing translations
+        const populateUrl = `${API_BASE_URL}/api/translations/populate`;
+        const populateResponse = await fetch(populateUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ texts: missingTexts, targetLang: lang })
+        });
+
+        if (!populateResponse.ok) {
+          throw new Error(`Populate failed: ${populateResponse.status} ${populateResponse.statusText}`);
+        }
+
+        const result = await populateResponse.json();
+        console.log(`✅ Populated ${result.newTranslations} new translations`);
+        
+        // Fetch updated translations from database
+        const updatedResponse = await fetch(dbUrl);
+        const updatedData = await updatedResponse.json();
+        setTranslatedData(updatedData.translations);
+      } else {
+        console.log(`✅ All ${count} translations already in database`);
+        setTranslatedData(translations);
+      }
+      
+      setSelectedLanguage(lang);
+      setForceRender(prev => prev + 1);
+    } catch (err) {
+      console.error('❌ Translation error:', err);
+      alert(`Translation error: ${err.message}\n\nMake sure the backend server is running!`);
+      setSelectedLanguage('en'); // Reset to English on error
+    } finally {
+      setIsTranslating(false);
+    }
   };
 
-  // Get translated text
-  const getTranslatedText = (text) => {
-    if (selectedLanguage === 'en' || !text) return text;
-    const cacheKey = `${text}_${selectedLanguage}`;
-    return translatedData[cacheKey] || text;
-  };
+  // Get translated text with useMemo for performance
+  const getTranslatedText = useMemo(() => {
+    return (text) => {
+      if (selectedLanguage === 'en' || !text) return text;
+      return translatedData[text] || text;
+    };
+  }, [selectedLanguage, translatedData, forceRender]);
 
   // Get container class with accessibility settings
   const getContainerClass = () => {
@@ -501,7 +630,6 @@ export default function Cashier() {
         onClearCart={handleClearCart}
         cartTotal={cartTotal}
         selectedLanguage={selectedLanguage}
-        translateText={translateText}
       />
 
       {/* Customer Lookup Modal */}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserButton } from '@clerk/clerk-react';
 import Inventory from './components/manager/Inventory';
@@ -28,88 +28,160 @@ export default function Manager() {
   const [selectedLanguage, setSelectedLanguage] = useState('en');
   const [translatedData, setTranslatedData] = useState({});
   const [isTranslating, setIsTranslating] = useState(false);
+  const [forceRender, setForceRender] = useState(0);
 
-  // Translation function
-  const translateText = async (text, targetLang) => {
-    if (targetLang === 'en' || !text) return text;
-    
-    const cacheKey = `${text}_${targetLang}`;
-    if (translatedData[cacheKey]) {
-      return translatedData[cacheKey];
-    }
-
-    try {
-      const response = await fetch(API_ENDPOINTS.translate, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, targetLang })
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        const translated = data.translatedText;
-        setTranslatedData(prev => ({ ...prev, [cacheKey]: translated }));
-        return translated;
-      }
-    } catch (err) {
-      console.error('Translation error:', err);
-    }
-    return text;
-  };
-
-  // Handle language change
+  // Handle language change (database-backed translation system)
   const handleLanguageChange = async (lang) => {
-    setSelectedLanguage(lang);
     if (lang === 'en') {
+      setSelectedLanguage('en');
       setTranslatedData({});
+      setForceRender(prev => prev + 1);
       return;
     }
+
     setIsTranslating(true);
-    
-    // Pre-translate common UI elements
-    const textsToTranslate = [
-      'Manager Dashboard',
-      'ShareNook - Management System',
-      'Manager',
-      'Back',
-      'Back to Role Selection',
-      'Accessibility',
-      'Accessibility Options',
-      'Inventory',
-      'Menu',
-      'Employees',
-      'Ordering Trends',
-      'Operational Reports',
-      'Z-Report (End of Day)',
-      'Text Size',
-      'Normal',
-      'Large',
-      'Extra Large',
-      'Display Mode',
-      'High Contrast ON',
-      'Normal Mode',
-      'Button Size',
-      'Large Buttons',
-      'Standard Buttons',
-      'Animation',
-      'No Animation',
-      'Animation ON',
-      'Close'
-    ];
 
-    for (const text of textsToTranslate) {
-      await translateText(text, lang);
+    try {
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      const dbUrl = `${API_BASE_URL}/api/translations/${lang}`;
+      
+      console.log('📡 Fetching translations from:', dbUrl);
+      
+      const dbResponse = await fetch(dbUrl);
+      
+      if (!dbResponse.ok) {
+        throw new Error(`Database fetch failed: ${dbResponse.status} ${dbResponse.statusText}`);
+      }
+      
+      const dbData = await dbResponse.json();
+      const { translations, count } = dbData;
+      
+      // Define all the text that needs translation
+      const staticLabels = [
+        // Main UI labels
+        'Manager Dashboard', 'ShareNook - Management System', 'Manager',
+        'Back', 'Back to Role Selection', 'Accessibility', 'Accessibility Options',
+        
+        // Tab names
+        'Inventory', 'Menu', 'Employees', 'Ordering Trends', 'Operational Reports', 'Z-Report (End of Day)',
+        
+        // Accessibility labels
+        'Text Size', 'Normal', 'Large', 'Extra Large',
+        'Display Mode', 'High Contrast ON', 'Normal Mode',
+        'Button Size', 'Large Buttons', 'Standard Buttons',
+        'Animation', 'No Animation', 'Animation ON', 'Close',
+        
+        // Common action words
+        'Add', 'Edit', 'Delete', 'Save', 'Cancel', 'Submit', 'Search', 'Filter',
+        'Export', 'Import', 'Refresh', 'View', 'Details', 'Actions', 'Confirm',
+        'Loading...', 'Error', 'Success', 'Warning', 'Info', 'Yes', 'No',
+        
+        // Inventory Management
+        'Inventory Management', 'Add Inventory Item', 'Edit Inventory Item',
+        'Item Name', 'Quantity', 'Unit', 'Restock Date', 'Low Stock Alert',
+        'Restock Threshold', 'Last Restocked', 'Stock Level', 'In Stock', 'Low Stock',
+        'Out of Stock', 'Remove Item', 'Update Stock', 'Restock History',
+        'Search inventory...', 'No inventory items found', 'Add First Item',
+        
+        // Menu Management
+        'Menu Management', 'Add Menu Item', 'Edit Menu Item', 'Item Details',
+        'Name', 'Price', 'Category', 'Type', 'Description', 'Available',
+        'Unavailable', 'Make Available', 'Make Unavailable', 'Drink', 'Topping',
+        'Delete Item', 'No menu items found', 'Search menu items...',
+        'Menu Item Image', 'Add New Category', 'Size Options', 'Sweetness Options',
+        'Ice Options', 'Extra Large', 'Medium Small',
+        
+        // Employee Management  
+        'Employee Management', 'Add Employee', 'Edit Employee', 'Employee Details',
+        'Employee ID', 'First Name', 'Last Name', 'Email', 'Phone', 'Role',
+        'Hire Date', 'Status', 'Active', 'Inactive', 'Hourly Rate', 'Hours Worked',
+        'Total Earnings', 'Cashier', 'Manager', 'Admin', 'No employees found',
+        'Search employees...', 'Delete Employee', 'Update Employee',
+        
+        // Ordering Trends
+        'Product Sales Analytics', 'Sales Trends', 'Top Selling Items',
+        'Revenue Analysis', 'Date Range', 'Start Date', 'End Date', 'Apply Filter',
+        'Total Sales', 'Total Revenue', 'Average Order Value', 'Product Name',
+        'Units Sold', 'Revenue', 'Percentage', 'Sales Chart', 'Daily', 'Weekly',
+        'Monthly', 'No sales data available', 'Select dates to view trends',
+        
+        // Operational Reports
+        'Sales Report', 'Product Usage', 'X-Report', 'Generate Report',
+        'Report Type', 'Time Period', 'Today', 'This Week', 'This Month',
+        'Custom Range', 'Download CSV', 'Download PDF', 'Print Report',
+        'Transaction Count', 'Cash Transactions', 'Card Transactions',
+        'Discount Applied', 'Tax Collected', 'Net Sales', 'Gross Sales',
+        'Items Sold', 'Peak Hours', 'Sales by Hour', 'Sales by Day',
+        'What Sells Together', 'Product Pairs', 'Frequently Bought Together',
+        'Pair Frequency', 'Times Ordered Together',
+        
+        // Z-Report (End of Day)
+        'Z-Report', 'End of Day Report', 'Close Register', 'Daily Summary',
+        'Opening Balance', 'Closing Balance', 'Expected Cash', 'Actual Cash',
+        'Cash Difference', 'Over', 'Short', 'Exact', 'Total Orders',
+        'Payment Methods', 'Cash', 'Card', 'Credit Card', 'Debit Card',
+        'Employee Sales', 'Hourly Breakdown', 'Generate Z-Report',
+        'Print Z-Report', 'Email Report', 'Archive Report', 'Report Date',
+        'Report Time', 'Generated By', 'Notes', 'Add Notes',
+        
+        // Common Messages
+        'Are you sure?', 'This action cannot be undone.',
+        'Successfully added!', 'Successfully updated!', 'Successfully deleted!',
+        'Failed to add item.', 'Failed to update item.', 'Failed to delete item.',
+        'Failed to load data.', 'Please fill in all required fields.',
+        'Invalid input.', 'Operation successful!', 'Operation failed.',
+        'No data available.', 'Loading data...', 'Saving changes...',
+        'Processing...', 'Please wait...', 'Required field', 'Optional field'
+      ];
+
+      const allTexts = [...staticLabels];
+
+      // Check which texts are missing from the database
+      const missingTexts = allTexts.filter(text => !translations.hasOwnProperty(text));
+      
+      if (missingTexts.length > 0) {
+        console.log(`📝 Found ${missingTexts.length} missing translations, populating...`);
+        
+        const populateUrl = `${API_BASE_URL}/api/translations/populate`;
+        const populateResponse = await fetch(populateUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ texts: missingTexts, targetLang: lang })
+        });
+
+        if (!populateResponse.ok) {
+          throw new Error(`Populate failed: ${populateResponse.status} ${populateResponse.statusText}`);
+        }
+
+        const result = await populateResponse.json();
+        console.log(`✅ Populated ${result.newTranslations} new translations`);
+        
+        const updatedResponse = await fetch(dbUrl);
+        const updatedData = await updatedResponse.json();
+        setTranslatedData(updatedData.translations);
+      } else {
+        console.log(`✅ All ${count} translations already in database`);
+        setTranslatedData(translations);
+      }
+      
+      setSelectedLanguage(lang);
+      setForceRender(prev => prev + 1);
+    } catch (err) {
+      console.error('❌ Translation error:', err);
+      alert(`Translation error: ${err.message}\n\nMake sure the backend server is running!`);
+      setSelectedLanguage('en');
+    } finally {
+      setIsTranslating(false);
     }
-    
-    setIsTranslating(false);
   };
 
-  // Get translated text
-  const getTranslatedText = (text) => {
-    if (selectedLanguage === 'en' || !text) return text;
-    const cacheKey = `${text}_${selectedLanguage}`;
-    return translatedData[cacheKey] || text;
-  };
+  // Get translated text with useMemo for performance
+  const getTranslatedText = useMemo(() => {
+    return (text) => {
+      if (selectedLanguage === 'en' || !text) return text;
+      return translatedData[text] || text;
+    };
+  }, [selectedLanguage, translatedData, forceRender]);
 
   // Get container class with accessibility settings
   const getContainerClass = () => {
@@ -388,12 +460,54 @@ export default function Manager() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {activeTab === 'inventory' && <Inventory />}
-        {activeTab === 'menu' && <Menu />}
-        {activeTab === 'employees' && <Employees />}
-        {activeTab === 'trends' && <OrderingTrends />}
-        {activeTab === 'reports' && <OperationalReports />}
-        {activeTab === 'zreport' && <ZReport />}
+        {activeTab === 'inventory' && (
+          <Inventory 
+            getTranslatedText={getTranslatedText}
+            highContrast={highContrast}
+            fontSize={fontSize}
+            largeClickTargets={largeClickTargets}
+          />
+        )}
+        {activeTab === 'menu' && (
+          <Menu 
+            getTranslatedText={getTranslatedText}
+            highContrast={highContrast}
+            fontSize={fontSize}
+            largeClickTargets={largeClickTargets}
+          />
+        )}
+        {activeTab === 'employees' && (
+          <Employees 
+            getTranslatedText={getTranslatedText}
+            highContrast={highContrast}
+            fontSize={fontSize}
+            largeClickTargets={largeClickTargets}
+          />
+        )}
+        {activeTab === 'trends' && (
+          <OrderingTrends 
+            getTranslatedText={getTranslatedText}
+            highContrast={highContrast}
+            fontSize={fontSize}
+            largeClickTargets={largeClickTargets}
+          />
+        )}
+        {activeTab === 'reports' && (
+          <OperationalReports 
+            getTranslatedText={getTranslatedText}
+            highContrast={highContrast}
+            fontSize={fontSize}
+            largeClickTargets={largeClickTargets}
+          />
+        )}
+        {activeTab === 'zreport' && (
+          <ZReport 
+            getTranslatedText={getTranslatedText}
+            highContrast={highContrast}
+            fontSize={fontSize}
+            largeClickTargets={largeClickTargets}
+          />
+        )}
       </main>
 
       {/* Accessibility Menu Modal */}
