@@ -393,7 +393,6 @@ export default function Kiosk({ role = 'customer' }) {
   const [fontSize, setFontSize] = useState('normal');
   const [highContrast, setHighContrast] = useState(false);
   const [showAccessibilityMenu, setShowAccessibilityMenu] = useState(false);
-  const [reduceMotion, setReduceMotion] = useState(false);
   const [largeClickTargets, setLargeClickTargets] = useState(false);
 
   // Customer authentication states
@@ -628,9 +627,36 @@ export default function Kiosk({ role = 'customer' }) {
   // Get font size classes (improved for Carol's macular degeneration)
   const getFontSizeClass = () => {
     switch(fontSize) {
-      case 'large': return 'text-xl';
-      case 'extra-large': return 'text-2xl';
-      default: return 'text-lg'; // Default slightly larger for readability
+      case 'large': return 'text-lg'; // Increased from default
+      case 'extra-large': return 'text-xl'; // Even larger
+      default: return 'text-base'; // Normal/default size
+    }
+  };
+
+  // Get heading size classes based on font size setting
+  const getHeadingSizeClass = (level) => {
+    if (fontSize === 'large') {
+      switch(level) {
+        case 'h1': return 'text-5xl'; // Larger than default 4xl
+        case 'h2': return 'text-3xl'; // Larger than default 2xl
+        case 'h3': return 'text-2xl'; // Larger than default xl
+        default: return 'text-xl';
+      }
+    } else if (fontSize === 'extra-large') {
+      switch(level) {
+        case 'h1': return 'text-6xl'; // Extra large
+        case 'h2': return 'text-4xl';
+        case 'h3': return 'text-3xl';
+        default: return 'text-2xl';
+      }
+    } else {
+      // Normal size
+      switch(level) {
+        case 'h1': return 'text-4xl';
+        case 'h2': return 'text-2xl';
+        case 'h3': return 'text-xl';
+        default: return 'text-lg';
+      }
     }
   };
 
@@ -643,8 +669,7 @@ export default function Kiosk({ role = 'customer' }) {
   const getContainerClass = () => {
     const baseClass = 'flex flex-col w-full min-h-screen font-sans';
     const bgClass = highContrast ? 'bg-black' : 'bg-lime-50';
-    const motionClass = reduceMotion ? '' : 'transition-all duration-200';
-    return `${baseClass} ${bgClass} ${getFontSizeClass()} ${motionClass}`;
+    return `${baseClass} ${bgClass} ${getFontSizeClass()}`;
   };
 
   // --- Data Fetching ---
@@ -1196,8 +1221,8 @@ export default function Kiosk({ role = 'customer' }) {
 
         {/* Font Size Controls */}
         <div className="mb-6">
-          <h3 className={`text-xl font-semibold mb-3 ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
-            📝 {getTranslatedText('Text Size')} <span className="text-sm font-normal">({getTranslatedText('For easier reading')})</span>
+          <h3 className={`font-semibold mb-3 ${getHeadingSizeClass('h3')} ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
+            {getTranslatedText('Text Size')} <span className="text-sm font-normal">({getTranslatedText('For easier reading')})</span>
           </h3>
           <div className="flex gap-3">
             <button
@@ -1241,8 +1266,8 @@ export default function Kiosk({ role = 'customer' }) {
 
         {/* High Contrast Toggle */}
         <div className="mb-6">
-          <h3 className={`text-xl font-semibold mb-3 ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
-            🎨 {getTranslatedText('Display Mode')} <span className="text-sm font-normal">({getTranslatedText('For better visibility')})</span>
+          <h3 className={`font-semibold mb-3 ${getHeadingSizeClass('h3')} ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
+            {getTranslatedText('Display Mode')} <span className="text-sm font-normal">({getTranslatedText('For better visibility')})</span>
           </h3>
           <button
             onClick={() => setHighContrast(!highContrast)}
@@ -1253,14 +1278,14 @@ export default function Kiosk({ role = 'customer' }) {
             }`}
             style={{ minHeight: '80px' }}
           >
-            {highContrast ? '🌞 ' + getTranslatedText('High Contrast ON') : '🌙 ' + getTranslatedText('Normal Mode')}
+            {highContrast ? getTranslatedText('High Contrast ON') : getTranslatedText('Normal Mode')}
           </button>
         </div>
 
         {/* Large Click Targets for tremor */}
         <div className="mb-6">
-          <h3 className={`text-xl font-semibold mb-3 ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
-            👆 {getTranslatedText('Button Size')} <span className="text-sm font-normal">({getTranslatedText('Easier to press')})</span>
+          <h3 className={`font-semibold mb-3 ${getHeadingSizeClass('h3')} ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
+            {getTranslatedText('Button Size')} <span className="text-sm font-normal">({getTranslatedText('Easier to press')})</span>
           </h3>
           <button
             onClick={() => setLargeClickTargets(!largeClickTargets)}
@@ -1271,32 +1296,14 @@ export default function Kiosk({ role = 'customer' }) {
             }`}
             style={{ minHeight: '80px' }}
           >
-            {largeClickTargets ? '✓ ' + getTranslatedText('Large Buttons') : getTranslatedText('Standard Buttons')}
-          </button>
-        </div>
-
-        {/* Reduce Motion */}
-        <div className="mb-6">
-          <h3 className={`text-xl font-semibold mb-3 ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
-            🎬 {getTranslatedText('Animation')} <span className="text-sm font-normal">({getTranslatedText('Reduce distractions')})</span>
-          </h3>
-          <button
-            onClick={() => setReduceMotion(!reduceMotion)}
-            className={`w-full py-6 rounded-lg font-bold transition-colors text-xl ${
-              reduceMotion
-                ? highContrast ? 'bg-yellow-400 text-black border-4 border-yellow-400' : 'bg-green-600 text-white'
-                : highContrast ? 'bg-gray-800 text-yellow-400 border-4 border-yellow-400' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
-            style={{ minHeight: '80px' }}
-          >
-            {reduceMotion ? '🚫 ' + getTranslatedText('No Animation') : '✨ ' + getTranslatedText('Animation ON')}
+            {largeClickTargets ? getTranslatedText('Large Buttons') : getTranslatedText('Standard Buttons')}
           </button>
         </div>
 
         {/* Helpful Info */}
         <div className={`p-4 rounded-lg ${highContrast ? 'bg-gray-800 border-2 border-yellow-400' : 'bg-blue-50 border-2 border-blue-200'}`}>
           <p className={`text-sm ${highContrast ? 'text-white' : 'text-gray-700'}`}>
-            💡 {getTranslatedText('These settings make the kiosk easier to use. Try different options to find what works best for you!')}
+            {getTranslatedText('These settings make the kiosk easier to use. Try different options to find what works best for you!')}
           </p>
         </div>
 
@@ -1340,15 +1347,15 @@ export default function Kiosk({ role = 'customer' }) {
         {/* Accessibility Button - Available on all screens */}
         <button
           onClick={() => setShowAccessibilityMenu(true)}
-          className={`fixed bottom-8 left-8 p-4 rounded-full shadow-2xl transition-all transform hover:scale-110 ${
+          className={`fixed bottom-8 left-8 px-6 py-4 rounded-xl shadow-2xl transition-all font-semibold text-sm ${
             highContrast
-              ? 'bg-yellow-400 text-black border-4 border-yellow-400'
+              ? 'bg-yellow-400 text-black border-4 border-yellow-400 hover:bg-yellow-300'
               : 'bg-green-600 text-white hover:bg-green-700'
           }`}
-          style={{ minWidth: '64px', minHeight: '64px', zIndex: 50 }}
+          style={{ zIndex: 50 }}
           title="Accessibility Options"
         >
-          <span className="text-3xl">♿</span>
+          {getTranslatedText('Accessibility')}
         </button>
 
         {/* Accessibility Menu Modal */}
@@ -1415,15 +1422,15 @@ export default function Kiosk({ role = 'customer' }) {
         {/* Accessibility Button - Available on all screens */}
         <button
           onClick={() => setShowAccessibilityMenu(true)}
-          className={`fixed bottom-8 left-8 p-4 rounded-full shadow-2xl transition-all transform hover:scale-110 ${
+          className={`fixed bottom-8 left-8 px-6 py-4 rounded-xl shadow-2xl transition-all font-semibold text-sm ${
             highContrast
-              ? 'bg-yellow-400 text-black border-4 border-yellow-400'
+              ? 'bg-yellow-400 text-black border-4 border-yellow-400 hover:bg-yellow-300'
               : 'bg-green-600 text-white hover:bg-green-700'
           }`}
-          style={{ minWidth: '64px', minHeight: '64px', zIndex: 50 }}
+          style={{ zIndex: 50 }}
           title="Accessibility Options"
         >
-          <span className="text-3xl">♿</span>
+          {getTranslatedText('Accessibility')}
         </button>
 
         {/* Accessibility Menu Modal */}
@@ -1442,11 +1449,13 @@ export default function Kiosk({ role = 'customer' }) {
     >
       
       {/* Top Navigation Tabs */}
-      <header className={`shadow-md ${highContrast ? 'bg-gray-900 border-b-4 border-yellow-400' : 'bg-white'}`}>
-        <div className="flex items-center justify-between px-8 py-4">
+      <header className={`shadow-md ${highContrast ? 'bg-gray-900 border-b-4 border-yellow-400' : 'bg-white border-b-2 border-gray-200'}`}>
+        <div className="flex items-center justify-between px-8 py-6">
           {/* Left: Kiosk Title */}
           <div className="flex items-center gap-8">
-            <h1 className={`text-3xl font-bold ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>{getTranslatedText('ShareNook Kiosk')}</h1>
+            <h1 className={`font-bold ${getHeadingSizeClass('h1')} ${highContrast ? 'text-yellow-400' : 'text-green-700'}`}>
+              {getTranslatedText('ShareNook')}
+            </h1>
             
             {/* Role Badge (for staff) - should not appear for customers */}
             {role !== 'customer' && (
@@ -1469,8 +1478,8 @@ export default function Kiosk({ role = 'customer' }) {
                       <div className={`text-sm font-semibold ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
                         {customer.name}
                       </div>
-                      <div className={`text-xs ${highContrast ? 'text-white' : 'text-green-600'}`}>
-                        🎁 {customer.loyaltyPoints} points
+                      <div className={`text-xs font-medium ${highContrast ? 'text-white' : 'text-green-600'}`}>
+                        {customer.loyaltyPoints} {getTranslatedText('points')}
                       </div>
                     </div>
                     <button
@@ -1482,20 +1491,20 @@ export default function Kiosk({ role = 'customer' }) {
                       }`}
                       title="Switch Account"
                     >
-                      Switch
+                      {getTranslatedText('Switch')}
                     </button>
                   </>
                 ) : (
                   // Show Log In button when in guest mode
                   <button
                     onClick={() => setShowAuthModal(true)}
-                    className={`px-4 py-2 rounded-lg font-semibold transition-colors ${getButtonSizeClass()} ${
+                    className={`px-6 py-3 rounded-lg font-semibold transition-colors ${getButtonSizeClass()} ${
                       highContrast
                         ? 'bg-yellow-400 text-black border-2 border-yellow-400 hover:bg-yellow-300'
                         : 'bg-green-600 text-white hover:bg-green-700'
                     }`}
                   >
-                    🎁 {getTranslatedText('Log In')}
+                    {getTranslatedText('Log In / Rewards')}
                   </button>
                 )}
               </div>
@@ -1528,17 +1537,16 @@ export default function Kiosk({ role = 'customer' }) {
             />
 
             {/* Language Selector */}
-            <div className="flex items-center gap-2">
-              <span className={`text-sm ${highContrast ? 'text-yellow-400' : 'text-gray-600'}`}>🌐</span>
+            <div className="flex items-center gap-3">
               <select
                 value={selectedLanguage}
                 onChange={(e) => handleLanguageChange(e.target.value)}
-                className={`px-4 py-2 rounded-lg border-2 font-medium focus:outline-none focus:ring-4 ${
+                className={`px-4 py-3 rounded-lg border-2 font-medium focus:outline-none focus:ring-2 ${
                   highContrast
                     ? 'bg-black text-yellow-400 border-yellow-400 focus:ring-yellow-400'
                     : 'bg-white text-gray-800 border-gray-300 focus:ring-green-500'
                 }`}
-                style={{ minHeight: '44px' }}
+                style={{ minHeight: '48px', minWidth: '150px' }}
                 disabled={isTranslating}
               >
                 <option value="en">English</option>
@@ -1553,7 +1561,10 @@ export default function Kiosk({ role = 'customer' }) {
                 <option value="hi">हिन्दी</option>
               </select>
               {isTranslating && (
-                <span className={`text-sm ${highContrast ? 'text-yellow-400' : 'text-gray-500'}`}>...</span>
+                <div className="flex items-center gap-2">
+                  <div className={`w-2 h-2 rounded-full animate-pulse ${highContrast ? 'bg-yellow-400' : 'bg-green-600'}`}></div>
+                  <span className={`text-sm ${highContrast ? 'text-yellow-400' : 'text-gray-500'}`}>{getTranslatedText('Translating...')}</span>
+                </div>
               )}
             </div>
           </div>
@@ -1561,19 +1572,19 @@ export default function Kiosk({ role = 'customer' }) {
       </header>
 
       {/* Main Content Area */}
-      <div className="flex flex-1 p-8 relative">
+      <div className="flex flex-1 p-8 gap-6 relative">
         {/* Weather Recommendation Banner */}
         {weatherRecommendation && (
-          <div className={`absolute top-4 left-1/2 transform -translate-x-1/2 z-10 ${
+          <div className={`absolute top-6 left-1/2 transform -translate-x-1/2 z-10 ${
             highContrast 
               ? 'bg-yellow-400 text-black border-4 border-yellow-500' 
-              : 'bg-gradient-to-r from-green-400 to-blue-400 text-white'
-          } px-6 py-3 rounded-lg shadow-lg flex items-center gap-3 cursor-pointer hover:scale-105 transition-transform`}
+              : 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-xl'
+          } px-8 py-4 rounded-xl flex items-center gap-4 cursor-pointer hover:scale-105 transition-transform`}
             onClick={() => handleDrinkClick(weatherRecommendation.drink)}
           >
-            <span className="text-2xl">{weatherRecommendation.icon}</span>
-            <div>
-              <span className="font-semibold">
+            <span className="text-3xl">{weatherRecommendation.icon}</span>
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-lg">
                 {weatherRecommendation.messageParts.map((part, idx) => {
                   // Don't translate numbers with °F or standalone punctuation
                   if (part.includes('°F') || part === '-') {
@@ -1582,14 +1593,16 @@ export default function Kiosk({ role = 'customer' }) {
                   return <span key={idx}>{getTranslatedText(part)} </span>;
                 })}
               </span>
-              <span className="underline font-bold">{getTranslatedText(weatherRecommendation.drink.name)}</span>
+              <span className="font-bold text-lg underline">{getTranslatedText(weatherRecommendation.drink.name)}</span>
             </div>
           </div>
         )}
 
         {/* Left-hand Category Navigation */}
-        <nav className="w-1/5 pr-6">
-          <h2 className={`text-2xl font-bold mb-6 ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>{getTranslatedText('Menu')}</h2>
+        <nav className="w-1/5">
+          <h2 className={`font-bold mb-6 ${getHeadingSizeClass('h2')} ${highContrast ? 'text-yellow-400' : 'text-gray-900'}`}>
+            {getTranslatedText('Menu')}
+          </h2>
           
           {/* Search Bar */}
           <div className="mb-6">
@@ -1598,18 +1611,18 @@ export default function Kiosk({ role = 'customer' }) {
               placeholder={getTranslatedText('Search drinks...')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className={`w-full px-4 py-3 rounded-lg border-2 font-medium focus:outline-none focus:ring-4 ${
+              className={`w-full px-4 py-4 rounded-lg border-2 font-medium focus:outline-none focus:ring-2 ${
                 highContrast
                   ? 'bg-black text-yellow-400 border-yellow-400 placeholder-yellow-600 focus:ring-yellow-400'
                   : 'bg-white text-gray-800 border-gray-300 placeholder-gray-400 focus:ring-green-500'
               }`}
-              style={{ minHeight: '50px' }}
+              style={{ minHeight: '56px' }}
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className={`mt-2 text-sm underline ${
-                  highContrast ? 'text-yellow-400' : 'text-gray-600 hover:text-gray-800'
+                className={`mt-2 text-sm font-medium ${
+                  highContrast ? 'text-yellow-400 hover:text-yellow-300' : 'text-gray-600 hover:text-gray-800'
                 }`}
               >
                 {getTranslatedText('Clear search')}
@@ -1617,15 +1630,19 @@ export default function Kiosk({ role = 'customer' }) {
             )}
           </div>
 
-          <ul>
+          <ul className="space-y-3">
             {categories.map((categoryName) => (
-              <li key={categoryName} className="mb-3">
+              <li key={categoryName}>
                 <button
                   onClick={() => setSelectedCategory(categoryName)}
-                  className={`w-full text-left p-5 rounded-lg font-semibold transition-colors ${getButtonSizeClass()} ${
+                  className={`w-full text-left px-6 py-4 rounded-lg font-semibold transition-all ${getButtonSizeClass()} ${
                     selectedCategory === categoryName
-                      ? highContrast ? 'bg-yellow-400 text-black border-4 border-yellow-400 shadow-lg' : 'bg-green-600 text-white shadow-md'
-                      : highContrast ? 'bg-gray-900 text-yellow-400 border-2 border-yellow-400 hover:bg-gray-800' : 'bg-white text-gray-700 hover:bg-gray-100 border-2 border-gray-200'
+                      ? highContrast 
+                        ? 'bg-yellow-400 text-black border-4 border-yellow-400 shadow-lg' 
+                        : 'bg-green-600 text-white shadow-md'
+                      : highContrast 
+                        ? 'bg-gray-900 text-yellow-400 border-2 border-yellow-400 hover:bg-gray-800' 
+                        : 'bg-white text-gray-700 hover:bg-gray-50 border-2 border-gray-200 hover:border-gray-300'
                   }`}
                 >
                   {getTranslatedText(categoryName)}
@@ -1636,11 +1653,15 @@ export default function Kiosk({ role = 'customer' }) {
         </nav>
 
         {/* Center Drink Grid */}
-        <main className="w-3/5 px-6">
+        <main className="w-3/5">
           {/* Search Results Info */}
           {searchQuery && (
-            <div className={`mb-4 text-sm ${highContrast ? 'text-yellow-400' : 'text-gray-600'}`}>
-              Found {visibleDrinks.length} drink{visibleDrinks.length !== 1 ? 's' : ''} matching "{searchQuery}"
+            <div className={`mb-6 p-4 rounded-lg ${
+              highContrast ? 'bg-gray-800 text-yellow-400' : 'bg-gray-100 text-gray-700'
+            }`}>
+              <p className="font-medium">
+                {visibleDrinks.length} {getTranslatedText('result(s) for')} "{searchQuery}"
+              </p>
             </div>
           )}
           
@@ -1718,15 +1739,15 @@ export default function Kiosk({ role = 'customer' }) {
       {/* Accessibility Button - Available on all screens */}
       <button
         onClick={() => setShowAccessibilityMenu(true)}
-        className={`fixed bottom-8 left-8 p-4 rounded-full shadow-2xl transition-all transform hover:scale-110 ${
+        className={`fixed bottom-8 left-8 px-6 py-4 rounded-xl shadow-2xl transition-all font-semibold text-sm ${
           highContrast
-            ? 'bg-yellow-400 text-black border-4 border-yellow-400'
+            ? 'bg-yellow-400 text-black border-4 border-yellow-400 hover:bg-yellow-300'
             : 'bg-green-600 text-white hover:bg-green-700'
         }`}
-        style={{ minWidth: '64px', minHeight: '64px', zIndex: 50 }}
+        style={{ zIndex: 50 }}
         title="Accessibility Options"
       >
-        <span className="text-3xl">♿</span>
+        {getTranslatedText('Accessibility')}
       </button>
 
       {/* Accessibility Menu Modal */}
