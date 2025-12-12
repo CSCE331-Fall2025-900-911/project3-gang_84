@@ -7,6 +7,7 @@ import CartView from './components/views/CartView';
 import AddMoreItemsModal from './components/modals/AddMoreItemsModal';
 import PaymentModal from './components/modals/PaymentModal';
 import ThankYouScreen from './components/views/ThankYouScreen';
+import VoiceAssistant from './components/VoiceAssistant';
 import { API_ENDPOINTS, API_BASE_URL } from './config/api';
 import { translateText, translateBatch } from './utils/translation';
 
@@ -1692,6 +1693,24 @@ export default function Kiosk({ role = 'customer' }) {
           onAuthenticated={handleAuthenticated}
           onGuest={handleGuest}
           currentCustomer={customer}
+          getTranslatedText={getTranslatedText}
+        />
+      )}
+
+      {/* Voice Assistant - Only on menu and cart views */}
+      {role === 'customer' && (currentView === 'menu' || currentView === 'cart') && (
+        <VoiceAssistant
+          drinks={drinks}
+          toppings={toppings}
+          sweetnessOptions={sweetnessOptions}
+          iceOptions={iceOptions}
+          sizeOptions={sizeOptions}
+          cart={cart}
+          currentView={currentView}
+          onNavigateToCart={handlePayClick}
+          onAddToCart={handleAddToCart}
+          onCheckout={handleCheckoutClick}
+          highContrast={highContrast}
           getTranslatedText={getTranslatedText}
         />
       )}
