@@ -632,17 +632,42 @@ export default function Kiosk({ role = 'customer' }) {
     }
   };
 
-  // Get button size class (for Carol's tremor) - without text size so parent scaling works
+  // Get heading size class based on accessibility settings
+  const getHeadingSizeClass = (level) => {
+    if (fontSize === 'large') {
+      switch(level) {
+        case 'h1': return 'text-5xl';
+        case 'h2': return 'text-3xl';
+        case 'h3': return 'text-2xl';
+        default: return 'text-xl';
+      }
+    } else if (fontSize === 'extra-large') {
+      switch(level) {
+        case 'h1': return 'text-6xl';
+        case 'h2': return 'text-4xl';
+        case 'h3': return 'text-3xl';
+        default: return 'text-2xl';
+      }
+    } else {
+      switch(level) {
+        case 'h1': return 'text-4xl';
+        case 'h2': return 'text-2xl';
+        case 'h3': return 'text-xl';
+        default: return 'text-lg';
+      }
+    }
+  };
+
+  // Get button size class (for Carol's tremor)
   const getButtonSizeClass = () => {
-    return largeClickTargets ? 'min-h-[80px] px-8 py-6' : 'min-h-[60px] px-6 py-4';
+    return largeClickTargets ? 'min-h-[80px] px-8 py-6 text-xl' : 'min-h-[60px] px-6 py-4 text-lg';
   };
 
   // Get container class with accessibility settings
   const getContainerClass = () => {
     const baseClass = 'flex flex-col w-full min-h-screen font-sans';
     const bgClass = highContrast ? 'bg-black' : 'bg-lime-50';
-    const motionClass = reduceMotion ? '' : 'transition-all duration-200';
-    return `${baseClass} ${bgClass} ${getFontSizeClass()} ${motionClass}`;
+    return `${baseClass} ${bgClass} ${getFontSizeScale()}`;
   };
 
   // --- Data Fetching ---
@@ -1454,7 +1479,7 @@ export default function Kiosk({ role = 'customer' }) {
                     </div>
                     <button
                       onClick={() => setShowAuthModal(true)}
-                      className={`text-xs px-3 py-2 rounded ${getButtonSizeClass()} ${
+                      className={`rounded ${getButtonSizeClass()} ${
                         highContrast 
                           ? 'bg-gray-800 text-yellow-400 border border-yellow-400 hover:bg-gray-700'
                           : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -1468,7 +1493,7 @@ export default function Kiosk({ role = 'customer' }) {
                   // Show Log In button when in guest mode
                   <button
                     onClick={() => setShowAuthModal(true)}
-                    className={`px-6 py-3 rounded-lg font-semibold transition-colors ${getButtonSizeClass()} ${
+                    className={`rounded-lg font-semibold transition-colors ${getButtonSizeClass()} ${
                       highContrast
                         ? 'bg-yellow-400 text-black border-2 border-yellow-400 hover:bg-yellow-300'
                         : 'bg-green-600 text-white hover:bg-green-700'
@@ -1605,7 +1630,7 @@ export default function Kiosk({ role = 'customer' }) {
               <li key={categoryName}>
                 <button
                   onClick={() => setSelectedCategory(categoryName)}
-                  className={`w-full text-left px-6 py-4 rounded-lg font-semibold transition-all ${getButtonSizeClass()} ${
+                  className={`w-full text-left rounded-lg font-semibold transition-all ${getButtonSizeClass()} ${
                     selectedCategory === categoryName
                       ? highContrast 
                         ? 'bg-yellow-400 text-black border-4 border-yellow-400 shadow-lg' 
