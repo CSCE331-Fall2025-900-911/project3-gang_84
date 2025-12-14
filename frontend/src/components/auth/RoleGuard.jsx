@@ -73,9 +73,9 @@ export function ProtectedRoute({ children, requiredRole }) {
           <p className="text-gray-700 mb-4">
             Your account doesn't have any roles assigned yet. Please contact an administrator to assign you the appropriate role.
           </p>
-          <a href="/" className="text-blue-600 hover:underline">
+          <button onClick={() => navigate(import.meta.env.BASE_URL)} className="text-blue-600 hover:underline">
             Return to Home
-          </a>
+          </button>
         </div>
       </div>
     );
@@ -98,9 +98,9 @@ export function ProtectedRoute({ children, requiredRole }) {
             <p className="text-sm text-gray-500 mb-4">
               Your roles: {roles.join(', ')}
             </p>
-            <a href="/" className="text-blue-600 hover:underline">
+            <button onClick={() => navigate(import.meta.env.BASE_URL)} className="text-blue-600 hover:underline">
               Return to Home
-            </a>
+            </button>
           </div>
         </div>
       );
