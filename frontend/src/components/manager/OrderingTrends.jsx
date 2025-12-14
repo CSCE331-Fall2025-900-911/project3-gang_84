@@ -254,10 +254,10 @@ export default function OrderingTrends() {
         </div>
       </div>
 
-      {/* Popular Items Table */}
+      {/* Popular Items Section - Table and Bar Charts */}
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
         <div className="p-6 border-b border-gray-200">
-          <h3 className="text-lg font-bold text-gray-800">Top 5 Popular Items</h3>
+          <h3 className="text-lg font-bold text-gray-800">Top 10 Popular Items</h3>
         </div>
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
@@ -283,6 +283,57 @@ export default function OrderingTrends() {
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Bar Charts Side by Side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Popular Items Bar Chart - Orders */}
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h3 className="text-lg font-bold text-gray-800 mb-4">Top 10 Items by Orders</h3>
+          <ResponsiveContainer width="100%" height={350}>
+            <BarChart 
+              data={[...popularItems].sort((a, b) => b.orders - a.orders).slice(0, 10)} 
+              margin={{ top: 5, right: 20, left: 10, bottom: 80 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis 
+                dataKey="name" 
+                angle={-45} 
+                textAnchor="end" 
+                interval={0}
+                tick={{ fontSize: 10 }}
+                height={80}
+              />
+              <YAxis label={{ value: 'Orders', angle: -90, position: 'insideLeft' }} />
+              <Tooltip />
+              <Bar dataKey="orders" fill="#8B5CF6" name="Orders" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Popular Items Bar Chart - Revenue */}
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h3 className="text-lg font-bold text-gray-800 mb-4">Top 10 Items by Revenue</h3>
+          <ResponsiveContainer width="100%" height={350}>
+            <BarChart 
+              data={[...popularItems].sort((a, b) => b.revenue - a.revenue).slice(0, 10)} 
+              margin={{ top: 5, right: 20, left: 10, bottom: 80 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis 
+                dataKey="name" 
+                angle={-45} 
+                textAnchor="end" 
+                interval={0}
+                tick={{ fontSize: 10 }}
+                height={80}
+              />
+              <YAxis label={{ value: 'Revenue ($)', angle: -90, position: 'insideLeft' }} />
+              <Tooltip formatter={(value) => [`$${value.toFixed(2)}`, 'Revenue']} />
+              <Bar dataKey="revenue" fill="#10B981" name="Revenue ($)" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </div>
     </div>
   );
