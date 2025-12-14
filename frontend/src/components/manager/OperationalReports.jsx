@@ -3,7 +3,7 @@ import { API_ENDPOINTS } from '../../config/api';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
-import { BarChart, Bar, LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, LineChart, Line, AreaChart, Area, PieChart, Pie, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 
 /**
  * Operational Reports Component
@@ -34,12 +34,17 @@ export default function OperationalReports() {
     }
     
     // Skip currency formatting for quantity/usage fields
-    const nonCurrencyFields = ['totalused', 'total_used', 'quantity', 'stock', 'count', 'orders', 'unit'];
+    const nonCurrencyFields = ['totalused', 'total_used', 'quantity', 'stock', 'count', 'unit'];
     if (nonCurrencyFields.some(f => keyLower === f)) {
       if (typeof value === 'number' || (!isNaN(parseFloat(value)) && keyLower !== 'unit')) {
         return parseFloat(value).toFixed(2);
       }
       return value;
+    }
+    
+    // Format orders as integers
+    if (keyLower === 'orders') {
+      return parseInt(value) || 0;
     }
     
     // Format currency/revenue values (be more specific)
@@ -136,7 +141,8 @@ export default function OperationalReports() {
         type: reportType,
         dateRange: { start: startDate, end: endDate },
         summary: transformSummary(data, reportType),
-        details: transformDetails(data, reportType)
+        details: transformDetails(data, reportType),
+        kiosk: data.kiosk || null // Store kiosk data for employee report
       });
     } catch (err) {
       setError(err.message);
@@ -768,6 +774,116 @@ export default function OperationalReports() {
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Charts for Employee Performance Report */}
+          {reportData.type === 'employee' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+              {/* Kiosk vs Employee Sales - Pie Chart */}
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h4 className="text-lg font-bold text-gray-800 mb-4">Sales Distribution</h4>
+                <div className="h-72">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      {(() => {
+                        const employeeOrders = reportData.details.reduce((sum, emp) => sum + (parseInt(emp.orders) || 0), 0);
+                        const summaryOrders = reportData.summary?.totalOrders || 0;
+                        // If kiosk data is missing or zero, derive it from summary minus employee orders
+                        let kioskOrders = parseInt(reportData.kiosk?.orders || 0);
+                        if ((!kioskOrders || kioskOrders === 0) && summaryOrders > 0) {
+                          const calc = summaryOrders - employeeOrders;
+                          kioskOrders = calc > 0 ? calc : 0;
+                        }
+                        const kioskRevenue = parseFloat(reportData.kiosk?.revenue || 0);
+                        const employeeRevenue = reportData.details.reduce((sum, emp) => sum + (parseFloat(emp.revenue) || 0), 0);
+
+                        const pieData = [
+                          { name: 'Kiosk (Self-Service)', value: kioskOrders, orders: kioskOrders, revenue: kioskRevenue },
+                          { name: 'Employees', value: employeeOrders, orders: employeeOrders, revenue: employeeRevenue }
+                        ];
+
+                        return (
+                          <>
+                            <Pie data={pieData} cx="50%" cy="50%" labelLine={false}
+                              label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`} outerRadius={80} fill="#8884d8" dataKey="value">
+                              <Cell fill="#8884d8" />
+                              <Cell fill="#82ca9d" />
+                            </Pie>
+                            <Tooltip formatter={(value, name, props) => [
+                              `${parseInt(value)} orders — $${parseFloat((props.payload && props.payload.revenue) || 0).toFixed(2)}`,
+                              name
+                            ]} />
+                            <Legend />
+                          </>
+                        );
+                      })()}
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                {/* Totals verification */}
+                <div className="mt-4 text-sm text-gray-600">
+                  {(() => {
+                    const employeeOrders = reportData.details.reduce((sum, emp) => sum + (parseInt(emp.orders) || 0), 0);
+                    const summaryOrders = reportData.summary?.totalOrders || 0;
+                    let kioskOrders = parseInt(reportData.kiosk?.orders || 0);
+                    if ((!kioskOrders || kioskOrders === 0) && summaryOrders > 0) {
+                      kioskOrders = summaryOrders - employeeOrders;
+                    }
+                    const total = kioskOrders + employeeOrders;
+                    const ok = total === summaryOrders;
+                    return (
+                      <div className="flex flex-col gap-2">
+                        <div className="flex gap-4">
+                          <div>Kiosk orders: <strong>{kioskOrders}</strong></div>
+                          <div>Employee orders: <strong>{employeeOrders}</strong></div>
+                          <div>Total (summary): <strong>{summaryOrders}</strong></div>
+                        </div>
+                        {!ok && (
+                          <div className="text-red-600 text-xs">⚠ Sum mismatch: {total} ≠ {summaryOrders}</div>
+                        )}
+                        <div className="text-xs text-gray-400">Backend kiosk data: {JSON.stringify(reportData.kiosk || 'null')}</div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+
+              {/* Top Employee Card */}
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h4 className="text-lg font-bold text-gray-800 mb-4">Top Employee</h4>
+                {(() => {
+                  const topEmployee = [...reportData.details]
+                    .filter(emp => parseFloat(emp.revenue) > 0)
+                    .sort((a, b) => parseFloat(b.revenue) - parseFloat(a.revenue))[0];
+                  
+                  if (!topEmployee) {
+                    return (
+                      <div className="flex items-center justify-center h-56 text-gray-500">
+                        No employee sales in this period
+                      </div>
+                    );
+                  }
+                  
+                  return (
+                    <div className="flex flex-col items-center justify-center h-56">
+                      <div className="text-6xl mb-4">🏆</div>
+                      <div className="text-2xl font-bold text-gray-800">{topEmployee.name}</div>
+                      <div className="text-sm text-gray-500 mb-4">{topEmployee.role}</div>
+                      <div className="grid grid-cols-2 gap-6 mt-2">
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-green-600">${parseFloat(topEmployee.revenue).toFixed(2)}</div>
+                          <div className="text-sm text-gray-500">Revenue</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-blue-600">{parseInt(topEmployee.orders)}</div>
+                          <div className="text-sm text-gray-500">Orders</div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           )}

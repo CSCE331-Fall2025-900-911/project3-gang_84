@@ -1134,7 +1134,7 @@ export default function Kiosk({ role = 'customer' }) {
           cartItems: cart,
           totalCost: finalTotal, // Send discounted total
           customerId: customer?.customerId || null,
-          employeeId: user ? 1 : null,
+          employeeId: null, // Kiosk is self-service, no employee
           paymentType: paymentType,
           rewardsUsed: selectedRewards, // Send used rewards
           rewardDiscount: totalDiscount,

@@ -1627,20 +1627,64 @@ app.get('/api/manager/reports/product', async (req, res) => {
 app.get('/api/manager/reports/employee', async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
+    
+    // Get employee performance
     const result = await pool.query(`
       SELECT 
         e.name,
         e.role,
         COUNT(o.orderid) as orders,
-        SUM(o.totalcost) as revenue,
-        AVG(o.totalcost) as avg_order_value
+        COALESCE(SUM(o.totalcost), 0) as revenue,
+        COALESCE(AVG(o.totalcost), 0) as avg_order_value
       FROM employees e
       LEFT JOIN orders o ON e.employeeid = o.employeeid 
         AND o.date >= $1 AND o.date <= $2
       GROUP BY e.employeeid, e.name, e.role
       ORDER BY revenue DESC
     `, [startDate, endDate]);
-    res.json({ employees: result.rows });
+    
+    // Get Kiosk (self-service) orders - where employeeid is NULL
+    const kioskResult = await pool.query(`
+      SELECT 
+        COUNT(orderid) as orders,
+        COALESCE(SUM(totalcost), 0) as revenue,
+        COALESCE(AVG(totalcost), 0) as avg_order_value
+      FROM orders
+      WHERE employeeid IS NULL
+        AND date >= $1 AND date <= $2
+    `, [startDate, endDate]);
+    
+    const kioskData = kioskResult.rows[0];
+    
+    // Get summary with proper customer count
+    const summaryResult = await pool.query(`
+      SELECT 
+        COUNT(DISTINCT o.orderid) as total_orders,
+        COALESCE(SUM(o.totalcost), 0) as total_revenue,
+        COALESCE(AVG(o.totalcost), 0) as avg_order_value,
+        (COUNT(DISTINCT o.customerid) + SUM(CASE WHEN o.customerid IS NULL THEN 1 ELSE 0 END)) as total_customers
+      FROM orders o
+      WHERE o.date >= $1 AND o.date <= $2
+    `, [startDate, endDate]);
+    
+    const summary = summaryResult.rows[0];
+    
+    res.json({ 
+      employees: result.rows,
+      kiosk: {
+        name: 'Kiosk (Self-Service)',
+        role: 'Self-Service',
+        orders: parseInt(kioskData.orders || 0),
+        revenue: parseFloat(kioskData.revenue || 0),
+        avg_order_value: parseFloat(kioskData.avg_order_value || 0)
+      },
+      summary: {
+        totalRevenue: parseFloat(summary.total_revenue || 0),
+        totalOrders: parseInt(summary.total_orders || 0),
+        avgOrderValue: parseFloat(summary.avg_order_value || 0),
+        totalCustomers: parseInt(summary.total_customers || 0)
+      }
+    });
   } catch (err) {
     console.error('Error fetching employee report:', err);
     res.status(500).json({ error: 'Failed to fetch employee report' });
