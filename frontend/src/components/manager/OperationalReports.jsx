@@ -82,7 +82,7 @@ export default function OperationalReports() {
   const reportTypes = [
     { value: 'sales', label: 'Sales Summary Report', description: 'Total sales, orders, and revenue breakdown' },
     { value: 'product', label: 'Product Performance Report', description: 'Best and worst selling items' },
-    { value: 'productUsage', label: 'Product Usage Report (Ingredient Consumption)', description: 'Ingredient usage over date range - matches Java Project 2' },
+    { value: 'productUsage', label: 'Product Usage Report (Ingredient Consumption)', description: 'Ingredient usage over date range' },
     { value: 'hourly', label: 'Hourly Performance Report', description: 'Sales patterns by hour of day' },
     { value: 'employee', label: 'Employee Performance Report', description: 'Orders processed by each employee' },
     { value: 'inventory', label: 'Inventory Status Report', description: 'Current stock levels and reorder status' },
@@ -626,6 +626,151 @@ export default function OperationalReports() {
               </div>
             </div>
           </div>
+
+          {/* Charts for Sales Summary Report */}
+          {reportData.type === 'sales' && reportData.details.length > 0 && (
+            <div className="space-y-6 mt-6">
+              {/* Daily Revenue Trend - Area Chart */}
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h4 className="text-lg font-bold text-gray-800 mb-4">Daily Revenue Trend</h4>
+                <div className="h-72">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart
+                      data={reportData.details.map(d => ({
+                        ...d,
+                        dateLabel: new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                        revenue: parseFloat(d.revenue || 0)
+                      }))}
+                      margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="dateLabel" />
+                      <YAxis tickFormatter={(value) => `$${value}`} />
+                      <Tooltip 
+                        formatter={(value, name) => [`$${parseFloat(value).toFixed(2)}`, 'Revenue']}
+                      />
+                      <Area 
+                        type="monotone" 
+                        dataKey="revenue" 
+                        name="Revenue" 
+                        stroke="#8884d8" 
+                        fill="#8884d8" 
+                        fillOpacity={0.6} 
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Daily Orders - Bar Chart */}
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h4 className="text-lg font-bold text-gray-800 mb-4">Daily Orders</h4>
+                <div className="h-72">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={reportData.details.map(d => ({
+                        ...d,
+                        dateLabel: new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                        orders: parseInt(d.orders || 0)
+                      }))}
+                      margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="dateLabel" />
+                      <YAxis />
+                      <Tooltip 
+                        formatter={(value, name) => [parseInt(value), 'Orders']}
+                      />
+                      <Bar dataKey="orders" name="Orders" fill="#82ca9d" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Charts for Product Performance Report */}
+          {reportData.type === 'product' && reportData.details.length > 0 && (
+            <div className="space-y-6 mt-6">
+              {/* Top 10 Products by Revenue - Horizontal Bar Chart */}
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h4 className="text-lg font-bold text-gray-800 mb-4">Top 10 Products by Revenue</h4>
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={[...reportData.details]
+                        .sort((a, b) => parseFloat(b.revenue) - parseFloat(a.revenue))
+                        .slice(0, 10)}
+                      layout="vertical"
+                      margin={{ top: 5, right: 30, left: 120, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis type="number" tickFormatter={(value) => `$${value}`} />
+                      <YAxis 
+                        type="category" 
+                        dataKey="name" 
+                        width={110}
+                        tick={{ fontSize: 12 }}
+                      />
+                      <Tooltip 
+                        formatter={(value, name) => [`$${parseFloat(value).toFixed(2)}`, 'Revenue']}
+                      />
+                      <Bar dataKey="revenue" name="Revenue" radius={[0, 4, 4, 0]}>
+                        {[...reportData.details]
+                          .sort((a, b) => parseFloat(b.revenue) - parseFloat(a.revenue))
+                          .slice(0, 10)
+                          .map((entry, index) => (
+                            <Cell 
+                              key={`cell-${index}`} 
+                              fill={['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#00C49F', '#FFBB28', '#FF8042', '#0088FE', '#a855f7', '#ec4899'][index % 10]} 
+                            />
+                          ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Top 10 Products by Orders - Horizontal Bar Chart */}
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h4 className="text-lg font-bold text-gray-800 mb-4">Top 10 Products by Orders</h4>
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={[...reportData.details]
+                        .sort((a, b) => parseInt(b.orders) - parseInt(a.orders))
+                        .slice(0, 10)}
+                      layout="vertical"
+                      margin={{ top: 5, right: 30, left: 120, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis type="number" />
+                      <YAxis 
+                        type="category" 
+                        dataKey="name" 
+                        width={110}
+                        tick={{ fontSize: 12 }}
+                      />
+                      <Tooltip 
+                        formatter={(value, name) => [parseInt(value), 'Orders']}
+                      />
+                      <Bar dataKey="orders" name="Orders" radius={[0, 4, 4, 0]}>
+                        {[...reportData.details]
+                          .sort((a, b) => parseInt(b.orders) - parseInt(a.orders))
+                          .slice(0, 10)
+                          .map((entry, index) => (
+                            <Cell 
+                              key={`cell-${index}`} 
+                              fill={['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#a855f7', '#ec4899'][index % 10]} 
+                            />
+                          ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Bar Chart for Product Usage Report - Top 10 Ingredients */}
           {reportData.type === 'productUsage' && reportData.details.length > 0 && (
