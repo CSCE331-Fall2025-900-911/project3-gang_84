@@ -136,24 +136,26 @@ export default function OperationalReports() {
   };
 
   const transformSummary = (data, type) => {
-    switch(type) {
-      case 'sales':
-        return {
-          totalRevenue: parseFloat(data.summary?.totalRevenue || 0),
-          totalOrders: parseInt(data.summary?.totalOrders || 0),
-          avgOrderValue: parseFloat(data.summary?.avgOrderValue || 0),
-          totalCustomers: parseInt(data.summary?.totalCustomers || 0)
-        };
-      default:
-        // For other reports, derive summary from details
-        const details = data.data || data.items || data.employees || [];
-        return {
-          totalRevenue: details.reduce((sum, item) => sum + parseFloat(item.revenue || 0), 0),
-          totalOrders: details.reduce((sum, item) => sum + parseInt(item.orders || item.count || 0), 0),
-          avgOrderValue: 0,
-          totalCustomers: 0
-        };
+    // If the API returns a summary object, use it directly
+    if (data.summary) {
+      return {
+        totalRevenue: parseFloat(data.summary.totalRevenue || 0),
+        totalOrders: parseInt(data.summary.totalOrders || 0),
+        avgOrderValue: parseFloat(data.summary.avgOrderValue || 0),
+        totalCustomers: parseInt(data.summary.totalCustomers || 0)
+      };
     }
+    
+    // Fallback: derive summary from details for reports without summary
+    const details = data.data || data.items || data.employees || [];
+    const totalRevenue = details.reduce((sum, item) => sum + parseFloat(item.revenue || 0), 0);
+    const totalOrders = details.reduce((sum, item) => sum + parseInt(item.orders || item.count || 0), 0);
+    return {
+      totalRevenue: totalRevenue,
+      totalOrders: totalOrders,
+      avgOrderValue: totalOrders > 0 ? totalRevenue / totalOrders : 0,
+      totalCustomers: 0 // Cannot determine without API summary
+    };
   };
 
   const transformDetails = (data, type) => {
