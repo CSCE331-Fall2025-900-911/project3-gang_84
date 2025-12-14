@@ -1477,7 +1477,29 @@ app.get('/api/manager/reports/product-usage', async (req, res) => {
       GROUP BY i.ingredientname, i.unit
       ORDER BY i.ingredientname
     `, [startDate, endDate]);
-    res.json({ data: result.rows });
+    
+    // Get summary with proper customer count
+    const summaryResult = await pool.query(`
+      SELECT 
+        COUNT(DISTINCT o.orderid) as total_orders,
+        COALESCE(SUM(o.totalcost), 0) as total_revenue,
+        COALESCE(AVG(o.totalcost), 0) as avg_order_value,
+        (COUNT(DISTINCT o.customerid) + SUM(CASE WHEN o.customerid IS NULL THEN 1 ELSE 0 END)) as total_customers
+      FROM orders o
+      WHERE o.date >= $1 AND o.date <= $2
+    `, [startDate, endDate]);
+    
+    const summary = summaryResult.rows[0];
+    
+    res.json({ 
+      data: result.rows,
+      summary: {
+        totalRevenue: parseFloat(summary.total_revenue || 0),
+        totalOrders: parseInt(summary.total_orders || 0),
+        avgOrderValue: parseFloat(summary.avg_order_value || 0),
+        totalCustomers: parseInt(summary.total_customers || 0)
+      }
+    });
   } catch (err) {
     console.error('Error fetching product usage report:', err);
     res.status(500).json({ error: 'Failed to fetch product usage report' });

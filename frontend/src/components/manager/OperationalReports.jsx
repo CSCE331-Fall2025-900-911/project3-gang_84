@@ -3,6 +3,7 @@ import { API_ENDPOINTS } from '../../config/api';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 
 /**
  * Operational Reports Component
@@ -32,8 +33,18 @@ export default function OperationalReports() {
       return value;
     }
     
-    // Format currency/revenue values
-    if (keyLower.includes('revenue') || keyLower.includes('sales') || keyLower.includes('total') || keyLower.includes('price')) {
+    // Skip currency formatting for quantity/usage fields
+    const nonCurrencyFields = ['totalused', 'total_used', 'quantity', 'stock', 'count', 'orders', 'unit'];
+    if (nonCurrencyFields.some(f => keyLower === f)) {
+      if (typeof value === 'number' || (!isNaN(parseFloat(value)) && keyLower !== 'unit')) {
+        return parseFloat(value).toFixed(2);
+      }
+      return value;
+    }
+    
+    // Format currency/revenue values (be more specific)
+    const currencyFields = ['revenue', 'totalcost', 'total_revenue', 'price', 'avg_price', 'avg_order_value', 'sales'];
+    if (currencyFields.some(f => keyLower === f || keyLower.endsWith(f))) {
       const num = parseFloat(value);
       if (!isNaN(num)) {
         return `$${num.toFixed(2)}`;
@@ -615,6 +626,47 @@ export default function OperationalReports() {
               </div>
             </div>
           </div>
+
+          {/* Bar Chart for Product Usage Report - Top 10 Ingredients */}
+          {reportData.type === 'productUsage' && reportData.details.length > 0 && (
+            <div className="bg-white rounded-lg shadow-md p-6 mt-6">
+              <h4 className="text-lg font-bold text-gray-800 mb-4">Top 10 Ingredients by Usage</h4>
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={[...reportData.details]
+                      .sort((a, b) => parseFloat(b.totalUsed) - parseFloat(a.totalUsed))
+                      .slice(0, 10)}
+                    layout="vertical"
+                    margin={{ top: 5, right: 30, left: 100, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis type="number" />
+                    <YAxis 
+                      type="category" 
+                      dataKey="ingredientName" 
+                      width={90}
+                      tick={{ fontSize: 12 }}
+                    />
+                    <Tooltip 
+                      formatter={(value, name) => [parseFloat(value).toFixed(2), 'Quantity Used']}
+                    />
+                    <Bar dataKey="totalUsed" name="Quantity Used" radius={[0, 4, 4, 0]}>
+                      {[...reportData.details]
+                        .sort((a, b) => parseFloat(b.totalUsed) - parseFloat(a.totalUsed))
+                        .slice(0, 10)
+                        .map((entry, index) => (
+                          <Cell 
+                            key={`cell-${index}`} 
+                            fill={['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#00C49F', '#FFBB28', '#FF8042', '#0088FE', '#00C49F', '#FFBB28'][index % 10]} 
+                          />
+                        ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
 
           {/* Detailed Report Data */}
           <div className="bg-white rounded-lg shadow-md overflow-hidden">
