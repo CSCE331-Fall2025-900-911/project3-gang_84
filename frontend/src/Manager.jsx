@@ -6,6 +6,7 @@ import Menu from './components/manager/Menu';
 import Employees from './components/manager/Employees';
 import OrderingTrends from './components/manager/OrderingTrends';
 import OperationalReports from './components/manager/OperationalReports';
+import XReport from './components/manager/XReport';
 import ZReport from './components/manager/ZReport';
 import { API_ENDPOINTS } from './config/api';
 
@@ -346,6 +347,7 @@ export default function Manager() {
     { id: 'employees', name: 'Employees', icon: '👥' },
     { id: 'trends', name: 'Ordering Trends', icon: '📈' },
     { id: 'reports', name: 'Operational Reports', icon: '📊' },
+    { id: 'xreport', name: 'X-Report (Current Session)', icon: '💹' },
     { id: 'zreport', name: 'Z-Report (End of Day)', icon: '📋' },
   ];
 
@@ -494,6 +496,14 @@ export default function Manager() {
         )}
         {activeTab === 'reports' && (
           <OperationalReports 
+            getTranslatedText={getTranslatedText}
+            highContrast={highContrast}
+            fontSize={fontSize}
+            largeClickTargets={largeClickTargets}
+          />
+        )}
+        {activeTab === 'xreport' && (
+          <XReport 
             getTranslatedText={getTranslatedText}
             highContrast={highContrast}
             fontSize={fontSize}

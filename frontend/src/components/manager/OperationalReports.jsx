@@ -23,7 +23,6 @@ export default function OperationalReports() {
     { value: 'hourly', label: 'Hourly Performance Report', description: 'Sales patterns by hour of day' },
     { value: 'employee', label: 'Employee Performance Report', description: 'Orders processed by each employee' },
     { value: 'inventory', label: 'Inventory Status Report', description: 'Current stock levels and reorder status' },
-    { value: 'xreport', label: 'X Report (Current Session)', description: 'Sales during current shift' },
   ];
 
   const generateReport = async () => {
@@ -56,9 +55,6 @@ export default function OperationalReports() {
           break;
         case 'inventory':
           endpoint = `${API_ENDPOINTS.manager.reports.inventory}`;
-          break;
-        case 'xreport':
-          endpoint = `${API_ENDPOINTS.manager.reports.xreport}?date=${new Date().toISOString().split('T')[0]}`;
           break;
         default:
           throw new Error('Invalid report type');
@@ -96,14 +92,6 @@ export default function OperationalReports() {
           avgOrderValue: parseFloat(data.summary?.avgOrderValue || 0),
           totalCustomers: parseInt(data.summary?.totalCustomers || 0)
         };
-      case 'xreport':
-        return {
-          totalRevenue: parseFloat(data.sales?.gross_sales || 0),
-          totalOrders: parseInt(data.sales?.total_transactions || 0),
-          avgOrderValue: data.sales?.total_transactions > 0 ? 
-            (parseFloat(data.sales?.gross_sales || 0) / parseInt(data.sales?.total_transactions || 1)) : 0,
-          totalCustomers: 0
-        };
       default:
         // For other reports, derive summary from details
         const details = data.data || data.items || data.employees || [];
@@ -139,9 +127,6 @@ export default function OperationalReports() {
           status: item.status,
           reorderLevel: item.reorder_level
         }));
-      case 'xreport':
-        // Transform X-Report data to show individual drinks
-        return data.products?.drinks || [];
       default:
         return [];
     }

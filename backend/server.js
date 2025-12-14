@@ -1586,10 +1586,12 @@ app.get('/api/manager/reports/xreport', async (req, res) => {
     const { date } = req.query;
     const reportDate = date || new Date().toISOString().split('T')[0];
     
-    // Get hourly sales data (matching Java implementation)
+    console.log(`X-Report: Fetching data for date=${reportDate}`);
+    
+    // Get hourly sales data - handle time as string by casting to TIME
     const hourlySalesResult = await pool.query(`
       SELECT 
-        EXTRACT(HOUR FROM o.time) AS sale_hour,
+        EXTRACT(HOUR FROM o.time::time) AS sale_hour,
         SUM(oi.price) AS hourly_total
       FROM orders o
       JOIN order_items oi ON o.orderid = oi.orderid
@@ -1597,6 +1599,8 @@ app.get('/api/manager/reports/xreport', async (req, res) => {
       GROUP BY sale_hour
       ORDER BY sale_hour
     `, [reportDate]);
+    
+    console.log(`X-Report: Hourly sales rows: ${hourlySalesResult.rows.length}`, hourlySalesResult.rows);
     
     // Get overall sales summary
     const salesResult = await pool.query(`
@@ -1649,16 +1653,66 @@ app.get('/api/manager/reports/xreport', async (req, res) => {
       ORDER BY revenue DESC
     `, [reportDate]);
     
+    // Get hourly transaction counts - handle time as string by casting to TIME
+    const hourlyTransactionsResult = await pool.query(`
+      SELECT 
+        EXTRACT(HOUR FROM o.time::time) AS sale_hour,
+        COUNT(DISTINCT o.orderid) AS transaction_count
+      FROM orders o
+      WHERE o.date = $1
+      GROUP BY sale_hour
+      ORDER BY sale_hour
+    `, [reportDate]);
+    
+    console.log(`X-Report: Hourly transactions rows: ${hourlyTransactionsResult.rows.length}`, hourlyTransactionsResult.rows);
+    
+    // Transform hourly data to include both sales and transactions
+    const hourlyData = [];
+    for (let hour = 0; hour < 24; hour++) {
+      const salesRow = hourlySalesResult.rows.find(r => parseInt(r.sale_hour) === hour);
+      const transRow = hourlyTransactionsResult.rows.find(r => parseInt(r.sale_hour) === hour);
+      
+      hourlyData.push({
+        hour: hour,
+        sales: parseFloat(salesRow?.hourly_total || 0),
+        transactions: parseInt(transRow?.transaction_count || 0)
+      });
+    }
+    
+    // Get top sellers
+    const topSellersResult = await pool.query(`
+      SELECT 
+        oi.drink as name,
+        COUNT(oi.itemid) as quantity,
+        SUM(oi.price) as revenue
+      FROM order_items oi
+      JOIN orders o ON oi.orderid = o.orderid
+      WHERE o.date = $1
+      GROUP BY oi.drink
+      ORDER BY revenue DESC
+      LIMIT 10
+    `, [reportDate]);
+    
+    console.log(`X-Report: Top sellers rows: ${topSellersResult.rows.length}`, topSellersResult.rows);
+    console.log(`X-Report: Hourly data array:`, hourlyData.filter(h => h.transactions > 0 || h.sales > 0));
+    
     res.json({
       date: reportDate,
-      hourlySales: hourlySalesResult.rows,
-      sales: salesResult.rows[0],
+      sales: {
+        gross_sales: parseFloat(salesResult.rows[0].gross_sales || 0),
+        returns: 0, // Future enhancement
+        voids: 0,   // Future enhancement
+        discards: 0, // Future enhancement
+        net_sales: parseFloat(salesResult.rows[0].gross_sales || 0)
+      },
       transactions: {
         totalTransactions: parseInt(salesResult.rows[0].total_transactions),
         cash: paymentsResult.rows.find(p => p.payment_type === 'cash') || { count: 0, amount: 0 },
         credit: paymentsResult.rows.find(p => p.payment_type === 'credit') || { count: 0, amount: 0 },
         debit: paymentsResult.rows.find(p => p.payment_type === 'debit') || { count: 0, amount: 0 }
       },
+      hourly: hourlyData,
+      topSellers: topSellersResult.rows,
       products: {
         totalItemsSold: parseInt(salesResult.rows[0].total_items_sold),
         categories: categoriesResult.rows,
