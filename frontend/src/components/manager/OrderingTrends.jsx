@@ -9,7 +9,6 @@ import { API_ENDPOINTS } from '../../config/api';
 export default function OrderingTrends() {
   const [startDate, setStartDate] = useState('2025-11-01');
   const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
-  const [viewType, setViewType] = useState('daily');
   const [salesData, setSalesData] = useState([]);
   const [popularItems, setPopularItems] = useState([]);
   const [categoryData, setCategoryData] = useState([]);
@@ -109,7 +108,7 @@ export default function OrderingTrends() {
 
       {/* Date Range Selector */}
       <div className="bg-white p-6 rounded-lg shadow-md">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
             <input
@@ -127,18 +126,6 @@ export default function OrderingTrends() {
               onChange={(e) => setEndDate(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">View Type</label>
-            <select
-              value={viewType}
-              onChange={(e) => setViewType(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-            >
-              <option value="daily">Daily</option>
-              <option value="weekly">Weekly</option>
-              <option value="monthly">Monthly</option>
-            </select>
           </div>
           <div className="flex items-end">
             <button 
