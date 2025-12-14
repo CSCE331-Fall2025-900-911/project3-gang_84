@@ -13,7 +13,11 @@ import { translateText, translateBatch } from './utils/translation';
 
 // Customization Modal
 function CustomizationModal({ drink, onClose, onAddToCart, sweetnessOptions, iceOptions, sizeOptions, toppingOptions, getTranslatedText, highContrast }) {
+  // Check if drink is from Hot Drinks category (should default to hot and hide ice option)
+  const isFromHotDrinksCategory = drink.category === 'Hot Drinks';
+  
   // Set default to first option from each category
+  const [isHot, setIsHot] = useState(isFromHotDrinksCategory); // Default hot if from Hot Drinks category
   const [sweetness, setSweetness] = useState(sweetnessOptions[0]);
   const [ice, setIce] = useState(iceOptions[0]);
   const [size, setSize] = useState(sizeOptions[0] || { name: 'Small', price: 0 });
@@ -34,7 +38,7 @@ function CustomizationModal({ drink, onClose, onAddToCart, sweetnessOptions, ice
     const basePrice = parseFloat(drink.price);
     const toppingsPrice = toppings.reduce((sum, t) => sum + parseFloat(t.price), 0);
     const sweetnessPrice = sweetness ? parseFloat(sweetness.price) : 0;
-    const icePrice = ice ? parseFloat(ice.price) : 0;
+    const icePrice = !isHot && ice ? parseFloat(ice.price) : 0; // Only add ice price if not hot
     const sizePrice = size ? parseFloat(size.price) : 0;
     return basePrice + toppingsPrice + sweetnessPrice + icePrice + sizePrice;
   };
@@ -43,9 +47,10 @@ function CustomizationModal({ drink, onClose, onAddToCart, sweetnessOptions, ice
     const customizedDrink = {
       ...drink,
       customizations: {
+        temperature: isHot ? 'Hot' : 'Cold',
         size: size.name,
         sweetness: sweetness.name,
-        ice: ice.name,
+        ice: isHot ? 'N/A' : ice.name, // Set ice to N/A if hot
         toppings: toppings.map(t => t.name),
       },
       price: calculateTotal().toFixed(2),
@@ -80,6 +85,39 @@ function CustomizationModal({ drink, onClose, onAddToCart, sweetnessOptions, ice
             ✕
           </button>
         </div>
+
+        {/* Hot/Cold Selection - Only show if not from Hot Drinks category */}
+        {!isFromHotDrinksCategory && (
+          <div className="mb-6">
+            <h3 className={`text-xl font-semibold mb-3 ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
+              {getTranslatedText('Temperature')}
+            </h3>
+            <div className="flex gap-2 flex-wrap">
+              <button
+                onClick={() => setIsHot(false)}
+                className={`px-4 py-3 rounded-lg font-semibold transition-colors ${
+                  !isHot
+                    ? highContrast ? 'bg-yellow-400 text-black border-2 border-yellow-400' : 'bg-blue-600 text-white'
+                    : highContrast ? 'bg-gray-800 text-yellow-400 border-2 border-yellow-400' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+                style={{ minHeight: '44px' }}
+              >
+                {getTranslatedText('Cold')} ❄️
+              </button>
+              <button
+                onClick={() => setIsHot(true)}
+                className={`px-4 py-3 rounded-lg font-semibold transition-colors ${
+                  isHot
+                    ? highContrast ? 'bg-yellow-400 text-black border-2 border-yellow-400' : 'bg-red-600 text-white'
+                    : highContrast ? 'bg-gray-800 text-yellow-400 border-2 border-yellow-400' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+                style={{ minHeight: '44px' }}
+              >
+                {getTranslatedText('Hot')} ☕
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Size Selection */}
         <div className="mb-6">
@@ -129,12 +167,13 @@ function CustomizationModal({ drink, onClose, onAddToCart, sweetnessOptions, ice
           </div>
         </div>
 
-        {/* Ice Level */}
-        <div className="mb-6">
-          <h3 className={`text-xl font-semibold mb-3 ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
-            {getTranslatedText('Ice Level')}
-          </h3>
-          <div className="flex gap-2 flex-wrap">
+        {/* Ice Level - Only show if Cold is selected */}
+        {!isHot && (
+          <div className="mb-6">
+            <h3 className={`text-xl font-semibold mb-3 ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
+              {getTranslatedText('Ice Level')}
+            </h3>
+            <div className="flex gap-2 flex-wrap">
             {iceOptions.map((option) => (
               <button
                 key={option.menuitemid}
@@ -151,7 +190,8 @@ function CustomizationModal({ drink, onClose, onAddToCart, sweetnessOptions, ice
               </button>
             ))}
           </div>
-        </div>
+          </div>
+        )}
 
         {/* Toppings */}
         <div className="mb-6">
@@ -790,7 +830,23 @@ export default function Kiosk({ role = 'customer' }) {
 
   // Open customization modal when drink is clicked
   const handleDrinkClick = (drink) => {
-    setSelectedDrink(drink);
+    // Skip customization for Miscellaneous items - add directly to cart
+    if (drink.category === 'Miscellaneous') {
+      const simpleDrink = {
+        ...drink,
+        customizations: {
+          temperature: 'N/A',
+          size: 'N/A',
+          sweetness: 'N/A',
+          ice: 'N/A',
+          toppings: [],
+        },
+      };
+      handleAddToCart(simpleDrink);
+    } else {
+      // Open customization modal for all other drinks
+      setSelectedDrink(drink);
+    }
   };
 
   // Handle language change with batch translation
