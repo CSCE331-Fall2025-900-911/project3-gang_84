@@ -153,6 +153,22 @@ export default function OperationalReports() {
   };
 
   const transformSummary = (data, type) => {
+    // For inventory reports, calculate inventory-specific metrics
+    if (type === 'inventory') {
+      const items = data.items || [];
+      const totalItems = items.length;
+      const lowStock = items.filter(i => i.status === 'Low').length;
+      const mediumStock = items.filter(i => i.status === 'Medium').length;
+      const goodStock = items.filter(i => i.status === 'Good').length;
+      
+      return {
+        totalItems,
+        lowStock,
+        mediumStock,
+        goodStock
+      };
+    }
+    
     // If the API returns a summary object, use it directly
     if (data.summary) {
       return {
@@ -613,24 +629,45 @@ export default function OperationalReports() {
             </div>
 
             {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
-              <div className="bg-green-50 p-4 rounded-lg">
-                <div className="text-sm text-gray-600">Total Revenue</div>
-                <div className="text-2xl font-bold text-green-600">${reportData.summary.totalRevenue.toFixed(2)}</div>
+            {reportData.type === 'inventory' ? (
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <div className="text-sm text-gray-600">Total Items</div>
+                  <div className="text-2xl font-bold text-blue-600">{reportData.summary.totalItems}</div>
+                </div>
+                <div className="bg-red-50 p-4 rounded-lg">
+                  <div className="text-sm text-gray-600">Low Stock</div>
+                  <div className="text-2xl font-bold text-red-600">{reportData.summary.lowStock}</div>
+                </div>
+                <div className="bg-yellow-50 p-4 rounded-lg">
+                  <div className="text-sm text-gray-600">Medium Stock</div>
+                  <div className="text-2xl font-bold text-yellow-600">{reportData.summary.mediumStock}</div>
+                </div>
+                <div className="bg-green-50 p-4 rounded-lg">
+                  <div className="text-sm text-gray-600">Good Stock</div>
+                  <div className="text-2xl font-bold text-green-600">{reportData.summary.goodStock}</div>
+                </div>
               </div>
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <div className="text-sm text-gray-600">Total Orders</div>
-                <div className="text-2xl font-bold text-blue-600">{reportData.summary.totalOrders}</div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
+                <div className="bg-green-50 p-4 rounded-lg">
+                  <div className="text-sm text-gray-600">Total Revenue</div>
+                  <div className="text-2xl font-bold text-green-600">${reportData.summary.totalRevenue.toFixed(2)}</div>
+                </div>
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <div className="text-sm text-gray-600">Total Orders</div>
+                  <div className="text-2xl font-bold text-blue-600">{reportData.summary.totalOrders}</div>
+                </div>
+                <div className="bg-purple-50 p-4 rounded-lg">
+                  <div className="text-sm text-gray-600">Avg Order Value</div>
+                  <div className="text-2xl font-bold text-purple-600">${reportData.summary.avgOrderValue.toFixed(2)}</div>
+                </div>
+                <div className="bg-orange-50 p-4 rounded-lg">
+                  <div className="text-sm text-gray-600">Total Customers</div>
+                  <div className="text-2xl font-bold text-orange-600">{reportData.summary.totalCustomers}</div>
+                </div>
               </div>
-              <div className="bg-purple-50 p-4 rounded-lg">
-                <div className="text-sm text-gray-600">Avg Order Value</div>
-                <div className="text-2xl font-bold text-purple-600">${reportData.summary.avgOrderValue.toFixed(2)}</div>
-              </div>
-              <div className="bg-orange-50 p-4 rounded-lg">
-                <div className="text-sm text-gray-600">Total Customers</div>
-                <div className="text-2xl font-bold text-orange-600">{reportData.summary.totalCustomers}</div>
-              </div>
-            </div>
+            )}
           </div>
 
           {/* Charts for Sales Summary Report */}
@@ -1041,6 +1078,78 @@ export default function OperationalReports() {
             </div>
           )}
 
+          {/* Charts for Inventory Report */}
+          {reportData.type === 'inventory' && reportData.details.length > 0 && (
+            <div className="space-y-6 mt-6">
+              {/* Stock Levels by Ingredient - Bar Chart */}
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h4 className="text-lg font-bold text-gray-800 mb-4">Stock Levels by Ingredient</h4>
+                <div className="h-96">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={reportData.details.map(d => ({
+                        ...d,
+                        stock: parseFloat(d.current || 0)
+                      }))}
+                      layout="vertical"
+                      margin={{ top: 5, right: 30, left: 120, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis type="number" />
+                      <YAxis dataKey="item" type="category" width={110} />
+                      <Tooltip 
+                        formatter={(value, name) => [parseFloat(value).toFixed(2), 'Stock']}
+                      />
+                      <Bar dataKey="stock" name="Stock" radius={[0, 4, 4, 0]}>
+                        {reportData.details.map((entry, index) => {
+                          let color = '#22c55e'; // green for Good
+                          if (entry.status === 'Low') color = '#ef4444'; // red
+                          else if (entry.status === 'Medium') color = '#eab308'; // yellow
+                          return <Cell key={`cell-${index}`} fill={color} />;
+                        })}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Stock Status Distribution - Pie Chart */}
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h4 className="text-lg font-bold text-gray-800 mb-4">Stock Status Distribution</h4>
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={[
+                          { name: 'Low Stock', value: reportData.summary.lowStock, color: '#ef4444' },
+                          { name: 'Medium Stock', value: reportData.summary.mediumStock, color: '#eab308' },
+                          { name: 'Good Stock', value: reportData.summary.goodStock, color: '#22c55e' }
+                        ].filter(d => d.value > 0)}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(0)}%)`}
+                        outerRadius={120}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {[
+                          { name: 'Low Stock', value: reportData.summary.lowStock, color: '#ef4444' },
+                          { name: 'Medium Stock', value: reportData.summary.mediumStock, color: '#eab308' },
+                          { name: 'Good Stock', value: reportData.summary.goodStock, color: '#22c55e' }
+                        ].filter(d => d.value > 0).map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Detailed Report Data */}
           <div className="bg-white rounded-lg shadow-md overflow-hidden">
             <div className="p-6 border-b border-gray-200">
@@ -1058,15 +1167,25 @@ export default function OperationalReports() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {reportData.details.map((row, idx) => (
-                    <tr key={idx} className="hover:bg-gray-50">
-                      {Object.entries(row).map(([key, value], i) => (
-                        <td key={i} className="px-6 py-4 whitespace-nowrap">
-                          {formatCellValue(key, value)}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
+                  {reportData.details.map((row, idx) => {
+                    // Color code inventory rows by stock status
+                    let rowClass = "hover:bg-gray-50";
+                    if (reportData.type === 'inventory') {
+                      if (row.status === 'Low') rowClass = "bg-red-50 hover:bg-red-100";
+                      else if (row.status === 'Medium') rowClass = "bg-yellow-50 hover:bg-yellow-100";
+                      else if (row.status === 'Good') rowClass = "bg-green-50 hover:bg-green-100";
+                    }
+                    
+                    return (
+                      <tr key={idx} className={rowClass}>
+                        {Object.entries(row).map(([key, value], i) => (
+                          <td key={i} className="px-6 py-4 whitespace-nowrap">
+                            {formatCellValue(key, value)}
+                          </td>
+                        ))}
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
