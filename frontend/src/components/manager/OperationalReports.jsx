@@ -3,7 +3,7 @@ import { API_ENDPOINTS } from '../../config/api';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 
 /**
  * Operational Reports Component
@@ -664,6 +664,118 @@ export default function OperationalReports() {
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
+              </div>
+            </div>
+          )}
+
+          {/* Charts for Hourly Performance Report */}
+          {reportData.type === 'hourly' && reportData.details.length > 0 && (
+            <div className="space-y-6 mt-6">
+              {/* Orders by Hour - Bar Chart */}
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h4 className="text-lg font-bold text-gray-800 mb-4">Orders by Hour of Day</h4>
+                <div className="h-72">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={reportData.details.map(d => ({
+                        ...d,
+                        hourLabel: `${parseInt(d.hour) % 12 || 12}${parseInt(d.hour) < 12 ? 'AM' : 'PM'}`
+                      }))}
+                      margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="hourLabel" />
+                      <YAxis />
+                      <Tooltip 
+                        formatter={(value, name) => [parseInt(value), 'Orders']}
+                        labelFormatter={(label) => `Time: ${label}`}
+                      />
+                      <Bar dataKey="orders" name="Orders" fill="#8884d8" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Revenue by Hour - Area Chart */}
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h4 className="text-lg font-bold text-gray-800 mb-4">Revenue by Hour of Day</h4>
+                <div className="h-72">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart
+                      data={reportData.details.map(d => ({
+                        ...d,
+                        hourLabel: `${parseInt(d.hour) % 12 || 12}${parseInt(d.hour) < 12 ? 'AM' : 'PM'}`,
+                        revenue: parseFloat(d.revenue)
+                      }))}
+                      margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="hourLabel" />
+                      <YAxis tickFormatter={(value) => `$${value}`} />
+                      <Tooltip 
+                        formatter={(value, name) => [`$${parseFloat(value).toFixed(2)}`, 'Revenue']}
+                        labelFormatter={(label) => `Time: ${label}`}
+                      />
+                      <Area 
+                        type="monotone" 
+                        dataKey="revenue" 
+                        name="Revenue" 
+                        stroke="#82ca9d" 
+                        fill="#82ca9d" 
+                        fillOpacity={0.6} 
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Combined Orders & Revenue - Line Chart */}
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h4 className="text-lg font-bold text-gray-800 mb-4">Orders vs Revenue Trend</h4>
+                <div className="h-72">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart
+                      data={reportData.details.map(d => ({
+                        ...d,
+                        hourLabel: `${parseInt(d.hour) % 12 || 12}${parseInt(d.hour) < 12 ? 'AM' : 'PM'}`,
+                        revenue: parseFloat(d.revenue),
+                        orders: parseInt(d.orders)
+                      }))}
+                      margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="hourLabel" />
+                      <YAxis yAxisId="left" />
+                      <YAxis yAxisId="right" orientation="right" tickFormatter={(value) => `$${value}`} />
+                      <Tooltip 
+                        formatter={(value, name) => [
+                          name === 'Revenue' ? `$${parseFloat(value).toFixed(2)}` : parseInt(value),
+                          name
+                        ]}
+                        labelFormatter={(label) => `Time: ${label}`}
+                      />
+                      <Legend />
+                      <Line 
+                        yAxisId="left"
+                        type="monotone" 
+                        dataKey="orders" 
+                        name="Orders" 
+                        stroke="#8884d8" 
+                        strokeWidth={2}
+                        dot={{ fill: '#8884d8' }}
+                      />
+                      <Line 
+                        yAxisId="right"
+                        type="monotone" 
+                        dataKey="revenue" 
+                        name="Revenue" 
+                        stroke="#82ca9d" 
+                        strokeWidth={2}
+                        dot={{ fill: '#82ca9d' }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
             </div>
           )}
