@@ -16,6 +16,58 @@ export default function OperationalReports() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // Helper function to format cell values nicely
+  const formatCellValue = (key, value) => {
+    const keyLower = key.toLowerCase();
+    
+    // Format dates
+    if (keyLower === 'date' || keyLower.includes('date')) {
+      if (typeof value === 'string' && value.includes('T')) {
+        return new Date(value).toLocaleDateString('en-US', { 
+          year: 'numeric', 
+          month: 'short', 
+          day: 'numeric' 
+        });
+      }
+      return value;
+    }
+    
+    // Format currency/revenue values
+    if (keyLower.includes('revenue') || keyLower.includes('sales') || keyLower.includes('total') || keyLower.includes('price')) {
+      const num = parseFloat(value);
+      if (!isNaN(num)) {
+        return `$${num.toFixed(2)}`;
+      }
+    }
+    
+    // Format average values
+    if (keyLower.includes('avg') || keyLower.includes('average')) {
+      const num = parseFloat(value);
+      if (!isNaN(num)) {
+        return `$${num.toFixed(2)}`;
+      }
+    }
+    
+    // Format percentages
+    if (keyLower.includes('percent')) {
+      const num = parseFloat(value);
+      if (!isNaN(num)) {
+        return `${num.toFixed(1)}%`;
+      }
+    }
+    
+    // Format other numbers
+    if (typeof value === 'number') {
+      // Check if it looks like a decimal that should be currency
+      if (value % 1 !== 0 && value < 10000) {
+        return value.toFixed(2);
+      }
+      return value.toLocaleString();
+    }
+    
+    return value;
+  };
+
   const reportTypes = [
     { value: 'sales', label: 'Sales Summary Report', description: 'Total sales, orders, and revenue breakdown' },
     { value: 'product', label: 'Product Performance Report', description: 'Best and worst selling items' },
@@ -581,9 +633,9 @@ export default function OperationalReports() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {reportData.details.map((row, idx) => (
                     <tr key={idx} className="hover:bg-gray-50">
-                      {Object.values(row).map((value, i) => (
+                      {Object.entries(row).map(([key, value], i) => (
                         <td key={i} className="px-6 py-4 whitespace-nowrap">
-                          {typeof value === 'number' && value > 100 ? `$${value.toFixed(2)}` : value}
+                          {formatCellValue(key, value)}
                         </td>
                       ))}
                     </tr>

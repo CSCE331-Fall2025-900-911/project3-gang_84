@@ -1396,6 +1396,8 @@ app.delete('/api/manager/employees/:id', async (req, res) => {
 app.get('/api/manager/reports/sales', async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
+    
+    // Get daily breakdown
     const result = await pool.query(`
       SELECT 
         o.date,
@@ -1407,7 +1409,29 @@ app.get('/api/manager/reports/sales', async (req, res) => {
       GROUP BY o.date
       ORDER BY o.date
     `, [startDate, endDate]);
-    res.json({ data: result.rows, summary: { totalRevenue: result.rows.reduce((sum, r) => sum + parseFloat(r.revenue || 0), 0), totalOrders: result.rows.reduce((sum, r) => sum + parseInt(r.orders || 0), 0), avgOrderValue: 0, totalCustomers: 0 } });
+    
+    // Get summary totals
+    const summaryResult = await pool.query(`
+      SELECT 
+        COUNT(DISTINCT o.orderid) as total_orders,
+        COALESCE(SUM(o.totalcost), 0) as total_revenue,
+        COALESCE(AVG(o.totalcost), 0) as avg_order_value,
+        COUNT(DISTINCT o.customerid) as total_customers
+      FROM orders o
+      WHERE o.date >= $1 AND o.date <= $2
+    `, [startDate, endDate]);
+    
+    const summary = summaryResult.rows[0];
+    
+    res.json({ 
+      data: result.rows, 
+      summary: { 
+        totalRevenue: parseFloat(summary.total_revenue || 0), 
+        totalOrders: parseInt(summary.total_orders || 0), 
+        avgOrderValue: parseFloat(summary.avg_order_value || 0), 
+        totalCustomers: parseInt(summary.total_customers || 0) 
+      } 
+    });
   } catch (err) {
     console.error('Error fetching sales data:', err);
     res.status(500).json({ error: 'Failed to fetch sales data' });
