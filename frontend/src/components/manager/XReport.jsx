@@ -83,19 +83,15 @@ export default function XReport() {
           totalTransactions: parseInt(xreportData.transactions?.totalTransactions || 0),
         },
         
-        // Payment methods breakdown
+        // Payment methods breakdown - API now returns Cash and Card directly
         paymentMethods: {
           cash: {
-            count: parseInt(xreportData.transactions?.cash?.count || 0),
-            amount: parseFloat(xreportData.transactions?.cash?.amount || 0)
+            count: parseInt(xreportData.transactions?.Cash?.count || 0),
+            amount: parseFloat(xreportData.transactions?.Cash?.amount || 0)
           },
-          credit: {
-            count: parseInt(xreportData.transactions?.credit?.count || 0),
-            amount: parseFloat(xreportData.transactions?.credit?.amount || 0)
-          },
-          debit: {
-            count: parseInt(xreportData.transactions?.debit?.count || 0),
-            amount: parseFloat(xreportData.transactions?.debit?.amount || 0)
+          card: {
+            count: parseInt(xreportData.transactions?.Card?.count || 0),
+            amount: parseFloat(xreportData.transactions?.Card?.amount || 0)
           },
         },
         
@@ -140,9 +136,8 @@ Total Transactions: ${reportPreview.summary.totalTransactions}
 
 PAYMENT METHODS
 ---------------
-Cash:         ${reportPreview.paymentMethods.cash.count} trans, $${reportPreview.paymentMethods.cash.amount.toFixed(2)}
-Credit Card:  ${reportPreview.paymentMethods.credit.count} trans, $${reportPreview.paymentMethods.credit.amount.toFixed(2)}
-Debit Card:   ${reportPreview.paymentMethods.debit.count} trans, $${reportPreview.paymentMethods.debit.amount.toFixed(2)}
+Cash:  ${reportPreview.paymentMethods.cash.count} trans, $${reportPreview.paymentMethods.cash.amount.toFixed(2)}
+Card:  ${reportPreview.paymentMethods.card.count} trans, $${reportPreview.paymentMethods.card.amount.toFixed(2)}
 
 ORDERS BY HOUR
 --------------
@@ -193,22 +188,6 @@ Can be run as often as desired without side effects.
           <span>{error}</span>
         </div>
       )}
-
-      {/* Info Banner */}
-      <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-lg">
-        <div className="flex">
-          <div className="flex-shrink-0">
-            <span className="text-2xl">💹</span>
-          </div>
-          <div className="ml-3">
-            <h3 className="text-sm font-medium text-blue-800">Industry-Standard X-Report</h3>
-            <p className="text-sm text-blue-700 mt-1">
-              Shows hourly sales activities to determine if perceived "rush" or "lull" periods match actual sales volume.
-              Includes sales totals and payment methods. No side effects - run as often as needed.
-            </p>
-          </div>
-        </div>
-      </div>
 
       {/* Generate Report Section */}
       <div className="bg-white p-6 rounded-lg shadow-md">
@@ -263,21 +242,16 @@ Can be run as often as desired without side effects.
           {/* Payment Methods */}
           <div className="bg-white p-6 rounded-lg shadow-md print:shadow-none">
             <h4 className="text-lg font-bold text-gray-800 mb-3">Payment Methods</h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="bg-green-50 p-4 rounded-lg">
                 <div className="text-sm text-gray-600 mb-1">Cash</div>
                 <div className="text-2xl font-bold text-green-600">${reportPreview.paymentMethods.cash.amount.toFixed(2)}</div>
                 <div className="text-sm text-gray-600 mt-1">{reportPreview.paymentMethods.cash.count} transactions</div>
               </div>
               <div className="bg-blue-50 p-4 rounded-lg">
-                <div className="text-sm text-gray-600 mb-1">Credit Card</div>
-                <div className="text-2xl font-bold text-blue-600">${reportPreview.paymentMethods.credit.amount.toFixed(2)}</div>
-                <div className="text-sm text-gray-600 mt-1">{reportPreview.paymentMethods.credit.count} transactions</div>
-              </div>
-              <div className="bg-purple-50 p-4 rounded-lg">
-                <div className="text-sm text-gray-600 mb-1">Debit Card</div>
-                <div className="text-2xl font-bold text-purple-600">${reportPreview.paymentMethods.debit.amount.toFixed(2)}</div>
-                <div className="text-sm text-gray-600 mt-1">{reportPreview.paymentMethods.debit.count} transactions</div>
+                <div className="text-sm text-gray-600 mb-1">Card</div>
+                <div className="text-2xl font-bold text-blue-600">${reportPreview.paymentMethods.card.amount.toFixed(2)}</div>
+                <div className="text-sm text-gray-600 mt-1">{reportPreview.paymentMethods.card.count} transactions</div>
               </div>
             </div>
           </div>

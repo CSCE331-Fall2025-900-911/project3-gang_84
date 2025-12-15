@@ -47,16 +47,12 @@ export default function ZReport() {
         transactions: {
           totalTransactions: parseInt(data.transactions?.totalTransactions || 0),
           cash: {
-            count: parseInt(data.transactions?.cash?.count || 0),
-            amount: parseFloat(data.transactions?.cash?.amount || 0)
+            count: parseInt(data.transactions?.Cash?.count || 0),
+            amount: parseFloat(data.transactions?.Cash?.amount || 0)
           },
-          credit: {
-            count: parseInt(data.transactions?.credit?.count || 0),
-            amount: parseFloat(data.transactions?.credit?.amount || 0)
-          },
-          debit: {
-            count: parseInt(data.transactions?.debit?.count || 0),
-            amount: parseFloat(data.transactions?.debit?.amount || 0)
+          card: {
+            count: parseInt(data.transactions?.Card?.count || 0),
+            amount: parseFloat(data.transactions?.Card?.amount || 0)
           },
         },
         
@@ -231,21 +227,16 @@ export default function ZReport() {
           {/* Payment Methods */}
           <div className="bg-white p-6 rounded-lg shadow-md print:shadow-none">
             <h4 className="text-lg font-bold text-gray-800 mb-3">Payment Methods</h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="bg-green-50 p-4 rounded-lg">
                 <div className="text-sm text-gray-600 mb-1">Cash</div>
                 <div className="text-2xl font-bold text-green-600">${reportPreview.transactions.cash.amount.toFixed(2)}</div>
                 <div className="text-sm text-gray-600 mt-1">{reportPreview.transactions.cash.count} transactions</div>
               </div>
               <div className="bg-blue-50 p-4 rounded-lg">
-                <div className="text-sm text-gray-600 mb-1">Credit Card</div>
-                <div className="text-2xl font-bold text-blue-600">${reportPreview.transactions.credit.amount.toFixed(2)}</div>
-                <div className="text-sm text-gray-600 mt-1">{reportPreview.transactions.credit.count} transactions</div>
-              </div>
-              <div className="bg-purple-50 p-4 rounded-lg">
-                <div className="text-sm text-gray-600 mb-1">Debit Card</div>
-                <div className="text-2xl font-bold text-purple-600">${reportPreview.transactions.debit.amount.toFixed(2)}</div>
-                <div className="text-sm text-gray-600 mt-1">{reportPreview.transactions.debit.count} transactions</div>
+                <div className="text-sm text-gray-600 mb-1">Card</div>
+                <div className="text-2xl font-bold text-blue-600">${reportPreview.transactions.card.amount.toFixed(2)}</div>
+                <div className="text-sm text-gray-600 mt-1">{reportPreview.transactions.card.count} transactions</div>
               </div>
             </div>
           </div>

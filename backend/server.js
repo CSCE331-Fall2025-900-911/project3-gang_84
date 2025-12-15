@@ -1751,13 +1751,13 @@ app.get('/api/manager/reports/xreport', async (req, res) => {
     // Get payment breakdown
     const paymentsResult = await pool.query(`
       SELECT 
-        LOWER(payment_type) as payment_type,
+        payment_type,
         COUNT(*) as count,
         SUM(amount) as amount
       FROM payments p
       JOIN orders o ON p.order_id = o.orderid
       WHERE o.date = $1
-      GROUP BY LOWER(payment_type)
+      GROUP BY payment_type
     `, [reportDate]);
     
     // Get category breakdown
@@ -1831,6 +1831,13 @@ app.get('/api/manager/reports/xreport', async (req, res) => {
     console.log(`X-Report: Top sellers rows: ${topSellersResult.rows.length}`, topSellersResult.rows);
     console.log(`X-Report: Hourly data array:`, hourlyData.filter(h => h.transactions > 0 || h.sales > 0));
     
+    // Build payment methods object from database results (Cash and Card)
+    const paymentMethods = {
+      totalTransactions: parseInt(salesResult.rows[0].total_transactions),
+      Cash: paymentsResult.rows.find(p => p.payment_type === 'Cash') || { payment_type: 'Cash', count: 0, amount: 0 },
+      Card: paymentsResult.rows.find(p => p.payment_type === 'Card') || { payment_type: 'Card', count: 0, amount: 0 }
+    };
+    
     res.json({
       date: reportDate,
       sales: {
@@ -1840,12 +1847,7 @@ app.get('/api/manager/reports/xreport', async (req, res) => {
         discards: 0, // Future enhancement
         net_sales: parseFloat(salesResult.rows[0].gross_sales || 0)
       },
-      transactions: {
-        totalTransactions: parseInt(salesResult.rows[0].total_transactions),
-        cash: paymentsResult.rows.find(p => p.payment_type === 'cash') || { count: 0, amount: 0 },
-        credit: paymentsResult.rows.find(p => p.payment_type === 'credit') || { count: 0, amount: 0 },
-        debit: paymentsResult.rows.find(p => p.payment_type === 'debit') || { count: 0, amount: 0 }
-      },
+      transactions: paymentMethods,
       hourly: hourlyData,
       topSellers: topSellersResult.rows,
       products: {
@@ -1899,13 +1901,13 @@ app.get('/api/manager/reports/zreport', async (req, res) => {
     // Get payment breakdown
     const paymentsResult = await pool.query(`
       SELECT 
-        LOWER(payment_type) as payment_type,
+        payment_type,
         COUNT(*) as count,
         SUM(amount) as amount
       FROM payments p
       JOIN orders o ON p.order_id = o.orderid
       WHERE o.date = $1
-      GROUP BY LOWER(payment_type)
+      GROUP BY payment_type
     `, [reportDate]);
     
     // Get category breakdown
@@ -1947,9 +1949,8 @@ app.get('/api/manager/reports/zreport', async (req, res) => {
       },
       transactions: {
         totalTransactions: parseInt(detailedSalesResult.rows[0].total_transactions),
-        cash: paymentsResult.rows.find(p => p.payment_type === 'cash') || { count: 0, amount: 0 },
-        credit: paymentsResult.rows.find(p => p.payment_type === 'credit') || { count: 0, amount: 0 },
-        debit: paymentsResult.rows.find(p => p.payment_type === 'debit') || { count: 0, amount: 0 }
+        Cash: paymentsResult.rows.find(p => p.payment_type === 'Cash') || { payment_type: 'Cash', count: 0, amount: 0 },
+        Card: paymentsResult.rows.find(p => p.payment_type === 'Card') || { payment_type: 'Card', count: 0, amount: 0 }
       },
       products: {
         totalItemsSold: parseInt(detailedSalesResult.rows[0].total_items_sold),
