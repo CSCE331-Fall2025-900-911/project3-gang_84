@@ -23,9 +23,14 @@ export default function VoiceAssistant({
   const [fullTranscript, setFullTranscript] = useState(''); // Track full conversation
   const [feedback, setFeedback] = useState('');
   const [isExpanded, setIsExpanded] = useState(false);
+  const [audioLevel, setAudioLevel] = useState(0); // Add audio level state
   const recognitionRef = useRef(null);
   const timeoutRef = useRef(null);
   const fullTranscriptRef = useRef(''); // Keep track of full transcript
+  const audioContextRef = useRef(null);
+  const analyserRef = useRef(null);
+  const micStreamRef = useRef(null);
+  const animationFrameRef = useRef(null);
 
   // Initialize speech recognition
   useEffect(() => {
@@ -43,6 +48,10 @@ export default function VoiceAssistant({
 
         for (let i = event.resultIndex; i < event.results.length; i++) {
           const transcriptPiece = event.results[i][0].transcript;
+          
+          // Log what we're hearing for debugging
+          console.log('Heard:', transcriptPiece, 'isFinal:', event.results[i].isFinal);
+          
           if (event.results[i].isFinal) {
             finalTranscript += transcriptPiece + ' ';
           } else {
@@ -50,11 +59,18 @@ export default function VoiceAssistant({
           }
         }
 
-        // Update current transcript
-        setTranscript(interimTranscript || finalTranscript);
+        // Update current transcript - show what's being heard immediately
+        const currentText = interimTranscript || finalTranscript;
+        setTranscript(currentText);
+        
+        // Show interim results as feedback
+        if (interimTranscript) {
+          setFeedback(`Hearing: "${interimTranscript}"`);
+        }
 
         // If we got a final result, append to full transcript and process
         if (finalTranscript) {
+          console.log('Final transcript:', finalTranscript);
           const updatedFullTranscript = fullTranscriptRef.current + finalTranscript;
           fullTranscriptRef.current = updatedFullTranscript;
           setFullTranscript(updatedFullTranscript);
@@ -114,9 +130,45 @@ export default function VoiceAssistant({
     };
   }, [isListening]); // Added isListening as dependency
 
-  const startListening = () => {
+  const startListening = async () => {
     if (!recognitionRef.current) {
       setFeedback('Voice recognition is not supported in your browser.');
+      return;
+    }
+
+    // Request microphone permission explicitly and set up audio monitoring
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      console.log('Microphone access granted');
+      
+      // Set up audio level monitoring
+      micStreamRef.current = stream;
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      audioContextRef.current = audioContext;
+      
+      const analyser = audioContext.createAnalyser();
+      analyser.fftSize = 256;
+      analyserRef.current = analyser;
+      
+      const microphone = audioContext.createMediaStreamSource(stream);
+      microphone.connect(analyser);
+      
+      // Monitor audio levels
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+      const checkAudioLevel = () => {
+        if (!isListening) return;
+        
+        analyser.getByteFrequencyData(dataArray);
+        const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
+        setAudioLevel(average);
+        
+        animationFrameRef.current = requestAnimationFrame(checkAudioLevel);
+      };
+      checkAudioLevel();
+      
+    } catch (error) {
+      console.error('Microphone permission denied:', error);
+      setFeedback('Microphone access denied. Please enable microphone permissions in your browser settings.');
       return;
     }
 
@@ -124,10 +176,11 @@ export default function VoiceAssistant({
       setTranscript('');
       setFullTranscript('');
       fullTranscriptRef.current = '';
-      setFeedback('Listening... speak your commands!');
+      setFeedback('🎤 Listening... Speak your commands!');
       setIsListening(true);
       setIsExpanded(true);
       recognitionRef.current.start();
+      console.log('Voice recognition started');
     } catch (error) {
       console.error('Error starting recognition:', error);
       setIsListening(false);
@@ -139,7 +192,20 @@ export default function VoiceAssistant({
     if (recognitionRef.current) {
       recognitionRef.current.stop();
     }
+    
+    // Clean up audio monitoring
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
+    if (micStreamRef.current) {
+      micStreamRef.current.getTracks().forEach(track => track.stop());
+    }
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+    }
+    
     setIsListening(false);
+    setAudioLevel(0);
     setFeedback('Stopped listening.');
   };
 
@@ -332,9 +398,9 @@ export default function VoiceAssistant({
   return (
     <div className={`fixed bottom-6 right-6 rounded-2xl shadow-2xl z-50 ${
       highContrast ? 'bg-gray-900 border-4 border-yellow-400' : 'bg-white'
-    }`} style={{ width: '380px', maxHeight: '500px' }}>
+    }`} style={{ width: '380px', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
-      <div className={`p-4 rounded-t-2xl ${
+      <div className={`p-4 rounded-t-2xl flex-shrink-0 ${
         highContrast ? 'bg-gray-800 border-b-4 border-yellow-400' : 'bg-gradient-to-r from-purple-600 to-purple-800'
       }`}>
         <div className="flex items-center justify-between">
@@ -359,8 +425,8 @@ export default function VoiceAssistant({
         </div>
       </div>
 
-      {/* Content */}
-      <div className="p-4">
+      {/* Scrollable Content */}
+      <div className="p-4 overflow-y-auto flex-1">
         {/* Instructions */}
         <div className={`mb-4 p-3 rounded-lg text-sm ${
           highContrast ? 'bg-gray-800 text-white' : 'bg-purple-50 text-gray-700'
@@ -435,7 +501,12 @@ export default function VoiceAssistant({
             </p>
           </div>
         )}
+      </div>
 
+      {/* Fixed Button Footer */}
+      <div className={`p-4 border-t flex-shrink-0 ${
+        highContrast ? 'bg-gray-900 border-yellow-400' : 'bg-white border-gray-200'
+      }`}>
         {/* Microphone Button */}
         <button
           onClick={isListening ? stopListening : startListening}
@@ -461,12 +532,6 @@ export default function VoiceAssistant({
             </span>
           )}
         </button>
-
-        {!recognitionRef.current && (
-          <p className="text-xs text-center mt-2 text-red-500">
-            Voice recognition not supported in this browser
-          </p>
-        )}
       </div>
     </div>
   );
