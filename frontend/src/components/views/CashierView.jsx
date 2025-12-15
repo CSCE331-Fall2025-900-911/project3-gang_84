@@ -12,6 +12,10 @@ export default function CashierView({
   largeClickTargets,
   reduceMotion,
   getTranslatedText,
+  getTextSizeClass,
+  getSmallTextClass,
+  getExtraSmallTextClass,
+  getHeadingSizeClass,
   onAddToCart,
   onRemoveFromCart,
   onIncreaseQuantity,
@@ -76,10 +80,10 @@ export default function CashierView({
       
       const data = await response.json();
       
-      // Extract unique categories from drinks and miscellaneous items
-      const drinkItems = data.menu_items.filter(item => item.type === 'Drink');
-      const miscItems = data.menu_items.filter(item => item.category === 'Miscellaneous');
-      const allOrderableItems = [...drinkItems, ...miscItems];
+      // Get all orderable items (Drinks OR Miscellaneous, without duplicates)
+      const allOrderableItems = data.menu_items.filter(
+        item => item.type === 'Drink' || item.category === 'Miscellaneous'
+      );
       
       const uniqueCategories = [...new Set(allOrderableItems.map(item => item.category))];
       
@@ -99,10 +103,24 @@ export default function CashierView({
     }
   };
 
-  // Filter drinks
+  // Filter drinks based on category and search (matching Kiosk logic)
   const filteredDrinks = drinks.filter(drink => {
-    const matchesCategory = selectedCategory === 'All' || drink.category === selectedCategory;
+    // Filter by category first
+    let matchesCategory;
+    if (selectedCategory === 'All') {
+      // Show all items where type = 'Drink' but exclude Miscellaneous category
+      matchesCategory = drink.type === 'Drink' && drink.category !== 'Miscellaneous';
+    } else if (selectedCategory === 'Miscellaneous') {
+      // Show Miscellaneous items regardless of type
+      matchesCategory = drink.category === 'Miscellaneous';
+    } else {
+      // Filter by selected category and ensure it's a Drink type
+      matchesCategory = drink.category === selectedCategory && drink.type === 'Drink';
+    }
+    
+    // Filter by search query
     const matchesSearch = drink.name.toLowerCase().includes(searchQuery.toLowerCase());
+    
     return matchesCategory && matchesSearch;
   });
 
@@ -111,8 +129,10 @@ export default function CashierView({
     onAddToCart({
       ...drink,
       customizations: {
-        sweetness: 'Regular',
-        ice: 'Regular',
+        temperature: 'N/A',
+        size: 'N/A',
+        sweetness: 'N/A',
+        ice: 'N/A',
         toppings: []
       }
     });
@@ -120,6 +140,12 @@ export default function CashierView({
 
   // Open customization modal
   const handleCustomize = (drink) => {
+    // Skip customization for Miscellaneous items - add directly to cart
+    if (drink.category === 'Miscellaneous') {
+      handleQuickAdd(drink);
+      return;
+    }
+    
     setSelectedDrink(drink);
     setShowCustomizationModal(true);
   };
@@ -134,30 +160,23 @@ export default function CashierView({
   // Get button size class based on accessibility settings
   const getButtonSizeClass = () => {
     if (largeClickTargets) {
-      return 'min-h-[80px] text-lg';
+      return 'min-h-[80px] py-4';
     }
-    return 'min-h-[60px]';
-  };
-
-  // Get font size class
-  const getFontSizeClass = () => {
-    if (fontSize === 'large') return 'text-lg';
-    if (fontSize === 'extra-large') return 'text-xl';
-    return '';
+    return 'min-h-[60px] py-2';
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className={highContrast ? 'text-yellow-400' : 'text-green-600'}>
-          Loading menu...
+        <div className={`${getTextSizeClass()} ${highContrast ? 'text-yellow-400' : 'text-green-600'}`}>
+          {getTranslatedText('Loading menu...')}
         </div>
       </div>
     );
   }
 
   return (
-    <div className={`flex h-[calc(100vh-64px)] ${getFontSizeClass()}`}>
+    <div className="flex h-[calc(100vh-64px)]">
       {/* Left Side - Menu (70%) */}
       <div className="w-[70%] flex flex-col border-r-2 border-green-300">
         {/* Search and Categories */}
@@ -185,7 +204,7 @@ export default function CashierView({
               <button
                 key={category}
                 onClick={() => setSelectedCategory(category)}
-                className={`menuButton px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition-colors ${getButtonSizeClass()} ${
+                className={`menuButton px-4 rounded-lg font-semibold whitespace-nowrap transition-colors ${getButtonSizeClass()} ${getTextSizeClass()} ${
                   selectedCategory === category
                     ? highContrast
                       ? 'bg-yellow-400 text-black'
@@ -238,22 +257,18 @@ export default function CashierView({
                   </button>
                 </div>
                 
-                <div className={`font-bold mb-1 ${
-                  largeClickTargets ? 'text-xl' : 'text-lg'
-                } ${
+                <div className={`font-bold mb-1 ${getTextSizeClass()} ${
                   highContrast ? 'text-yellow-400' : 'text-gray-800'
                 }`}>
                   {getTranslatedText(drink.name)}
                 </div>
-                <div className={`font-bold ${
-                  largeClickTargets ? 'text-2xl' : 'text-xl'
-                } ${
+                <div className={`font-bold ${getHeadingSizeClass('h3')} ${
                   highContrast ? 'text-white' : 'text-green-600'
                 }`}>
                   ${parseFloat(drink.price).toFixed(2)}
                 </div>
                 {drink.category && (
-                  <div className={`text-xs mt-1 ${
+                  <div className={`mt-1 ${getExtraSmallTextClass()} ${
                     highContrast ? 'text-gray-400' : 'text-gray-500'
                   }`}>
                     {getTranslatedText(drink.category)}
@@ -265,7 +280,7 @@ export default function CashierView({
         </div>
 
         {/* Keyboard Shortcuts Info */}
-        <div className={`p-2 text-xs text-center border-t ${
+        <div className={`p-2 text-center border-t ${getExtraSmallTextClass()} ${
           highContrast ? 'bg-gray-900 text-gray-400 border-yellow-400' : 'bg-gray-100 text-gray-600 border-gray-200'
         }`}>
           <span className="font-semibold">{getTranslatedText('Shortcuts')}:</span> / = {getTranslatedText('Search')} | F2 = {getTranslatedText('Checkout')} | Esc = {getTranslatedText('Clear')} | {getTranslatedText('Click: Quick add')} | {getTranslatedText('Right-click: Customize')}
@@ -280,7 +295,7 @@ export default function CashierView({
         <div className={`p-4 border-b-2 ${
           highContrast ? 'border-yellow-400' : 'border-gray-200'
         }`}>
-          <h2 className={`text-xl font-bold ${
+          <h2 className={`font-bold ${getHeadingSizeClass('h2')} ${
             highContrast ? 'text-yellow-400' : 'text-gray-800'
           }`}>
             {getTranslatedText('Current Order')}
@@ -290,12 +305,12 @@ export default function CashierView({
         {/* Cart Items */}
         <div className="flex-1 overflow-y-auto p-4">
           {cart.length === 0 ? (
-            <div className={`text-center py-8 ${
+            <div className={`text-center py-8 ${getTextSizeClass()} ${
               highContrast ? 'text-white' : 'text-gray-500'
             }`}>
               <div className="text-4xl mb-2">🛒</div>
               <p>{getTranslatedText('No items yet')}</p>
-              <p className="text-sm mt-1">{getTranslatedText('Click drinks to add')}</p>
+              <p className={`${getSmallTextClass()} mt-1`}>{getTranslatedText('Click drinks to add')}</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -310,14 +325,14 @@ export default function CashierView({
                 >
                   <div className="flex-1 pr-2">
                     <div className="flex justify-between items-start mb-1">
-                      <span className={`font-semibold ${
+                      <span className={`font-semibold ${getTextSizeClass()} ${
                         highContrast ? 'text-yellow-400' : 'text-gray-800'
                       }`}>
                         {getTranslatedText(item.name)}
                       </span>
                     </div>
                     {item.customizations && (
-                      <div className={`text-xs mt-1 ${
+                      <div className={`mt-1 ${getExtraSmallTextClass()} ${
                         highContrast ? 'text-gray-500' : 'text-gray-500'
                       }`}>
                         {getTranslatedText(item.customizations.size)} • {getTranslatedText(item.customizations.sweetness)} • {getTranslatedText(item.customizations.ice)}
@@ -329,7 +344,7 @@ export default function CashierView({
                     <div className="flex items-center gap-0.5 mt-1">
                       <button
                         onClick={() => onDecreaseQuantity(index)}
-                        className={`h-4 w-4 rounded text-xs font-bold leading-none transition-colors ${
+                        className={`h-4 w-4 rounded font-bold leading-none transition-colors ${getExtraSmallTextClass()} ${
                           highContrast
                             ? 'bg-gray-700 text-yellow-400 border border-yellow-400 hover:bg-gray-600'
                             : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
@@ -338,14 +353,14 @@ export default function CashierView({
                       >
                         −
                       </button>
-                      <span className={`text-xs min-w-[20px] text-center ${
+                      <span className={`min-w-[20px] text-center ${getExtraSmallTextClass()} ${
                         highContrast ? 'text-white' : 'text-gray-800'
                       }`}>
                         {item.quantity}
                       </span>
                       <button
                         onClick={() => onIncreaseQuantity(index)}
-                        className={`h-4 w-4 rounded text-xs font-bold leading-none transition-colors ${
+                        className={`h-4 w-4 rounded font-bold leading-none transition-colors ${getExtraSmallTextClass()} ${
                           highContrast
                             ? 'bg-gray-700 text-yellow-400 border border-yellow-400 hover:bg-gray-600'
                             : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
@@ -354,7 +369,7 @@ export default function CashierView({
                       >
                         +
                       </button>
-                      <span className={`text-xs ${
+                      <span className={`${getExtraSmallTextClass()} ${
                         highContrast ? 'text-gray-400' : 'text-gray-600'
                       }`}>
                         × ${parseFloat(item.price).toFixed(2)}
@@ -362,14 +377,14 @@ export default function CashierView({
                     </div>
                   </div>
                   <div className="flex flex-col items-end ml-1">
-                    <span className={`font-bold text-sm mb-1 ${
+                    <span className={`font-bold mb-1 ${getSmallTextClass()} ${
                       highContrast ? 'text-white' : 'text-gray-800'
                     }`}>
                       ${(item.quantity * parseFloat(item.price)).toFixed(2)}
                     </span>
                     <button
                       onClick={() => onRemoveFromCart(index)}
-                      className={`h-6 w-6 rounded text-sm font-semibold leading-none transition-colors ${
+                      className={`h-6 w-6 rounded font-semibold leading-none transition-colors ${getSmallTextClass()} ${
                         highContrast
                           ? 'bg-red-700 text-white border border-yellow-400 hover:bg-red-600'
                           : 'bg-red-500 text-white hover:bg-red-600'
@@ -391,12 +406,12 @@ export default function CashierView({
         }`}>
           {/* Total */}
           <div className="flex justify-between items-center mb-4">
-            <span className={`${largeClickTargets ? 'text-2xl' : 'text-xl'} font-bold ${
+            <span className={`font-bold ${getHeadingSizeClass('h2')} ${
               highContrast ? 'text-yellow-400' : 'text-gray-800'
             }`}>
               {getTranslatedText('Total')}:
             </span>
-            <span className={`${largeClickTargets ? 'text-3xl' : 'text-2xl'} font-bold ${
+            <span className={`font-bold ${getHeadingSizeClass('h1')} ${
               highContrast ? 'text-white' : 'text-green-600'
             }`}>
               ${cartTotal.toFixed(2)}
@@ -408,7 +423,7 @@ export default function CashierView({
             <button
               onClick={onCheckout}
               disabled={cart.length === 0}
-              className={`w-full ${getButtonSizeClass()} rounded-lg font-bold ${largeClickTargets ? 'text-xl' : 'text-lg'} transition-colors ${
+              className={`w-full rounded-lg font-bold transition-colors ${getButtonSizeClass()} ${getTextSizeClass()} ${
                 cart.length === 0
                   ? highContrast
                     ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
@@ -424,7 +439,7 @@ export default function CashierView({
             <button
               onClick={onClearCart}
               disabled={cart.length === 0}
-              className={`w-full ${largeClickTargets ? 'py-4' : 'py-2'} rounded-lg font-semibold ${largeClickTargets ? 'text-lg' : 'text-base'} transition-colors ${
+              className={`w-full rounded-lg font-semibold transition-colors ${getButtonSizeClass()} ${getTextSizeClass()} ${
                 cart.length === 0
                   ? highContrast
                     ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
@@ -454,7 +469,12 @@ export default function CashierView({
           sizeOptions={sizeOptions}
           toppingOptions={toppings}
           highContrast={highContrast}
+          largeClickTargets={largeClickTargets}
           getTranslatedText={getTranslatedText}
+          getTextSizeClass={getTextSizeClass}
+          getSmallTextClass={getSmallTextClass}
+          getExtraSmallTextClass={getExtraSmallTextClass}
+          getHeadingSizeClass={getHeadingSizeClass}
         />
       )}
     </div>
@@ -462,11 +482,39 @@ export default function CashierView({
 }
 
 // Customization Modal Component
-function CustomizationModal({ drink, onClose, onAddToCart, sweetnessOptions, iceOptions, sizeOptions, toppingOptions, getTranslatedText, highContrast }) {
+function CustomizationModal({ 
+  drink, 
+  onClose, 
+  onAddToCart, 
+  sweetnessOptions, 
+  iceOptions, 
+  sizeOptions, 
+  toppingOptions, 
+  getTranslatedText, 
+  highContrast,
+  largeClickTargets,
+  getTextSizeClass,
+  getSmallTextClass,
+  getExtraSmallTextClass,
+  getHeadingSizeClass
+}) {
+  // Check if drink is from Hot Drinks category (should default to hot and hide ice option)
+  const isFromHotDrinksCategory = drink.category === 'Hot Drinks';
+  
+  // Set default to first option from each category
+  const [isHot, setIsHot] = useState(isFromHotDrinksCategory); // Default hot if from Hot Drinks category
   const [sweetness, setSweetness] = useState(sweetnessOptions[0]);
   const [ice, setIce] = useState(iceOptions[0]);
   const [size, setSize] = useState(sizeOptions[0] || { name: 'Small', price: 0 });
   const [toppings, setToppings] = useState([]);
+
+  // Button size helper
+  const getButtonSizeClass = () => {
+    if (largeClickTargets) {
+      return 'min-h-[60px] py-4';
+    }
+    return 'min-h-[44px] py-3';
+  };
 
   const toggleTopping = (topping) => {
     setToppings((prev) => {
@@ -483,7 +531,7 @@ function CustomizationModal({ drink, onClose, onAddToCart, sweetnessOptions, ice
     const basePrice = parseFloat(drink.price);
     const toppingsPrice = toppings.reduce((sum, t) => sum + parseFloat(t.price), 0);
     const sweetnessPrice = sweetness ? parseFloat(sweetness.price) : 0;
-    const icePrice = ice ? parseFloat(ice.price) : 0;
+    const icePrice = !isHot && ice ? parseFloat(ice.price) : 0; // Only add ice price if not hot
     const sizePrice = size ? parseFloat(size.price) : 0;
     return basePrice + toppingsPrice + sweetnessPrice + icePrice + sizePrice;
   };
@@ -492,9 +540,10 @@ function CustomizationModal({ drink, onClose, onAddToCart, sweetnessOptions, ice
     const customizedDrink = {
       ...drink,
       customizations: {
+        temperature: isHot ? 'Hot' : 'Cold',
         size: size.name,
         sweetness: sweetness.name,
-        ice: ice.name,
+        ice: isHot ? 'N/A' : ice.name, // Set ice to N/A if hot
         toppings: toppings.map(t => t.name),
       },
       price: calculateTotal().toFixed(2),
@@ -515,10 +564,10 @@ function CustomizationModal({ drink, onClose, onAddToCart, sweetnessOptions, ice
         {/* Header */}
         <div className="flex justify-between items-start mb-4">
           <div>
-            <h2 className={`text-2xl font-bold ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
+            <h2 className={`font-bold ${getHeadingSizeClass('h2')} ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
               {getTranslatedText(drink.name)}
             </h2>
-            <p className={`text-lg ${highContrast ? 'text-white' : 'text-gray-600'}`}>
+            <p className={`${getTextSizeClass()} ${highContrast ? 'text-white' : 'text-gray-600'}`}>
               {getTranslatedText('Base')}: ${parseFloat(drink.price).toFixed(2)}
             </p>
           </div>
@@ -530,9 +579,40 @@ function CustomizationModal({ drink, onClose, onAddToCart, sweetnessOptions, ice
           </button>
         </div>
 
+        {/* Hot/Cold Selection - Only show if not from Hot Drinks category */}
+        {!isFromHotDrinksCategory && (
+          <div className="mb-4">
+            <h3 className={`font-semibold mb-2 ${getHeadingSizeClass('h3')} ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
+              {getTranslatedText('Temperature')}
+            </h3>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => setIsHot(false)}
+                className={`px-4 rounded-lg font-semibold transition-colors ${getButtonSizeClass()} ${getTextSizeClass()} ${
+                  !isHot
+                    ? highContrast ? 'bg-yellow-400 text-black' : 'bg-blue-600 text-white'
+                    : highContrast ? 'bg-gray-800 text-yellow-400 border-2 border-yellow-400' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                {getTranslatedText('Cold')}
+              </button>
+              <button
+                onClick={() => setIsHot(true)}
+                className={`px-4 rounded-lg font-semibold transition-colors ${getButtonSizeClass()} ${getTextSizeClass()} ${
+                  isHot
+                    ? highContrast ? 'bg-yellow-400 text-black' : 'bg-red-600 text-white'
+                    : highContrast ? 'bg-gray-800 text-yellow-400 border-2 border-yellow-400' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                {getTranslatedText('Hot')}
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Size Selection */}
         <div className="mb-4">
-          <h3 className={`text-lg font-semibold mb-2 ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
+          <h3 className={`font-semibold mb-2 ${getHeadingSizeClass('h3')} ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
             {getTranslatedText('Size')}
           </h3>
           <div className="grid grid-cols-4 gap-2">
@@ -540,14 +620,14 @@ function CustomizationModal({ drink, onClose, onAddToCart, sweetnessOptions, ice
               <button
                 key={option.menuitemid}
                 onClick={() => setSize(option)}
-                className={`px-3 py-3 rounded-lg font-semibold text-sm transition-colors ${
+                className={`px-3 rounded-lg font-semibold transition-colors ${getButtonSizeClass()} ${getTextSizeClass()} ${
                   size?.menuitemid === option.menuitemid
                     ? highContrast ? 'bg-yellow-400 text-black' : 'bg-green-600 text-white'
                     : highContrast ? 'bg-gray-800 text-yellow-400 border-2 border-yellow-400' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }`}
               >
                 {getTranslatedText(option.name)}
-                {parseFloat(option.price) > 0 && <div className="text-xs">+${parseFloat(option.price).toFixed(2)}</div>}
+                {parseFloat(option.price) > 0 && <div className={getExtraSmallTextClass()}>+${parseFloat(option.price).toFixed(2)}</div>}
               </button>
             ))}
           </div>
@@ -555,7 +635,7 @@ function CustomizationModal({ drink, onClose, onAddToCart, sweetnessOptions, ice
 
         {/* Sweetness Level */}
         <div className="mb-4">
-          <h3 className={`text-lg font-semibold mb-2 ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
+          <h3 className={`font-semibold mb-2 ${getHeadingSizeClass('h3')} ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
             {getTranslatedText('Sweetness Level')}
           </h3>
           <div className="grid grid-cols-4 gap-2">
@@ -563,45 +643,47 @@ function CustomizationModal({ drink, onClose, onAddToCart, sweetnessOptions, ice
               <button
                 key={option.menuitemid}
                 onClick={() => setSweetness(option)}
-                className={`px-3 py-3 rounded-lg font-semibold text-sm transition-colors ${
+                className={`px-3 rounded-lg font-semibold transition-colors ${getButtonSizeClass()} ${getTextSizeClass()} ${
                   sweetness?.menuitemid === option.menuitemid
                     ? highContrast ? 'bg-yellow-400 text-black' : 'bg-green-600 text-white'
                     : highContrast ? 'bg-gray-800 text-yellow-400 border-2 border-yellow-400' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }`}
               >
                 {getTranslatedText(option.name)}
-                {parseFloat(option.price) > 0 && <div className="text-xs">+${parseFloat(option.price).toFixed(2)}</div>}
+                {parseFloat(option.price) > 0 && <div className={getExtraSmallTextClass()}>+${parseFloat(option.price).toFixed(2)}</div>}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Ice Level */}
-        <div className="mb-4">
-          <h3 className={`text-lg font-semibold mb-2 ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
-            {getTranslatedText('Ice Level')}
-          </h3>
-          <div className="grid grid-cols-4 gap-2">
-            {iceOptions.map((option) => (
-              <button
-                key={option.menuitemid}
-                onClick={() => setIce(option)}
-                className={`px-3 py-3 rounded-lg font-semibold text-sm transition-colors ${
-                  ice?.menuitemid === option.menuitemid
-                    ? highContrast ? 'bg-yellow-400 text-black' : 'bg-blue-600 text-white'
-                    : highContrast ? 'bg-gray-800 text-yellow-400 border-2 border-yellow-400' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-              >
-                {getTranslatedText(option.name)}
-                {parseFloat(option.price) > 0 && <div className="text-xs">+${parseFloat(option.price).toFixed(2)}</div>}
-              </button>
-            ))}
+        {/* Ice Level - Only show when drink is cold */}
+        {!isHot && (
+          <div className="mb-4">
+            <h3 className={`font-semibold mb-2 ${getHeadingSizeClass('h3')} ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
+              {getTranslatedText('Ice Level')}
+            </h3>
+            <div className="grid grid-cols-4 gap-2">
+              {iceOptions.map((option) => (
+                <button
+                  key={option.menuitemid}
+                  onClick={() => setIce(option)}
+                  className={`px-3 rounded-lg font-semibold transition-colors ${getButtonSizeClass()} ${getTextSizeClass()} ${
+                    ice?.menuitemid === option.menuitemid
+                      ? highContrast ? 'bg-yellow-400 text-black' : 'bg-blue-600 text-white'
+                      : highContrast ? 'bg-gray-800 text-yellow-400 border-2 border-yellow-400' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  {getTranslatedText(option.name)}
+                  {parseFloat(option.price) > 0 && <div className={getExtraSmallTextClass()}>+${parseFloat(option.price).toFixed(2)}</div>}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Toppings */}
         <div className="mb-4">
-          <h3 className={`text-lg font-semibold mb-2 ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
+          <h3 className={`font-semibold mb-2 ${getHeadingSizeClass('h3')} ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
             {getTranslatedText('Toppings')} ({getTranslatedText('Select Multiple')})
           </h3>
           <div className="grid grid-cols-2 gap-2">
@@ -611,7 +693,7 @@ function CustomizationModal({ drink, onClose, onAddToCart, sweetnessOptions, ice
                 <button
                   key={topping.menuitemid}
                   onClick={() => toggleTopping(topping)}
-                  className={`p-3 rounded-lg font-semibold text-sm transition-colors text-left ${
+                  className={`px-3 rounded-lg font-semibold transition-colors text-left ${getButtonSizeClass()} ${getTextSizeClass()} ${
                     isSelected
                       ? highContrast ? 'bg-yellow-400 text-black' : 'bg-purple-600 text-white'
                       : highContrast ? 'bg-gray-800 text-yellow-400 border-2 border-yellow-400' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
@@ -619,7 +701,7 @@ function CustomizationModal({ drink, onClose, onAddToCart, sweetnessOptions, ice
                 >
                   <div className="flex justify-between items-center">
                     <span>{getTranslatedText(topping.name)}</span>
-                    <span className="text-xs">+${parseFloat(topping.price).toFixed(2)}</span>
+                    <span className={getExtraSmallTextClass()}>+${parseFloat(topping.price).toFixed(2)}</span>
                   </div>
                 </button>
               );
@@ -632,14 +714,14 @@ function CustomizationModal({ drink, onClose, onAddToCart, sweetnessOptions, ice
           <div className={`flex justify-between items-center mb-3 ${
             highContrast ? 'text-yellow-400' : 'text-gray-800'
           }`}>
-            <span className="text-lg font-semibold">{getTranslatedText('Total')}:</span>
-            <span className={`text-2xl font-bold ${highContrast ? 'text-white' : 'text-green-600'}`}>
+            <span className={`font-semibold ${getTextSizeClass()}`}>{getTranslatedText('Total')}:</span>
+            <span className={`font-bold ${getHeadingSizeClass('h2')} ${highContrast ? 'text-white' : 'text-green-600'}`}>
               ${calculateTotal().toFixed(2)}
             </span>
           </div>
           <button
             onClick={handleAddToCart}
-            className={`w-full py-4 rounded-lg text-lg font-bold transition-colors ${
+            className={`w-full rounded-lg font-bold transition-colors ${getButtonSizeClass()} ${getTextSizeClass()} ${
               highContrast
                 ? 'bg-yellow-400 text-black hover:bg-yellow-300'
                 : 'bg-green-600 text-white hover:bg-green-700'

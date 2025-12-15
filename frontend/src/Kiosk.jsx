@@ -12,7 +12,7 @@ import { API_ENDPOINTS, API_BASE_URL } from './config/api';
 import { translateText, translateBatch } from './utils/translation';
 
 // Customization Modal
-function CustomizationModal({ drink, onClose, onAddToCart, sweetnessOptions, iceOptions, sizeOptions, toppingOptions, getTranslatedText, highContrast }) {
+function CustomizationModal({ drink, onClose, onAddToCart, sweetnessOptions, iceOptions, sizeOptions, toppingOptions, getTranslatedText, highContrast, getTextSizeClass, getSmallTextClass, getHeadingSizeClass }) {
   // Check if drink is from Hot Drinks category (should default to hot and hide ice option)
   const isFromHotDrinksCategory = drink.category === 'Hot Drinks';
   
@@ -70,10 +70,10 @@ function CustomizationModal({ drink, onClose, onAddToCart, sweetnessOptions, ice
       }`} onClick={(e) => e.stopPropagation()}>
         <div className="flex justify-between items-start mb-6">
           <div>
-            <h2 className={`text-3xl font-bold ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
+            <h2 className={`font-bold ${getHeadingSizeClass('h2')} ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
               {getTranslatedText(drink.name)}
             </h2>
-            <p className={`text-lg ${highContrast ? 'text-white' : 'text-gray-600'}`}>
+            <p className={`${getTextSizeClass()} ${highContrast ? 'text-white' : 'text-gray-600'}`}>
               ${parseFloat(drink.price).toFixed(2)}
             </p>
           </div>
@@ -89,13 +89,13 @@ function CustomizationModal({ drink, onClose, onAddToCart, sweetnessOptions, ice
         {/* Hot/Cold Selection - Only show if not from Hot Drinks category */}
         {!isFromHotDrinksCategory && (
           <div className="mb-6">
-            <h3 className={`text-xl font-semibold mb-3 ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
+            <h3 className={`font-semibold mb-3 ${getHeadingSizeClass('h3')} ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
               {getTranslatedText('Temperature')}
             </h3>
             <div className="flex gap-2 flex-wrap">
               <button
                 onClick={() => setIsHot(false)}
-                className={`px-4 py-3 rounded-lg font-semibold transition-colors ${
+                className={`px-4 py-3 rounded-lg font-semibold transition-colors ${getTextSizeClass()} ${
                   !isHot
                     ? highContrast ? 'bg-yellow-400 text-black border-2 border-yellow-400' : 'bg-blue-600 text-white'
                     : highContrast ? 'bg-gray-800 text-yellow-400 border-2 border-yellow-400' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
@@ -106,7 +106,7 @@ function CustomizationModal({ drink, onClose, onAddToCart, sweetnessOptions, ice
               </button>
               <button
                 onClick={() => setIsHot(true)}
-                className={`px-4 py-3 rounded-lg font-semibold transition-colors ${
+                className={`px-4 py-3 rounded-lg font-semibold transition-colors ${getTextSizeClass()} ${
                   isHot
                     ? highContrast ? 'bg-yellow-400 text-black border-2 border-yellow-400' : 'bg-red-600 text-white'
                     : highContrast ? 'bg-gray-800 text-yellow-400 border-2 border-yellow-400' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
@@ -121,7 +121,7 @@ function CustomizationModal({ drink, onClose, onAddToCart, sweetnessOptions, ice
 
         {/* Size Selection */}
         <div className="mb-6">
-          <h3 className={`text-xl font-semibold mb-3 ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
+          <h3 className={`font-semibold mb-3 ${getHeadingSizeClass('h3')} ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
             {getTranslatedText('Size')}
           </h3>
           <div className="flex gap-2 flex-wrap">
@@ -129,7 +129,7 @@ function CustomizationModal({ drink, onClose, onAddToCart, sweetnessOptions, ice
               <button
                 key={option.menuitemid}
                 onClick={() => setSize(option)}
-                className={`px-4 py-3 rounded-lg font-semibold transition-colors ${
+                className={`px-4 py-3 rounded-lg font-semibold transition-colors ${getTextSizeClass()} ${
                   size?.menuitemid === option.menuitemid
                     ? highContrast ? 'bg-yellow-400 text-black border-2 border-yellow-400' : 'bg-orange-600 text-white'
                     : highContrast ? 'bg-gray-800 text-yellow-400 border-2 border-yellow-400' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
@@ -145,7 +145,7 @@ function CustomizationModal({ drink, onClose, onAddToCart, sweetnessOptions, ice
 
         {/* Sweetness Level */}
         <div className="mb-6">
-          <h3 className={`text-xl font-semibold mb-3 ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
+          <h3 className={`font-semibold mb-3 ${getHeadingSizeClass('h3')} ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
             {getTranslatedText('Sweetness Level')}
           </h3>
           <div className="flex gap-2 flex-wrap">
@@ -153,7 +153,7 @@ function CustomizationModal({ drink, onClose, onAddToCart, sweetnessOptions, ice
               <button
                 key={option.menuitemid}
                 onClick={() => setSweetness(option)}
-                className={`px-4 py-3 rounded-lg font-semibold transition-colors ${
+                className={`px-4 py-3 rounded-lg font-semibold transition-colors ${getTextSizeClass()} ${
                   sweetness?.menuitemid === option.menuitemid
                     ? highContrast ? 'bg-yellow-400 text-black border-2 border-yellow-400' : 'bg-green-600 text-white'
                     : highContrast ? 'bg-gray-800 text-yellow-400 border-2 border-yellow-400' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
@@ -170,7 +170,7 @@ function CustomizationModal({ drink, onClose, onAddToCart, sweetnessOptions, ice
         {/* Ice Level - Only show if Cold is selected */}
         {!isHot && (
           <div className="mb-6">
-            <h3 className={`text-xl font-semibold mb-3 ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
+            <h3 className={`font-semibold mb-3 ${getHeadingSizeClass('h3')} ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
               {getTranslatedText('Ice Level')}
             </h3>
             <div className="flex gap-2 flex-wrap">
@@ -178,7 +178,7 @@ function CustomizationModal({ drink, onClose, onAddToCart, sweetnessOptions, ice
               <button
                 key={option.menuitemid}
                 onClick={() => setIce(option)}
-                className={`px-4 py-3 rounded-lg font-semibold transition-colors ${
+                className={`px-4 py-3 rounded-lg font-semibold transition-colors ${getTextSizeClass()} ${
                   ice?.menuitemid === option.menuitemid
                     ? highContrast ? 'bg-yellow-400 text-black border-2 border-yellow-400' : 'bg-blue-600 text-white'
                     : highContrast ? 'bg-gray-800 text-yellow-400 border-2 border-yellow-400' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
@@ -195,7 +195,7 @@ function CustomizationModal({ drink, onClose, onAddToCart, sweetnessOptions, ice
 
         {/* Toppings */}
         <div className="mb-6">
-          <h3 className={`text-xl font-semibold mb-3 ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
+          <h3 className={`font-semibold mb-3 ${getHeadingSizeClass('h3')} ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
             {getTranslatedText('Toppings')}
           </h3>
           <div className="grid grid-cols-2 gap-3">
@@ -213,8 +213,8 @@ function CustomizationModal({ drink, onClose, onAddToCart, sweetnessOptions, ice
                   style={{ minHeight: '50px' }}
                 >
                   <div className="flex justify-between items-center">
-                    <span>{getTranslatedText(topping.name)}</span>
-                    <span className="text-sm">+${parseFloat(topping.price).toFixed(2)}</span>
+                    <span className={getTextSizeClass()}>{getTranslatedText(topping.name)}</span>
+                    <span className={getSmallTextClass()}>+${parseFloat(topping.price).toFixed(2)}</span>
                   </div>
                 </button>
               );
@@ -227,14 +227,14 @@ function CustomizationModal({ drink, onClose, onAddToCart, sweetnessOptions, ice
           <div className={`flex justify-between items-center mb-4 ${
             highContrast ? 'text-yellow-400' : 'text-gray-800'
           }`}>
-            <span className="text-xl font-semibold">{getTranslatedText('Total')}:</span>
-            <span className={`text-2xl font-bold ${highContrast ? 'text-white' : 'text-green-600'}`}>
+            <span className={`font-semibold ${getHeadingSizeClass('h3')}`}>{getTranslatedText('Total')}:</span>
+            <span className={`font-bold ${getHeadingSizeClass('h2')} ${highContrast ? 'text-white' : 'text-green-600'}`}>
               ${calculateTotal().toFixed(2)}
             </span>
           </div>
           <button
             onClick={handleAddToCart}
-            className={`w-full py-5 rounded-lg text-lg font-bold shadow-lg transition-colors ${
+            className={`w-full py-5 rounded-lg font-bold shadow-lg transition-colors ${getTextSizeClass()} ${
               highContrast
                 ? 'bg-yellow-400 text-black border-4 border-yellow-400 hover:bg-yellow-300'
                 : 'bg-green-600 text-white hover:bg-green-700'
@@ -250,7 +250,7 @@ function CustomizationModal({ drink, onClose, onAddToCart, sweetnessOptions, ice
 }
 
 // A single drink item in the grid
-function DrinkCard({ drink, onDrinkClick, getTranslatedText, highContrast }) {
+function DrinkCard({ drink, onDrinkClick, getTranslatedText, highContrast, getTextSizeClass }) {
   // Database returns 'name' and 'price' as lowercase
   return (
     <div
@@ -267,7 +267,7 @@ function DrinkCard({ drink, onDrinkClick, getTranslatedText, highContrast }) {
       }`}>
         <span className="text-5xl">🥤</span>
       </div>
-      <span className={`text-center font-semibold mb-2 ${
+      <span className={`text-center font-semibold mb-2 ${getTextSizeClass()} ${
         highContrast ? 'text-yellow-400' : 'text-gray-800'
       }`}>
         {getTranslatedText(drink.name)}
@@ -283,7 +283,7 @@ function DrinkCard({ drink, onDrinkClick, getTranslatedText, highContrast }) {
 }
 
 // The sidebar showing the cart
-function Cart({ cartItems, total, highContrast, getTranslatedText, onPay, largeClickTargets, onRemoveItem, onIncreaseQuantity, onDecreaseQuantity }) {
+function Cart({ cartItems, total, highContrast, getTranslatedText, onPay, largeClickTargets, onRemoveItem, onIncreaseQuantity, onDecreaseQuantity, getTextSizeClass, getSmallTextClass, getExtraSmallTextClass, getHeadingSizeClass }) {
   const getButtonSizeClass = () => {
     return largeClickTargets
       ? 'min-h-[80px] px-8 py-6 text-xl'
@@ -294,12 +294,12 @@ function Cart({ cartItems, total, highContrast, getTranslatedText, onPay, largeC
     <div className={`w-1/4 p-6 shadow-lg rounded-lg ${
       highContrast ? 'bg-gray-900 border-4 border-yellow-400' : 'bg-white'
     }`}>
-      <h2 className={`font-bold mb-6 text-center ${
+      <h2 className={`font-bold mb-6 text-center ${getHeadingSizeClass('h2')} ${
         highContrast ? 'text-yellow-400' : 'text-gray-800'
-      }`} style={{fontSize: '1.5rem'}}>{getTranslatedText('View Cart')}</h2>
+      }`}>{getTranslatedText('View Cart')}</h2>
       <div className="flex-grow overflow-y-auto mb-4" style={{maxHeight: '60vh'}}>
         {cartItems.length === 0 ? (
-          <p className={`text-center ${highContrast ? 'text-white' : 'text-gray-500'}`}>{getTranslatedText('Your cart is empty.')}</p>
+          <p className={`text-center ${getTextSizeClass()} ${highContrast ? 'text-white' : 'text-gray-500'}`}>{getTranslatedText('Your cart is empty.')}</p>
         ) : (
           cartItems.map((item, index) => (
             <div
@@ -309,13 +309,14 @@ function Cart({ cartItems, total, highContrast, getTranslatedText, onPay, largeC
               }`}
             >
               <div className="flex-1">
-                <span className={`font-semibold block ${
+                <span className={`font-semibold block ${getTextSizeClass()} ${
                   highContrast ? 'text-yellow-400' : 'text-gray-800'
-                }`} style={{fontSize: '1.125rem'}}>{getTranslatedText(item.name)}</span>
+                }`}>{getTranslatedText(item.name)}</span>
                 {item.customizations && (
-                  <div className={`mt-1 ${
+                  <div className={`mt-1 ${getSmallTextClass()} ${
                     highContrast ? 'text-white' : 'text-gray-500'
                   }`}>
+                    <div>{getTranslatedText('Temperature:')} {getTranslatedText(item.customizations.temperature)}</div>
                     <div>{getTranslatedText('Sweetness:')} {getTranslatedText(item.customizations.sweetness)}</div>
                     <div>{getTranslatedText('Ice:')} {getTranslatedText(item.customizations.ice)}</div>
                     {item.customizations.toppings.length > 0 && (
@@ -326,7 +327,7 @@ function Cart({ cartItems, total, highContrast, getTranslatedText, onPay, largeC
                 <div className="flex items-center gap-0.5 mt-1">
                   <button
                     onClick={() => onDecreaseQuantity(index)}
-                    className={`h-5 w-5 rounded text-xs font-bold leading-none transition-colors ${
+                    className={`h-5 w-5 rounded ${getExtraSmallTextClass()} font-bold leading-none transition-colors ${
                       highContrast
                         ? 'bg-gray-700 text-yellow-400 border border-yellow-400 hover:bg-gray-600'
                         : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
@@ -335,14 +336,14 @@ function Cart({ cartItems, total, highContrast, getTranslatedText, onPay, largeC
                   >
                     −
                   </button>
-                  <span className={`min-w-[25px] text-center ${
+                  <span className={`min-w-[25px] text-center ${getExtraSmallTextClass()} ${
                     highContrast ? 'text-white' : 'text-gray-800'
-                  }`} style={{fontSize: '0.75rem'}}>
+                  }`}>
                     {item.quantity}
                   </span>
                   <button
                     onClick={() => onIncreaseQuantity(index)}
-                    className={`h-5 w-5 rounded text-xs font-bold leading-none transition-colors ${
+                    className={`h-5 w-5 rounded ${getExtraSmallTextClass()} font-bold leading-none transition-colors ${
                       highContrast
                         ? 'bg-gray-700 text-yellow-400 border border-yellow-400 hover:bg-gray-600'
                         : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
@@ -351,22 +352,22 @@ function Cart({ cartItems, total, highContrast, getTranslatedText, onPay, largeC
                   >
                     +
                   </button>
-                  <span className={`ml-1 ${
+                  <span className={`ml-1 ${getExtraSmallTextClass()} ${
                     highContrast ? 'text-gray-300' : 'text-gray-500'
-                  }`} style={{fontSize: '0.75rem'}}>
+                  }`}>
                     × ${parseFloat(item.price).toFixed(2)}
                   </span>
                 </div>
               </div>
               <div className="flex flex-col items-end ml-1">
-                <span className={`font-bold mb-1 ${
+                <span className={`font-bold mb-1 ${getSmallTextClass()} ${
                   highContrast ? 'text-white' : 'text-gray-800'
-                }`} style={{fontSize: '0.875rem'}}>
+                }`}>
                   ${(item.quantity * parseFloat(item.price)).toFixed(2)}
                 </span>
                 <button
                   onClick={() => onRemoveItem(index)}
-                  className={`h-7 w-7 rounded text-sm font-semibold leading-none transition-colors ${
+                  className={`h-7 w-7 rounded ${getSmallTextClass()} font-semibold leading-none transition-colors ${
                     highContrast
                       ? 'bg-red-700 text-white border border-yellow-400 hover:bg-red-600'
                       : 'bg-red-500 text-white hover:bg-red-600'
@@ -663,12 +664,30 @@ export default function Kiosk({ role = 'customer' }) {
 
   const weatherRecommendation = useMemo(() => getWeatherRecommendation(), [currentWeather, drinks]);
 
-  // Get font size scale (improved for Carol's macular degeneration)
-  const getFontSizeScale = () => {
+  // Get base font size class for body text (improved for Carol's macular degeneration)
+  const getTextSizeClass = () => {
     switch(fontSize) {
-      case 'large': return 'text-xl';
-      case 'extra-large': return 'text-2xl';
-      default: return 'text-lg'; // Default slightly larger for readability
+      case 'large': return 'text-lg';
+      case 'extra-large': return 'text-xl';
+      default: return 'text-base';
+    }
+  };
+
+  // Get small text size class
+  const getSmallTextClass = () => {
+    switch(fontSize) {
+      case 'large': return 'text-base';
+      case 'extra-large': return 'text-lg';
+      default: return 'text-sm';
+    }
+  };
+
+  // Get extra small text size class
+  const getExtraSmallTextClass = () => {
+    switch(fontSize) {
+      case 'large': return 'text-sm';
+      case 'extra-large': return 'text-base';
+      default: return 'text-xs';
     }
   };
 
@@ -707,7 +726,7 @@ export default function Kiosk({ role = 'customer' }) {
   const getContainerClass = () => {
     const baseClass = 'flex flex-col w-full min-h-screen font-sans';
     const bgClass = highContrast ? 'bg-black' : 'bg-lime-50';
-    return `${baseClass} ${bgClass} ${getFontSizeScale()}`;
+    return `${baseClass} ${bgClass}`;
   };
 
   // --- Data Fetching ---
@@ -875,24 +894,16 @@ export default function Kiosk({ role = 'customer' }) {
       const dbData = await dbResponse.json();
       const { translations, count } = dbData;
       
-      if (count > 0) {
-        console.log(`✅ Loaded ${count} translations from database`);
-        setTranslatedData(translations);
-        setSelectedLanguage(lang);
-        setForceRender(prev => prev + 1);
-        setIsTranslating(false);
-        return;
-      }
-
-      // If no translations in DB, populate them (first-time setup)
-      console.log(`📝 No translations found, populating database for ${lang}...`);
-      
+      // Define all the text that needs translation
       const staticLabels = [
         // Original labels
         'Sweetness Level', 'Ice Level', 'Size', 'Toppings', 'Total', 'Add to Cart',
         'View Cart', 'Your cart is empty.', 'Sweetness:', 'Ice:', 'Size:', 'Toppings:', 
         'Pay', 'Menu', 'Kiosk System', 'Accessibility:', 'Text Size:', 
         'Normal', 'Large', 'Extra Large', 'High Contrast', 'Language:',
+        
+        // Temperature options (NEW)
+        'Temperature', 'Temperature:', 'Hot', 'Cold', 'N/A',
         
         // Sweetness/Ice/Size options (modification values)
         'Regular', 'Less', 'No Ice', 'Small', 'Medium', 'Extra Large',
@@ -905,7 +916,7 @@ export default function Kiosk({ role = 'customer' }) {
         '20% Off', '20% off your entire order', 'Buy One Get One', 'Get the cheapest drink free',
         'Not enough points', 'Subtotal', 'Rewards Savings', 'Proceed to Checkout',
         
-        // Customer Auth Modal labels
+        // Customer Auth Modal labels (UPDATED)
         'Log In', 'Sign Up', 'Skip', 'Continue as Guest', 'Earn Rewards!',
         'Sign up or log in to earn points with every purchase',
         'Phone Number', 'Enter your phone number', 'PIN', 'Enter PIN',
@@ -914,11 +925,16 @@ export default function Kiosk({ role = 'customer' }) {
         'Back', '4-Digit PIN', 'Phone', 'Checking...', 'Continue',
         "Don't have an account?", 'Already have an account?',
         'Logging In...', 'Creating Account...', 'Setting PIN...', 'Set PIN & Continue',
-        'Switch Account', 'Currently logged in as:', 
+        'Switch Account', 'Currently logged in as:', 'Switch',
         'Log In to Different Account', 'Create New Account', 'Log Out (Continue as Guest)',
         'Logging out will remove your rewards tracking for this session',
         'Log In to Account', 'You can always sign up later to start earning rewards!',
         'Set Up Your PIN', 'Your account was created by a cashier. Please set up a 4-digit PIN to secure your account.',
+        
+        // Accessibility labels (NEW)
+        'Accessibility', 'For easier reading', 'Display Mode', 'For better visibility',
+        'Button Size', 'Easier to press', 'Large Buttons', 'Standard Buttons',
+        'These settings make the kiosk easier to use. Try different options to find what works best for you!',
         
         // Error messages
         'Please enter a valid 10-digit phone number',
@@ -955,7 +971,9 @@ export default function Kiosk({ role = 'customer' }) {
         '°F',
         
         // Search and Navigation
-        'Search drinks...', 'Clear search', 'ShareNook Kiosk'
+        'Search drinks...', 'Clear search', 'ShareNook Kiosk', 'result(s) for',
+
+        'Log In / Rewards', 'Hot', 'Cold', 'Temperature'
       ];
 
       const allTexts = [
@@ -968,28 +986,35 @@ export default function Kiosk({ role = 'customer' }) {
         ...sizeOptions.map(o => o.name)
       ];
 
-      // Populate database (this uses MyMemory API)
-      const populateUrl = `${API_BASE_URL}/api/translations/populate`;
-      console.log('📡 Populating translations at:', populateUrl);
+      // Check which texts are missing from the database
+      const missingTexts = allTexts.filter(text => !translations.hasOwnProperty(text));
       
-      const populateResponse = await fetch(populateUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ texts: allTexts, targetLang: lang })
-      });
+      if (missingTexts.length > 0) {
+        console.log(`📝 Found ${missingTexts.length} missing translations, populating...`);
+        
+        const populateUrl = `${API_BASE_URL}/api/translations/populate`;
+        const populateResponse = await fetch(populateUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ texts: missingTexts, targetLang: lang })
+        });
 
-      if (!populateResponse.ok) {
-        throw new Error(`Populate failed: ${populateResponse.status} ${populateResponse.statusText}`);
+        if (!populateResponse.ok) {
+          throw new Error(`Populate failed: ${populateResponse.status} ${populateResponse.statusText}`);
+        }
+
+        const result = await populateResponse.json();
+        console.log(`✅ Populated ${result.newTranslations} new translations`);
+        
+        // Fetch updated translations from database
+        const updatedResponse = await fetch(dbUrl);
+        const updatedData = await updatedResponse.json();
+        setTranslatedData(updatedData.translations);
+      } else {
+        console.log(`✅ All ${count} translations already in database`);
+        setTranslatedData(translations);
       }
-
-      const result = await populateResponse.json();
-      console.log(`✅ Populated ${result.newTranslations} new translations`);
       
-      // Now fetch from database
-      const fetchResponse = await fetch(dbUrl);
-      const fetchData = await fetchResponse.json();
-      
-      setTranslatedData(fetchData.translations);
       setSelectedLanguage(lang);
       setForceRender(prev => prev + 1);
     } catch (err) {
@@ -1276,7 +1301,7 @@ export default function Kiosk({ role = 'customer' }) {
         {/* Font Size Controls */}
         <div className="mb-6">
           <h3 className={`font-semibold mb-3 ${getHeadingSizeClass('h3')} ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
-            {getTranslatedText('Text Size')} <span className="text-sm font-normal">({getTranslatedText('For easier reading')})</span>
+            {getTranslatedText('Text Size')} <span className={`${getSmallTextClass()} font-normal`}></span>
           </h3>
           <div className="flex gap-3">
             <button
@@ -1289,7 +1314,7 @@ export default function Kiosk({ role = 'customer' }) {
               style={{ minHeight: '80px' }}
             >
               <div className="text-base">A</div>
-              <div className="text-sm mt-2">{getTranslatedText('Normal')}</div>
+              <div className={`${getSmallTextClass()} mt-2`}>{getTranslatedText('Normal')}</div>
             </button>
             <button
               onClick={() => setFontSize('large')}
@@ -1301,7 +1326,7 @@ export default function Kiosk({ role = 'customer' }) {
               style={{ minHeight: '80px' }}
             >
               <div className="text-xl">A</div>
-              <div className="text-sm mt-2">{getTranslatedText('Large')}</div>
+              <div className={`${getSmallTextClass()} mt-2`}>{getTranslatedText('Large')}</div>
             </button>
             <button
               onClick={() => setFontSize('extra-large')}
@@ -1313,7 +1338,7 @@ export default function Kiosk({ role = 'customer' }) {
               style={{ minHeight: '80px' }}
             >
               <div className="text-2xl">A</div>
-              <div className="text-sm mt-2">{getTranslatedText('Extra Large')}</div>
+              <div className={`${getSmallTextClass()} mt-2`}>{getTranslatedText('Extra Large')}</div>
             </button>
           </div>
         </div>
@@ -1321,11 +1346,11 @@ export default function Kiosk({ role = 'customer' }) {
         {/* High Contrast Toggle */}
         <div className="mb-6">
           <h3 className={`font-semibold mb-3 ${getHeadingSizeClass('h3')} ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
-            {getTranslatedText('Display Mode')} <span className="text-sm font-normal">({getTranslatedText('For better visibility')})</span>
+            {getTranslatedText('Display Mode')} <span className={`${getSmallTextClass()} font-normal`}></span>
           </h3>
           <button
             onClick={() => setHighContrast(!highContrast)}
-            className={`w-full py-6 rounded-lg font-bold transition-colors text-xl ${
+            className={`w-full py-6 rounded-lg font-bold transition-colors ${getTextSizeClass()} ${
               highContrast
                 ? 'bg-yellow-400 text-black border-4 border-yellow-400'
                 : 'bg-gray-800 text-white hover:bg-gray-700'
@@ -1339,11 +1364,11 @@ export default function Kiosk({ role = 'customer' }) {
         {/* Large Click Targets for tremor */}
         <div className="mb-6">
           <h3 className={`font-semibold mb-3 ${getHeadingSizeClass('h3')} ${highContrast ? 'text-yellow-400' : 'text-gray-800'}`}>
-            {getTranslatedText('Button Size')} <span className="text-sm font-normal">({getTranslatedText('Easier to press')})</span>
+            {getTranslatedText('Button Size')} <span className={`${getSmallTextClass()} font-normal`}></span>
           </h3>
           <button
             onClick={() => setLargeClickTargets(!largeClickTargets)}
-            className={`w-full py-6 rounded-lg font-bold transition-colors text-xl ${
+            className={`w-full py-6 rounded-lg font-bold transition-colors ${getTextSizeClass()} ${
               largeClickTargets
                 ? highContrast ? 'bg-yellow-400 text-black border-4 border-yellow-400' : 'bg-green-600 text-white'
                 : highContrast ? 'bg-gray-800 text-yellow-400 border-4 border-yellow-400' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
@@ -1352,13 +1377,6 @@ export default function Kiosk({ role = 'customer' }) {
           >
             {largeClickTargets ? getTranslatedText('Large Buttons') : getTranslatedText('Standard Buttons')}
           </button>
-        </div>
-
-        {/* Helpful Info */}
-        <div className={`p-4 rounded-lg ${highContrast ? 'bg-gray-800 border-2 border-yellow-400' : 'bg-blue-50 border-2 border-blue-200'}`}>
-          <p className={`text-sm ${highContrast ? 'text-white' : 'text-gray-700'}`}>
-            {getTranslatedText('These settings make the kiosk easier to use. Try different options to find what works best for you!')}
-          </p>
         </div>
 
         {/* Close Button */}
@@ -1447,6 +1465,9 @@ export default function Kiosk({ role = 'customer' }) {
             toppingOptions={toppings}
             getTranslatedText={getTranslatedText}
             highContrast={highContrast}
+            getTextSizeClass={getTextSizeClass}
+            getSmallTextClass={getSmallTextClass}
+            getHeadingSizeClass={getHeadingSizeClass}
           />
         )}
         
@@ -1672,7 +1693,7 @@ export default function Kiosk({ role = 'customer' }) {
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className={`mt-2 text-sm font-medium ${
+                className={`mt-2 ${getSmallTextClass()} font-medium ${
                   highContrast ? 'text-yellow-400 hover:text-yellow-300' : 'text-gray-600 hover:text-gray-800'
                 }`}
               >
@@ -1686,7 +1707,7 @@ export default function Kiosk({ role = 'customer' }) {
               <li key={categoryName}>
                 <button
                   onClick={() => setSelectedCategory(categoryName)}
-                  className={`w-full text-left rounded-lg font-semibold transition-all ${getButtonSizeClass()} ${
+                  className={`w-full text-left rounded-lg font-semibold transition-all ${getButtonSizeClass()} ${getTextSizeClass()} ${
                     selectedCategory === categoryName
                       ? highContrast 
                         ? 'bg-yellow-400 text-black border-4 border-yellow-400 shadow-lg' 
@@ -1710,7 +1731,7 @@ export default function Kiosk({ role = 'customer' }) {
             <div className={`mb-6 p-4 rounded-lg ${
               highContrast ? 'bg-gray-800 text-yellow-400' : 'bg-gray-100 text-gray-700'
             }`}>
-              <p className="font-medium">
+              <p className={`font-medium ${getTextSizeClass()}`}>
                 {visibleDrinks.length} {getTranslatedText('result(s) for')} "{searchQuery}"
               </p>
             </div>
@@ -1724,6 +1745,7 @@ export default function Kiosk({ role = 'customer' }) {
                 onDrinkClick={handleDrinkClick}
                 getTranslatedText={getTranslatedText}
                 highContrast={highContrast}
+                getTextSizeClass={getTextSizeClass}
               />
             ))}
           </div>
@@ -1740,6 +1762,10 @@ export default function Kiosk({ role = 'customer' }) {
           onRemoveItem={handleRemoveItem}
           onIncreaseQuantity={handleIncreaseQuantity}
           onDecreaseQuantity={handleDecreaseQuantity}
+          getTextSizeClass={getTextSizeClass}
+          getSmallTextClass={getSmallTextClass}
+          getExtraSmallTextClass={getExtraSmallTextClass}
+          getHeadingSizeClass={getHeadingSizeClass}
         />
       </div>
 
@@ -1755,6 +1781,9 @@ export default function Kiosk({ role = 'customer' }) {
           toppingOptions={toppings}
           getTranslatedText={getTranslatedText}
           highContrast={highContrast}
+          getTextSizeClass={getTextSizeClass}
+          getSmallTextClass={getSmallTextClass}
+          getHeadingSizeClass={getHeadingSizeClass}
         />
       )}
 

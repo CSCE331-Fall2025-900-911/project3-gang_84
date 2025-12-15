@@ -28,7 +28,6 @@ export default function Cashier() {
   const [fontSize, setFontSize] = useState('normal');
   const [highContrast, setHighContrast] = useState(false);
   const [showAccessibilityMenu, setShowAccessibilityMenu] = useState(false);
-  const [reduceMotion, setReduceMotion] = useState(false);
   const [largeClickTargets, setLargeClickTargets] = useState(false);
   
   // Language & Translation
@@ -369,6 +368,44 @@ export default function Cashier() {
     };
   }, [selectedLanguage, translatedData, forceRender]);
 
+  // Text size helper functions for granular control
+  const getTextSizeClass = () => {
+    switch(fontSize) {
+      case 'large': return 'text-lg';
+      case 'extra-large': return 'text-xl';
+      default: return 'text-base';
+    }
+  };
+
+  const getSmallTextClass = () => {
+    switch(fontSize) {
+      case 'large': return 'text-base';
+      case 'extra-large': return 'text-lg';
+      default: return 'text-sm';
+    }
+  };
+
+  const getExtraSmallTextClass = () => {
+    switch(fontSize) {
+      case 'large': return 'text-sm';
+      case 'extra-large': return 'text-base';
+      default: return 'text-xs';
+    }
+  };
+
+  const getHeadingSizeClass = (level) => {
+    switch(level) {
+      case 'h1':
+        return fontSize === 'extra-large' ? 'text-5xl' : fontSize === 'large' ? 'text-4xl' : 'text-3xl';
+      case 'h2':
+        return fontSize === 'extra-large' ? 'text-4xl' : fontSize === 'large' ? 'text-3xl' : 'text-2xl';
+      case 'h3':
+        return fontSize === 'extra-large' ? 'text-3xl' : fontSize === 'large' ? 'text-2xl' : 'text-xl';
+      default:
+        return getTextSizeClass();
+    }
+  };
+
   // Get container class with accessibility settings
   const getContainerClass = () => {
     let classes = 'min-h-screen';
@@ -379,8 +416,7 @@ export default function Cashier() {
       classes += ' bg-gradient-to-br from-green-50 to-green-100';
     }
     
-    if (fontSize === 'large') classes += ' text-lg';
-    if (fontSize === 'extra-large') classes += ' text-xl';
+    // Text sizing handled at component level for granular control
     
     return classes;
   };
@@ -399,8 +435,8 @@ export default function Cashier() {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center mb-6">
-          <h2 className={`text-3xl font-bold ${highContrast ? 'text-yellow-400' : 'text-gray-900'}`}>
-            ♿ {getTranslatedText('Accessibility')}
+          <h2 className={`font-bold ${getHeadingSizeClass('h2')} ${highContrast ? 'text-yellow-400' : 'text-gray-900'}`}>
+            {getTranslatedText('Accessibility')}
           </h2>
           <button
             onClick={() => setShowAccessibilityMenu(false)}
@@ -414,8 +450,8 @@ export default function Cashier() {
 
         {/* Font Size Controls */}
         <div className="mb-6">
-          <h3 className={`text-xl font-semibold mb-3 ${highContrast ? 'text-yellow-400' : 'text-gray-900'}`}>
-            📝 {getTranslatedText('Text Size')}
+          <h3 className={`font-semibold mb-3 ${getHeadingSizeClass('h3')} ${highContrast ? 'text-yellow-400' : 'text-gray-900'}`}>
+            {getTranslatedText('Text Size')}
           </h3>
           <div className="flex gap-3">
             <button
@@ -459,55 +495,37 @@ export default function Cashier() {
 
         {/* High Contrast Toggle */}
         <div className="mb-6">
-          <h3 className={`text-xl font-semibold mb-3 ${highContrast ? 'text-yellow-400' : 'text-gray-900'}`}>
-            🎨 {getTranslatedText('Display Mode')}
+          <h3 className={`font-semibold mb-3 ${getHeadingSizeClass('h3')} ${highContrast ? 'text-yellow-400' : 'text-gray-900'}`}>
+            {getTranslatedText('Display Mode')}
           </h3>
           <button
             onClick={() => setHighContrast(!highContrast)}
-            className={`w-full py-6 rounded-lg font-bold transition-colors text-xl ${
+            className={`w-full py-6 rounded-lg font-bold transition-colors ${getTextSizeClass()} ${
               highContrast
                 ? 'bg-yellow-400 text-black border-4 border-yellow-400'
                 : 'bg-gray-800 text-white hover:bg-gray-700'
             }`}
             style={{ minHeight: '80px' }}
           >
-            {highContrast ? '🌞 ' + getTranslatedText('High Contrast ON') : '🌙 ' + getTranslatedText('Normal Mode')}
+            {highContrast ? getTranslatedText('High Contrast ON') : getTranslatedText('Normal Mode')}
           </button>
         </div>
 
         {/* Large Click Targets */}
         <div className="mb-6">
-          <h3 className={`text-xl font-semibold mb-3 ${highContrast ? 'text-yellow-400' : 'text-gray-900'}`}>
-            👆 {getTranslatedText('Button Size')}
+          <h3 className={`font-semibold mb-3 ${getHeadingSizeClass('h3')} ${highContrast ? 'text-yellow-400' : 'text-gray-900'}`}>
+            {getTranslatedText('Button Size')}
           </h3>
           <button
             onClick={() => setLargeClickTargets(!largeClickTargets)}
-            className={`w-full py-6 rounded-lg font-bold transition-colors text-xl ${
+            className={`w-full py-6 rounded-lg font-bold transition-colors ${getTextSizeClass()} ${
               largeClickTargets
                 ? highContrast ? 'bg-yellow-400 text-black border-4 border-yellow-400' : 'bg-green-700 text-white'
                 : highContrast ? 'bg-gray-800 text-yellow-400 border-4 border-yellow-400' : 'bg-gray-100 text-gray-900 hover:bg-gray-200 border-2 border-gray-300'
             }`}
             style={{ minHeight: '80px' }}
           >
-            {largeClickTargets ? '✓ ' + getTranslatedText('Large Buttons') : getTranslatedText('Standard Buttons')}
-          </button>
-        </div>
-
-        {/* Reduce Motion */}
-        <div className="mb-6">
-          <h3 className={`text-xl font-semibold mb-3 ${highContrast ? 'text-yellow-400' : 'text-gray-900'}`}>
-            🎬 {getTranslatedText('Animation')}
-          </h3>
-          <button
-            onClick={() => setReduceMotion(!reduceMotion)}
-            className={`w-full py-6 rounded-lg font-bold transition-colors text-xl ${
-              reduceMotion
-                ? highContrast ? 'bg-yellow-400 text-black border-4 border-yellow-400' : 'bg-green-700 text-white'
-                : highContrast ? 'bg-gray-800 text-yellow-400 border-4 border-yellow-400' : 'bg-gray-100 text-gray-900 hover:bg-gray-200 border-2 border-gray-300'
-            }`}
-            style={{ minHeight: '80px' }}
-          >
-            {reduceMotion ? '🚫 ' + getTranslatedText('No Animation') : '✨ ' + getTranslatedText('Animation ON')}
+            {largeClickTargets ? getTranslatedText('Large Buttons') : getTranslatedText('Standard Buttons')}
           </button>
         </div>
 
@@ -608,7 +626,7 @@ export default function Cashier() {
               style={{ minHeight: '44px' }}
               title={getTranslatedText('Accessibility Options')}
             >
-              ♿ {getTranslatedText('Accessibility')}
+              {getTranslatedText('Accessibility')}
             </button>
           </div>
         </div>
@@ -619,7 +637,10 @@ export default function Cashier() {
         highContrast={highContrast}
         fontSize={fontSize}
         largeClickTargets={largeClickTargets}
-        reduceMotion={reduceMotion}
+        getTextSizeClass={getTextSizeClass}
+        getSmallTextClass={getSmallTextClass}
+        getExtraSmallTextClass={getExtraSmallTextClass}
+        getHeadingSizeClass={getHeadingSizeClass}
         getTranslatedText={getTranslatedText}
         onAddToCart={handleAddToCart}
         onRemoveFromCart={handleRemoveFromCart}
